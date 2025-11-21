@@ -31,7 +31,7 @@
                     <a href="#kontak" class="text-gray-300 hover:text-white transition">Kontak</a>
                     <a href="{{ route('login') }}" 
                     class="w-full bg-blue-600 text-white px-6 py-2 rounded-lg block text-center">
-                        Mulai Sekarang
+                        Login
                     </a>
                 </div>
 
