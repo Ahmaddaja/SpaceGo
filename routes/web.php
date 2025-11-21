@@ -8,10 +8,11 @@ Route::get('/', function () {
     return view('welcome');
 });
 
+
 // Route untuk Customer (default user)
 Route::middleware(['auth', 'role:customer'])->group(function () {
     Route::get('/dashboard', function () {
-        return view('dashboard');
+        return view('users.dashboard');
     })->name('dashboard');
 
     // Tambahkan route customer lainnya di sini
