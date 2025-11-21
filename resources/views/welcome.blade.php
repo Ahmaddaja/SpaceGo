@@ -29,9 +29,10 @@
                 
                 <div class="hidden md:flex items-center space-x-8">
                     <a href="#kontak" class="text-gray-300 hover:text-white transition">Kontak</a>
-                    <button class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg transition">
+                    <a href="{{ route('login') }}" 
+                    class="w-full bg-blue-600 text-white px-6 py-2 rounded-lg block text-center">
                         Mulai Sekarang
-                    </button>
+                    </a>
                 </div>
 
                 <button class="md:hidden text-white" @click="mobileMenuOpen = !mobileMenuOpen">
@@ -48,7 +49,11 @@
         <div x-show="mobileMenuOpen" x-cloak class="md:hidden bg-slate-800 border-t border-slate-700">
             <div class="px-4 py-4 space-y-3">
                 <a href="#kontak" class="block text-gray-300 hover:text-white">Kontak</a>
-                <button class="w-full bg-blue-600 text-white px-6 py-2 rounded-lg">Mulai Sekarang</button>
+                <a href="{{ route('login') }}" 
+                class="w-full bg-blue-600 text-white px-6 py-2 rounded-lg block text-center">
+                    Mulai Sekarang
+                </a>
+
             </div>
         </div>
     </nav>
