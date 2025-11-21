@@ -19,7 +19,6 @@
             </div>
             
             <div class="flex items-center space-x-6">
-                <a href="#layanan" class="text-gray-600 hover:text-blue-600 hidden md:block">Layanan</a>
                 <a href="#tentang" class="text-gray-600 hover:text-blue-600 hidden md:block">Tentang</a>
                 <a href="#kontak" class="text-gray-600 hover:text-blue-600 hidden md:block">Kontak</a>
                 <a href="{{ route('login') }}"
