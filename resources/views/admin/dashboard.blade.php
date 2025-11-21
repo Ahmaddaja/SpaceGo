@@ -8,6 +8,7 @@
         <h2 class="font-semibold text-xl text-gray-800 leading-tight">
             {{ __('Dashboard') }}
         </h2>
+        <p>Selamat datang, <strong>{{ Auth::user()->name }}</strong>!</p>
     </x-slot>
 
     <!-- Main Content -->
@@ -15,8 +16,6 @@
         <!-- Top Bar -->
         <div class="top-bar">
             <div class="page-header">
-                <h1>Admin Dashboard</h1>
-                <p>Selamat datang, <strong>{{ Auth::user()->name }}</strong>!</p>
             </div>
             <div class="top-actions">
                 <select class="select-dropdown">
@@ -427,10 +426,6 @@
                 <button class="action-btn primary">
                     <i class="fas fa-plus"></i>
                     Add New Property
-                </button>
-                <button class="action-btn">
-                    <i class="fas fa-user-plus"></i>
-                    Add New User
                 </button>
                 <button class="action-btn">
                     <i class="fas fa-calendar-plus"></i>
