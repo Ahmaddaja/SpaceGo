@@ -1,0 +1,50 @@
+/* Simple Dashboard Styles */
+.welcome-admin {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border-radius: 10px;
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
+    color: white;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.welcome-admin h3 {
+    font-weight: 300;
+    margin-bottom: 0;
+    font-size: 1.4rem;
+}
+
+.welcome-admin strong {
+    font-weight: 600;
+    color: #fff;
+}
+
+/* Simple Card Styles */
+.simple-card {
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    background: white;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    transition: box-shadow 0.2s ease;
+}
+
+.simple-card:hover {
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.simple-card .card-body {
+    padding: 1.25rem;
+}
+
+.simple-card .card-title {
+    color: #2d3748;
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+    font-size: 1.1rem;
+}
+
+.simple-card .card-text {
+    color: #718096;
+    line-height: 1.5;
+    margin-bottom: 0;
+}
