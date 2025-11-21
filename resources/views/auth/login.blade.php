@@ -106,7 +106,7 @@
         </svg>
 
         <h3 class="fw-bold text-dark mb-1">SpaceGO</h3>
-        <p class="text-muted mb-4">Sistem Sewa Gudang & Penyimpanan Modern</p>
+        <p class="text-muted mb-4">Layanan Sewa Gudang & Penyimpanan Modern</p>
     </div>
 
     <form method="POST" action="{{ route('login') }}">

@@ -139,7 +139,7 @@
 
         <!-- Login Link -->
         <div class="text-center">
-            <span class="text-muted small">Sudah punya akun?</span>
+            <span class="text-muted small">Sudah Punya Akun?</span>
             <a href="{{ route('login') }}" class="fw-semibold" style="color:#4f46e5">Login</a>
         </div>
     </form>
