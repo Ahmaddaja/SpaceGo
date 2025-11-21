@@ -1,6 +1,5 @@
 @props(['isOpen' => true])
 
-
     <!-- Sidebar -->
     <aside id="sidebar" class="bg-dark text-white p-3">
         <h4 class="mb-4">Menu</h4>
