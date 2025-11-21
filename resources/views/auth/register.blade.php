@@ -93,7 +93,7 @@
         </svg>
 
         <h3 class="fw-bold text-dark">Daftar Akun SpaceGO</h3>
-        <p class="text-muted">Akses layanan sewa gudang modern</p>
+        <p class="text-muted">Akses layanan sewa gudang</p>
     </div>
 
     <!-- REGISTER FORM -->
