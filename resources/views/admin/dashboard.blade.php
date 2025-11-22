@@ -8,7 +8,7 @@
         <h2 class="font-semibold text-xl text-gray-800 leading-tight">
             {{ __('Dashboard') }}
         </h2>
-        <p>Selamat datang, <strong>{{ Auth::user()->name }}</strong>!</p>
+        <p>halo, Selamat datang, <strong>{{ Auth::user()->name }}</strong>!</p>
     </x-slot>
 
     <!-- Main Content -->
