@@ -1,4 +1,6 @@
-<x-layouts.app>
+@extends('layouts.app')
+
+@section('content')
 <div class="d-flex">
     <!-- Main Content -->
     <main class="flex-grow-1 p-4">
@@ -70,9 +72,4 @@
         </div>
     </main>
 </div>
-
-<!-- Bootstrap JS -->
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
-</body>
-</html>
-</x-layouts.app>
+@endsection
