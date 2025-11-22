@@ -12,7 +12,7 @@ Route::get('/', function () {
 // Route untuk Customer (default user)
 Route::middleware(['auth', 'role:customer'])->group(function () {
     Route::get('/dashboard', function () {
-        return view('users.dashboard');
+        return view('customer.index');
     })->name('dashboard');
 });
 

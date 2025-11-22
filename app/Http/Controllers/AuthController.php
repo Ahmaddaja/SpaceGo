@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers;
 
-use App\Http\Controllers\Controller;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -20,29 +19,34 @@ class AuthController extends Controller
     }
 
     /**
-     * Handle login request
+     * Handle login (email atau username)
      */
     public function login(Request $request)
     {
-        $credentials = $request->validate([
-            'email' => ['required', 'email'],
-            'password' => ['required'],
+        $request->validate([
+            'login' => ['required', 'string'],  // bisa email atau username
+            'password' => ['required', 'string'],
         ]);
+
+        $login_type = filter_var($request->login, FILTER_VALIDATE_EMAIL) ? 'email' : 'username';
+
+        $credentials = [
+            $login_type => $request->login,
+            'password' => $request->password,
+        ];
 
         if (Auth::attempt($credentials, $request->boolean('remember'))) {
             $request->session()->regenerate();
 
-            // Redirect based on user role
             if (Auth::user()->role === 'admin') {
                 return redirect()->intended('/admin/dashboard');
             }
-
             return redirect()->intended('/dashboard');
         }
 
         return back()->withErrors([
-            'email' => 'Email atau password yang Anda masukkan salah.',
-        ])->onlyInput('email');
+            'login' => 'Email/Username atau password salah.',
+        ])->onlyInput('login');
     }
 
     /**
@@ -54,74 +58,40 @@ class AuthController extends Controller
     }
 
     /**
-     * Handle registration request
+     * Handle registration
      */
     public function register(Request $request)
     {
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:255'],
+            'username' => ['required', 'string', 'max:50', 'unique:users'],
+            'phone' => ['required', 'string', 'max:20', 'unique:users'],
             'email' => ['required', 'string', 'email', 'max:255', 'unique:users'],
-            // 'phone' => ['required', 'string', 'max:20'],
             'password' => ['required', 'confirmed', Password::min(8)],
-            // 'terms' => ['accepted'],
-        ], [
-            'name.required' => 'Nama lengkap harus diisi.',
-            'email.required' => 'Email harus diisi.',
-            'email.email' => 'Format email tidak valid.',
-            'email.unique' => 'Email sudah terdaftar.',
-            'phone.required' => 'Nomor telepon harus diisi.',
-            'password.required' => 'Password harus diisi.',
-            'password.confirmed' => 'Konfirmasi password tidak cocok.',
-            'password.min' => 'Password minimal 8 karakter.',
-            // 'terms.accepted' => 'Anda harus menyetujui syarat dan ketentuan.',
         ]);
 
         $user = User::create([
             'name' => $validated['name'],
+            'username' => $validated['username'],
+            'phone' => $validated['phone'],
             'email' => $validated['email'],
-            // 'phone' => $validated['phone'],
             'password' => Hash::make($validated['password']),
-            'role' => 'customer', // Default role
+            'role' => 'customer', 
         ]);
 
         Auth::login($user);
 
-        return redirect('/dashboard')->with('success', 'Akun berhasil dibuat! Selamat datang di SPACEGO.');
+        return redirect('/dashboard')->with('success', 'Akun berhasil dibuat!');
     }
 
     /**
-     * Handle logout request
+     * Logout
      */
     public function logout(Request $request)
     {
         Auth::logout();
-
         $request->session()->invalidate();
         $request->session()->regenerateToken();
-
-        return redirect('/')->with('success', 'Anda telah berhasil logout.');
-    }
-
-    /**
-     * Show forgot password form
-     */
-    public function showForgotPasswordForm()
-    {
-        return view('auth.forgot-password');
-    }
-
-    /**
-     * Handle forgot password request
-     */
-    public function forgotPassword(Request $request)
-    {
-        $request->validate([
-            'email' => ['required', 'email'],
-        ]);
-
-        // Logic untuk mengirim reset password link
-        // Implementasi sesuai kebutuhan menggunakan Laravel Password Reset
-
-        return back()->with('success', 'Link reset password telah dikirim ke email Anda.');
+        return redirect('/');
     }
 }
