@@ -78,20 +78,6 @@
         .register-link a:hover {
             text-decoration: underline;
         }
-
-        /* mobile improvements */
-        @media (max-width: 480px) {
-            .login-card {
-                padding: 28px 22px;
-                border-radius: 18px;
-            }
-            h3 {
-                font-size: 1.4rem;
-            }
-            p {
-                font-size: 0.85rem;
-            }
-        }
     </style>
 </head>
 
@@ -100,7 +86,6 @@
 <div class="login-card shadow-lg">
     <div class="text-center">
 
-        <!-- LOGO STORAGE (lebih clean & modern) -->
         <svg class="logo-storage" fill="#4f46e5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
             <path d="M3 10L12 3L21 10V21H3V10ZM5 12V19H19V12L12 7L5 12Z"/>
         </svg>
@@ -112,12 +97,12 @@
     <form method="POST" action="{{ route('login') }}">
         @csrf
 
-        <!-- Email -->
+        <!-- Email / Username -->
         <div class="mb-3">
-            <label class="form-label fw-semibold">Email</label>
-            <input id="email" type="email" name="email" required autofocus
-                   class="form-control" value="{{ old('email') }}">
-            @error('email')
+            <label class="form-label fw-semibold">Email atau Username</label>
+            <input id="login" type="text" name="login" required autofocus
+                   class="form-control" value="{{ old('login') }}">
+            @error('login')
                 <small class="text-danger">{{ $message }}</small>
             @enderror
         </div>
@@ -138,19 +123,10 @@
             <label for="remember" class="form-check-label small">Ingat saya</label>
         </div>
 
-        <!-- Button Login -->
         <button type="submit" class="btn btn-login text-white w-100 py-2 mb-3">
             Masuk
         </button>
 
-        <!-- Forgot Password -->
-        @if (Route::has('password.request'))
-        <div class="text-end mb-2">
-            <a href="{{ route('password.request') }}" class="small text-secondary">Lupa password?</a>
-        </div>
-        @endif
-
-        <!-- Register Link -->
         <div class="text-center register-link mt-2">
             <span class="text-muted small">Belum punya akun?</span>
             <a href="{{ route('register') }}">Daftar</a>
