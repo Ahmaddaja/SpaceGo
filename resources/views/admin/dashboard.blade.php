@@ -1,10 +1,10 @@
 @extends('layouts.main', ['title' => 'Dashboard'])
 
 @section('title-content')
-<div class="d-flex justify-content-between align-items-center">
+<div class="d-flex justify-content-between align-items-right">
     <h1 class="m-0">Dashboard</h1>
     <nav aria-label="breadcrumb">
-        <ol class="breadcrumb bg-transparent p-0 m-0">
+        <ol class="breadcrumb bg-transparent p-0 m-0 justify-content-end small">
             <li class="breadcrumb-item"><a href="/">Home</a></li>
             <li class="breadcrumb-item active">Dashboard</li>
         </ol>
@@ -112,7 +112,7 @@
 <div class="card border-0 shadow-sm">
     <div class="card-header bg-white border-0 d-flex justify-content-between align-items-center py-3">
         <h5 class="mb-0 font-weight-bold">Booking Terbaru</h5>
-        <a href="/booking" class="btn btn-primary btn-sm">Lihat Semua</a>
+        <a href="/booking" class="btn btn-primary btn-sm ml-auto">Lihat Semua</a>
     </div>
     <div class="card-body p-0">
         <div class="table-responsive">
