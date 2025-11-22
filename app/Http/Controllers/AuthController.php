@@ -61,9 +61,9 @@ class AuthController extends Controller
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'string', 'email', 'max:255', 'unique:users'],
-            'phone' => ['required', 'string', 'max:20'],
+            // 'phone' => ['required', 'string', 'max:20'],
             'password' => ['required', 'confirmed', Password::min(8)],
-            'terms' => ['accepted'],
+            // 'terms' => ['accepted'],
         ], [
             'name.required' => 'Nama lengkap harus diisi.',
             'email.required' => 'Email harus diisi.',
@@ -73,13 +73,13 @@ class AuthController extends Controller
             'password.required' => 'Password harus diisi.',
             'password.confirmed' => 'Konfirmasi password tidak cocok.',
             'password.min' => 'Password minimal 8 karakter.',
-            'terms.accepted' => 'Anda harus menyetujui syarat dan ketentuan.',
+            // 'terms.accepted' => 'Anda harus menyetujui syarat dan ketentuan.',
         ]);
 
         $user = User::create([
             'name' => $validated['name'],
             'email' => $validated['email'],
-            'phone' => $validated['phone'],
+            // 'phone' => $validated['phone'],
             'password' => Hash::make($validated['password']),
             'role' => 'customer', // Default role
         ]);
