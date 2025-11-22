@@ -1,34 +1,78 @@
-<aside class="w-64 h-screen bg-white shadow-md p-5">
+<x-layouts.app>
+<div class="d-flex">
+    <!-- Main Content -->
+    <main class="flex-grow-1 p-4">
+        <h2 class="mb-4">Dashboard Overview</h2>
 
-    <h2 class="text-xl font-semibold text-gray-700 mb-5">
-        Menu
-    </h2>
+        <!-- Cards Row -->
+        <div class="row g-4 mb-4">
+            <div class="col-md-4">
+                <div class="card shadow-sm">
+                    <div class="card-body">
+                        <h5 class="card-title">Total Users</h5>
+                        <p class="display-6 fw-bold">124</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card shadow-sm">
+                    <div class="card-body">
+                        <h5 class="card-title">Active Roles</h5>
+                        <p class="display-6 fw-bold">8</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card shadow-sm">
+                    <div class="card-body">
+                        <h5 class="card-title">Permissions</h5>
+                        <p class="display-6 fw-bold">32</p>
+                    </div>
+                </div>
+            </div>
+        </div>
 
-    <nav class="space-y-2">
+        <!-- Table Section -->
+        <div class="card shadow-sm">
+            <div class="card-header bg-white fw-bold">User List</div>
+            <div class="card-body">
+                <table class="table table-striped">
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Email</th>
+                            <th>Role</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>John Doe</td>
+                            <td>john@example.com</td>
+                            <td>Admin</td>
+                            <td>
+                                <button class="btn btn-sm btn-primary">Edit</button>
+                                <button class="btn btn-sm btn-danger">Delete</button>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>Jane Smith</td>
+                            <td>jane@example.com</td>
+                            <td>User</td>
+                            <td>
+                                <button class="btn btn-sm btn-primary">Edit</button>
+                                <button class="btn btn-sm btn-danger">Delete</button>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </main>
+</div>
 
-        {{-- Dashboard --}}
-        <a href="{{ route('dashboard') }}"
-           class="flex items-center gap-3 p-3 rounded-lg hover:bg-blue-100 hover:text-blue-600 text-gray-700">
-            <i class="fa-solid fa-house"></i>
-            <span>Dashboard</span>
-        </a>
-
-        {{-- Profile --}}
-        <a href="{{ route('profile.edit') }}"
-           class="flex items-center gap-3 p-3 rounded-lg hover:bg-blue-100 hover:text-blue-600 text-gray-700">
-            <i class="fa-solid fa-user"></i>
-            <span>Profile</span>
-        </a>
-
-        {{-- Logout --}}
-        <form method="POST" action="{{ route('logout') }}">
-            @csrf
-            <button class="w-full flex items-center gap-3 p-3 rounded-lg hover:bg-red-100 hover:text-red-600 text-gray-700">
-                <i class="fa-solid fa-right-from-brush"></i>
-                <span>Logout</span>
-            </button>
-        </form>
-
-    </nav>
-
-</aside>
+<!-- Bootstrap JS -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
+</x-layouts.app>
