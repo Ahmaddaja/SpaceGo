@@ -1,34 +1,133 @@
-<aside class="w-64 h-screen bg-white shadow-md p-5">
+<aside class="main-sidebar sidebar-dark-primary elevation-4">
+    <!-- Brand Logo -->
+    <a href="/" class="brand-link">
+        <i class="fas fa-building mr-2"></i>
+        <span class="brand-text font-weight-light">RentalGedung</span>
+    </a>
+    <div class="sidebar">
+        <nav class="mt-2">
+            <ul class="nav nav-pills nav-sidebar flex-column" data-widget="treeview" role="menu" data-accordion="false">
+                <li class="nav-header">MENU</li>
+                
+                <!-- Dashboard -->
+                <li class="nav-item has-treeview">
+                    <a href="#" class="nav-link">
+                        <i class="nav-icon fas fa-tachometer-alt"></i>
+                        <p>
+                            Dashboard
+                            <i class="right fas fa-angle-left"></i>
+                        </p>
+                    </a>
+                    <ul class="nav nav-treeview">
+                        <li class="nav-item">
+                            <a href="/dashboard/analytics" class="nav-link">
+                                <i class="far fa-circle nav-icon"></i>
+                                <p>Analytics</p>
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a href="/dashboard/reports" class="nav-link">
+                                <i class="far fa-circle nav-icon"></i>
+                                <p>Reports</p>
+                            </a>
+                        </li>
+                    </ul>
+                </li>
 
-    <h2 class="text-xl font-semibold text-gray-700 mb-5">
-        Menu
-    </h2>
+                <!-- Jadwal Booking -->
+                <li class="nav-item">
+                    <a href="/jadwal-booking" class="nav-link">
+                        <i class="nav-icon fas fa-calendar-check"></i>
+                        <p>Jadwal Booking</p>
+                    </a>
+                </li>
 
-    <nav class="space-y-2">
+                <!-- Kelola Gedung -->
+                <li class="nav-item">
+                    <a href="/kelola-gedung" class="nav-link">
+                        <i class="nav-icon fas fa-building"></i>
+                        <p>Kelola Gedung</p>
+                    </a>
+                </li>
 
-        {{-- Dashboard --}}
-        <a href="{{ route('dashboard') }}"
-           class="flex items-center gap-3 p-3 rounded-lg hover:bg-blue-100 hover:text-blue-600 text-gray-700">
-            <i class="fa-solid fa-house"></i>
-            <span>Dashboard</span>
-        </a>
+                <!-- Transaksi -->
+                <li class="nav-item has-treeview">
+                    <a href="#" class="nav-link">
+                        <i class="nav-icon fas fa-file-invoice-dollar"></i>
+                        <p>
+                            Transaksi
+                            <i class="right fas fa-angle-left"></i>
+                        </p>
+                    </a>
+                    <ul class="nav nav-treeview">
+                        <li class="nav-item">
+                            <a href="/transaksi" class="nav-link">
+                                <i class="far fa-circle nav-icon"></i>
+                                <p>Semua Transaksi</p>
+                            </a>
+                        </li>
+                    </ul>
+                </li>
 
-        {{-- Profile --}}
-        <a href="{{ route('profile.edit') }}"
-           class="flex items-center gap-3 p-3 rounded-lg hover:bg-blue-100 hover:text-blue-600 text-gray-700">
-            <i class="fa-solid fa-user"></i>
-            <span>Profile</span>
-        </a>
+                <!-- Pelanggan -->
+                <li class="nav-item">
+                    <a href="/pelanggan" class="nav-link">
+                        <i class="nav-icon fas fa-users"></i>
+                        <p>Pelanggan</p>
+                    </a>
+                </li>
 
-        {{-- Logout --}}
-        <form method="POST" action="{{ route('logout') }}">
-            @csrf
-            <button class="w-full flex items-center gap-3 p-3 rounded-lg hover:bg-red-100 hover:text-red-600 text-gray-700">
-                <i class="fa-solid fa-right-from-brush"></i>
-                <span>Logout</span>
-            </button>
-        </form>
+                <!-- Laporan -->
+                <li class="nav-item has-treeview">
+                    <a href="#" class="nav-link">
+                        <i class="nav-icon fas fa-chart-bar"></i>
+                        <p>
+                            Laporan
+                            <i class="right fas fa-angle-left"></i>
+                        </p>
+                    </a>
+                    <ul class="nav nav-treeview">
+                        <li class="nav-item">
+                            <a href="/laporan/pendapatan" class="nav-link">
+                                <i class="far fa-circle nav-icon"></i>
+                                <p>Pendapatan</p>
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a href="/laporan/booking" class="nav-link">
+                                <i class="far fa-circle nav-icon"></i>
+                                <p>Booking</p>
+                            </a>
+                        </li>
+                    </ul>
+                </li>
 
-    </nav>
+                <li class="nav-header">PENGATURAN</li>
 
+                <!-- Pengaturan -->
+                <li class="nav-item">
+                    <a href="/pengaturan" class="nav-link">
+                        <i class="nav-icon fas fa-cog"></i>
+                        <p>Pengaturan</p>
+                    </a>
+                </li>
+
+                <!-- Profile -->
+                <li class="nav-item">
+                    <a href="/profile" class="nav-link">
+                        <i class="nav-icon fas fa-user"></i>
+                        <p>Profile</p>
+                    </a>
+                </li>
+
+                <!-- Logout -->
+                <li class="nav-item">
+                    <a href="javascript:;" class="nav-link" onclick="document.getElementById('form-logout').submit();">
+                        <i class="nav-icon fas fa-sign-out-alt"></i>
+                        <p>Logout</p>
+                    </a>
+                </li>
+            </ul>
+        </nav>
+    </div>
 </aside>
