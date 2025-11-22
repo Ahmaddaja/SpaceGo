@@ -20,7 +20,7 @@
     <ul class="navbar-nav ml-auto">
         <!-- Dark Mode Toggle -->
         <li class="nav-item">
-            <a class="nav-link" href="#" role="button">
+            <a class="nav-link" href="javascript:;" id="darkToggle">
                 <i class="fas fa-moon"></i>
             </a>
         </li>
