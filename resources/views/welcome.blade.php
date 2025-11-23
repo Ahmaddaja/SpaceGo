@@ -39,7 +39,7 @@
                         Sewa Gudang untuk Bisnis Anda
                     </h1>
                     <p class="text-xl text-gray-700 mb-8 leading-relaxed">
-                        Solusi penyimpanan yang aman, fleksibel, dan terjangkau. Kelola inventori Anda dengan mudah bersama SPACEGO.
+                        Solusi penyimpanan yang aman, Fleksibel, dan Terjangkau. Kelola inventori Anda dengan mudah bersama SPACEGO.
                     </p>
                     <button class="bg-blue-600 text-white px-8 py-4 rounded-lg text-lg hover:bg-blue-700 shadow-lg">
                         Hubungi Kami Sekarang »
