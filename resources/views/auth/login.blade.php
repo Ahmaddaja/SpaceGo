@@ -12,6 +12,9 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&display=swap" rel="stylesheet">
 
+    <!-- BOOTSTRAP ICONS -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+
     <!-- CUSTOM STYLE -->
     <style>
         body {
@@ -78,6 +81,41 @@
         .register-link a:hover {
             text-decoration: underline;
         }
+
+        /* Password Toggle Styling */
+        .password-wrapper {
+            position: relative;
+        }
+
+        .password-toggle {
+            position: absolute;
+            right: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: none;
+            border: none;
+            color: #6b7280;
+            cursor: pointer;
+            padding: 0;
+            width: 24px;
+            height: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: color 0.2s ease;
+        }
+
+        .password-toggle:hover {
+            color: #4f46e5;
+        }
+
+        .password-toggle i {
+            font-size: 18px;
+        }
+
+        .password-wrapper .form-control {
+            padding-right: 45px;
+        }
     </style>
 </head>
 
@@ -107,11 +145,16 @@
             @enderror
         </div>
 
-        <!-- Password -->
+        <!-- Password with Toggle -->
         <div class="mb-3">
             <label class="form-label fw-semibold">Password</label>
-            <input id="password" type="password" name="password" required
-                   class="form-control">
+            <div class="password-wrapper">
+                <input id="password" type="password" name="password" required
+                       class="form-control">
+                <button type="button" class="password-toggle" onclick="togglePassword()">
+                    <i id="toggleIcon" class="bi bi-eye"></i>
+                </button>
+            </div>
             @error('password')
                 <small class="text-danger">{{ $message }}</small>
             @enderror
@@ -133,6 +176,23 @@
         </div>
     </form>
 </div>
+
+<script>
+    function togglePassword() {
+        const passwordInput = document.getElementById('password');
+        const toggleIcon = document.getElementById('toggleIcon');
+        
+        if (passwordInput.type === 'password') {
+            passwordInput.type = 'text';
+            toggleIcon.classList.remove('bi-eye');
+            toggleIcon.classList.add('bi-eye-slash');
+        } else {
+            passwordInput.type = 'password';
+            toggleIcon.classList.remove('bi-eye-slash');
+            toggleIcon.classList.add('bi-eye');
+        }
+    }
+</script>
 
 </body>
 </html>
