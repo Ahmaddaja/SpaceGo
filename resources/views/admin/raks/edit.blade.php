@@ -6,7 +6,7 @@
 
 @section('content')
 <div class="container-fluid">
-    <form action="{{ route('raks.update', $rak->id) }}" method="POST" enctype="multipart/form-data">
+    <form action="{{ route('raks.update', $rak->id) }}" method="POST" enctype="multipart/form-data" id="update-form">
         @csrf
         @method('PUT')
         
@@ -22,6 +22,15 @@
                 @include('admin.raks.partials.form-actions', ['submitText' => 'Update Rak', 'rak' => $rak])
             </div>
         </div>
+    </form>
+    
+    <!-- Form Delete Terpisah -->
+    <form id="delete-form-{{ $rak->id }}" 
+          action="{{ route('raks.destroy', $rak->id) }}" 
+          method="POST" 
+          style="display: none;">
+        @csrf
+        @method('DELETE')
     </form>
 </div>
 @endsection
