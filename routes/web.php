@@ -3,8 +3,6 @@
 use App\Http\Controllers\ProfileController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AuthController;
-use App\Http\Controllers\RakController;
-
 
 // Halaman awal
 Route::get('/', function () {
@@ -16,6 +14,11 @@ Route::middleware(['auth', 'role:customer'])->group(function () {
     Route::get('/dashboard', function () {
         return view('customer.index');
     })->name('dashboard');
+    
+    // Route Profile Customer
+    Route::get('/customer/profile', [ProfileController::class, 'index'])->name('customer.profile.index');
+    Route::put('/customer/profile', [ProfileController::class, 'updateProfile'])->name('customer.profile.update');
+    Route::post('/customer/profile/upload-foto', [ProfileController::class, 'uploadFoto'])->name('customer.profile.upload-foto');
 });
 
 // Route khusus Admin
@@ -23,7 +26,6 @@ Route::middleware(['auth', 'role:admin'])->group(function () {
     Route::get('/admin/dashboard', function () {
         return view('admin.dashboard');
     })->name('admin.dashboard');
-    Route::resource('raks', RakController::class);
 });
 
 // Route Profile (untuk semua user yang login)
