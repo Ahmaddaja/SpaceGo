@@ -4,7 +4,7 @@
     </div>
     <div class="card-body">
         <div class="form-group">
-            <label for="lokasi_gudang">Lokasi Gudang <span class="text-danger">*</span></label>
+           <label for="lokasi_gudang">Lokasi Gudang <span class="text-danger">*</span></label>
             <select class="form-control @error('lokasi_gudang') is-invalid @enderror" id="lokasi_gudang"
                 name="lokasi_gudang">
                 <option value="">Pilih Gudang</option>
@@ -15,7 +15,10 @@
                     </option>
                 @endforeach
             </select>
+
             @error('lokasi_gudang')
+                <div class="invalid-feedback">{{ $message }}</div>
+            @enderror
 
                 {{-- <div class="form-group">
             <label for="zona_gudang">Zona Gudang</label>
