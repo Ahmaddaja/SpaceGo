@@ -43,14 +43,14 @@
                 <td>: <strong class="text-success">{{ $rak->harga_format }}</strong></td>
             </tr>
             <tr>
-                <td class="font-weight-bold">Status Aktif</td>
+                {{-- <td class="font-weight-bold">Status Aktif</td>
                 <td>: 
                     @if($rak->is_active)
                         <span class="badge badge-success">Aktif</span>
                     @else
                         <span class="badge badge-secondary">Tidak Aktif</span>
                     @endif
-                </td>
+                </td> --}}
             </tr>
         </table>
 
