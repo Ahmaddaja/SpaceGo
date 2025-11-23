@@ -51,12 +51,12 @@
                     <small class="text-muted">{{ Auth::user()->role }}</small>
                 </div>
                 <div class="bg-primary rounded-circle d-flex align-items-center justify-content-center text-white font-weight-bold" style="width: 40px; height: 40px;">
-                    AD
+                    {{ strtoupper(substr(Auth::user()->name, 0, 2)) }}
                 </div>
                 <i class="fas fa-caret-down ml-2"></i>
             </a>
             <div class="dropdown-menu dropdown-menu-right">
-                <a href="/profile" class="dropdown-item">
+                <a href="{{ route('admin.profile.index') }}" class="dropdown-item">
                     <i class="fas fa-user mr-2"></i> Profile
                 </a>
                 <div class="dropdown-divider"></div>

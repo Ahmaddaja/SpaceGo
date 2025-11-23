@@ -4,6 +4,7 @@ use App\Http\Controllers\ProfileController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\RakController;
+use App\Http\Controllers\ProfileAdminController;
 
 // Halaman awal
 Route::get('/', function () {
@@ -28,6 +29,9 @@ Route::middleware(['auth', 'role:admin'])->group(function () {
         return view('admin.dashboard');
     })->name('admin.dashboard');
     Route::resource('raks', RakController::class);
+    Route::get('/admin/profile', [ProfileAdminController::class, 'index'])->name('admin.profile.index');
+    Route::put('/admin/profile', [ProfileAdminController::class, 'update'])->name('admin.profile.update');
+    Route::put('/admin/profile/password', [ProfileAdminController::class, 'updatePassword'])->name('admin.profile.updatePassword');
 });
 
 // Route Profile (untuk semua user yang login)
