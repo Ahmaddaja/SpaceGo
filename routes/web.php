@@ -3,6 +3,8 @@
 use App\Http\Controllers\ProfileController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\RakController;
+
 
 // Halaman awal
 Route::get('/', function () {
@@ -21,6 +23,7 @@ Route::middleware(['auth', 'role:admin'])->group(function () {
     Route::get('/admin/dashboard', function () {
         return view('admin.dashboard');
     })->name('admin.dashboard');
+    Route::resource('raks', RakController::class);
 });
 
 // Route Profile (untuk semua user yang login)
@@ -50,5 +53,3 @@ Route::get('/register', [AuthController::class, 'showRegistrationForm'])->name('
 
 // Proses Register
 Route::post('/register', [AuthController::class, 'register'])->name('register.post');
-
-
