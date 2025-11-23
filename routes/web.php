@@ -27,7 +27,7 @@ Route::middleware(['auth', 'role:admin'])->group(function () {
     Route::get('/admin/dashboard', function () {
         return view('admin.dashboard');
     })->name('admin.dashboard');
-    Route::resource('admin/customers', RakController::class);
+    Route::resource('raks', RakController::class);
 });
 
 // Route Profile (untuk semua user yang login)
