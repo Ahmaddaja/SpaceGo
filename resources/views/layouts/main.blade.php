@@ -3,6 +3,25 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script>
+    (function () {
+        const savedMode = localStorage.getItem("darkMode");
+
+        if (savedMode === "on") {
+            document.documentElement.classList.add("dark-mode");
+            document.body?.classList.add("dark-mode");
+        } else if (savedMode === "off") {
+            document.documentElement.classList.remove("dark-mode");
+        } else {
+            // jika belum ada setting, pakai mode dari sistem
+            const systemDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+            if (systemDark) {
+                document.documentElement.classList.add("dark-mode");
+                document.body?.classList.add("dark-mode");
+            }
+        }
+    })();
+    </script>
     <title>{{ config('app.name') }}{{ isset($title) ? ' | ' . $title : '' }}</title>
     <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:300,400,400i,700&display=fallback">
     <link rel="stylesheet" href="{{ asset('adminlte/plugins/fontawesome-free/css/all.min.css') }}">
@@ -43,12 +62,15 @@
     .brand-link {
         background: #1e293b !important;
         border-bottom: 1px solid #334155 !important;
+        justify-content: flex-start !important;
+        padding-left: 20px !important;
     }
 
     .brand-link .brand-text {
         color: #ffffff !important;
         font-weight: 600;
         letter-spacing: .3px;
+        text-align: center;
     }
 
     .brand-link i {
@@ -139,119 +161,125 @@
     }
 
     /* ========== DARK MODE ========== */
-    body.dark-mode {
+    .dark-mode body,
+    .dark-mode {
         background-color: #0f172a !important;
         color: #e2e8f0 !important;
     }
 
     /* Header Dark */
-    body.dark-mode .main-header {
+    .dark-mode .main-header {
         background-color: #1e293b !important;
         border-bottom: 1px solid #334155 !important;
     }
 
-    body.dark-mode .main-header .navbar-nav .nav-link {
+    .dark-mode .main-header .navbar-nav .nav-link {
         color: #e2e8f0 !important;
     }
 
     /* Sidebar Dark */
-    body.dark-mode .sidebar-theme {
+    .dark-mode .sidebar-theme {
         background-color: #0f172a !important;
         border-right: 1px solid #1e293b;
     }
 
     /* Brand Link Dark */
-    body.dark-mode .brand-link {
+    .dark-mode .brand-link {
         background: #0f172a !important;
         border-bottom: 1px solid #1e293b !important;
+        justify-content: flex-start !important;
+        padding-left: 20px !important;
     }
 
-    body.dark-mode .brand-link .brand-text {
+    .dark-mode .brand-link .brand-text {
         color: #ffffff !important;
+        text-align: center;
+        font-weight: 600;
+        letter-spacing: .3px;
     }
 
-    body.dark-mode .brand-link i {
+    .dark-mode .brand-link i {
         color: #ffffff !important;
     }
 
     /* Nav links Dark */
-    body.dark-mode .sidebar-theme .nav-link {
+    .dark-mode .sidebar-theme .nav-link {
         color: #cbd5e1 !important;
     }
 
-    body.dark-mode .sidebar-theme .nav-link:hover {
+    .dark-mode .sidebar-theme .nav-link:hover {
         background-color: #1e293b !important;
         color: #ffffff !important;
     }
 
-    body.dark-mode .sidebar-theme .nav-link.active {
+    .dark-mode .sidebar-theme .nav-link.active {
         background-color: #2563eb !important;
         color: #ffffff !important;
     }
 
-    body.dark-mode .sidebar-theme .nav-link i {
+    .dark-mode .sidebar-theme .nav-link i {
         color: #cbd5e1 !important;
     }
 
-    body.dark-mode .sidebar-theme .nav-link:hover i,
-    body.dark-mode .sidebar-theme .nav-link.active i {
+    .dark-mode .sidebar-theme .nav-link:hover i,
+    .dark-mode .sidebar-theme .nav-link.active i {
         color: #ffffff !important;
     }
 
-    body.dark-mode .sidebar-theme .nav-header {
+    .dark-mode .sidebar-theme .nav-header {
         color: #64748b !important;
     }
 
     /* Content Wrapper Dark */
-    body.dark-mode .content-wrapper {
+    .dark-mode .content-wrapper {
         background: #0f172a !important;
     }
 
     /* Card Dark */
-    body.dark-mode .card {
+    .dark-mode .card {
         background: #1e293b !important;
         box-shadow: 0 1px 3px rgba(0,0,0,0.3) !important;
     }
 
-    body.dark-mode .card-header {
+    .dark-mode .card-header {
         background: #1e293b !important;
         border-bottom: 1px solid #334155 !important;
     }
 
     /* Table Dark */
-    body.dark-mode .table thead th {
+    .dark-mode .table thead th {
         background-color: #0f172a !important;
         color: #e2e8f0 !important;
     }
 
-    body.dark-mode .table tbody td {
+    .dark-mode .table tbody td {
         color: #e2e8f0 !important;
         border-color: #334155 !important;
     }
 
-    body.dark-mode .table-hover tbody tr:hover {
+    .dark-mode .table-hover tbody tr:hover {
         background-color: #334155 !important;
     }
 
     /* Text colors Dark */
-    body.dark-mode .text-muted {
+    .dark-mode .text-muted {
         color: #94a3b8 !important;
     }
 
-    body.dark-mode h1,
-    body.dark-mode h2,
-    body.dark-mode h3,
-    body.dark-mode h4,
-    body.dark-mode h5 {
+    .dark-mode h1,
+    .dark-mode h2,
+    .dark-mode h3,
+    .dark-mode h4,
+    .dark-mode h5 {
         color: #e2e8f0 !important;
     }
 
     /* Breadcrumb Dark */
-    body.dark-mode .breadcrumb-item a {
+    .dark-mode .breadcrumb-item a {
         color: #3b82f6 !important;
     }
 
-    body.dark-mode .breadcrumb-item.active {
+    .dark-mode .breadcrumb-item.active {
         color: #94a3b8 !important;
     }
 
@@ -269,36 +297,36 @@
         color: rgba(0,0,0,0.15) !important;
     }
 
-    body.dark-mode .small-box .icon i {
+    .dark-mode .small-box .icon i {
         color: rgba(255,255,255,0.15) !important;
     }
 
     /* Dropdown menus */
-    body.dark-mode .dropdown-menu {
+    .dark-mode .dropdown-menu {
         background-color: #1e293b !important;
         border-color: #334155 !important;
     }
 
-    body.dark-mode .dropdown-item {
+    .dark-mode .dropdown-item {
         color: #e2e8f0 !important;
     }
 
-    body.dark-mode .dropdown-item:hover {
+    .dark-mode .dropdown-item:hover {
         background-color: #334155 !important;
     }
 
-    body.dark-mode .dropdown-divider {
+    .dark-mode .dropdown-divider {
         border-color: #334155 !important;
     }
 
     /* Input forms */
-    body.dark-mode .form-control {
+    .dark-mode .form-control {
         background-color: #0f172a !important;
         border-color: #334155 !important;
         color: #e2e8f0 !important;
     }
 
-    body.dark-mode .form-control:focus {
+    .dark-mode .form-control:focus {
         background-color: #1e293b !important;
         border-color: #3b82f6 !important;
         color: #e2e8f0 !important;
@@ -335,45 +363,34 @@
     <script src="{{ asset('adminlte/dist/js/adminlte.min.js') }}"></script>
     @stack('scripts')
     <script>
-    document.addEventListener("DOMContentLoaded", function () {
-        const toggle = document.getElementById("darkToggle");
-        const icon = toggle?.querySelector("i");
+document.addEventListener("DOMContentLoaded", function () {
+    const toggle = document.getElementById("darkToggle");
+    const icon = toggle?.querySelector("i");
 
-        function updateIcon() {
-            if (!icon) return;
-
-            if (document.body.classList.contains("dark-mode")) {
-                icon.classList.remove("fa-moon");
-                icon.classList.add("fa-sun");
-            } else {
-                icon.classList.remove("fa-sun");
-                icon.classList.add("fa-moon");
-            }
+    function updateIcon() {
+        if (!icon) return;
+        if (document.documentElement.classList.contains("dark-mode")) {
+            icon.classList.remove("fa-moon");
+            icon.classList.add("fa-sun");
+        } else {
+            icon.classList.remove("fa-sun");
+            icon.classList.add("fa-moon");
         }
+    }
 
-        if (!toggle) return;
+    toggle?.addEventListener("click", function (e) {
+        e.preventDefault();
 
-        toggle.addEventListener("click", function (e) {
-            e.preventDefault();
+        document.documentElement.classList.toggle("dark-mode");
 
-            document.body.classList.toggle("dark-mode");
-
-            localStorage.setItem(
-                "darkMode",
-                document.body.classList.contains("dark-mode")
-                    ? "on"
-                    : "off"
-            );
-
-            updateIcon();
-        });
-
-        if (localStorage.getItem("darkMode") === "on") {
-            document.body.classList.add("dark-mode");
-        }
+        const isDark = document.documentElement.classList.contains("dark-mode");
+        localStorage.setItem("darkMode", isDark ? "on" : "off");
 
         updateIcon();
     });
-    </script>
+
+    updateIcon();
+});
+</script>
 </body>
 </html>
