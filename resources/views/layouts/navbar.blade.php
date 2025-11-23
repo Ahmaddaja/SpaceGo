@@ -47,8 +47,8 @@
         <li class="nav-item dropdown">
             <a class="nav-link d-flex align-items-center" data-toggle="dropdown" href="#" aria-expanded="false">
                 <div class="mr-2 text-right">
-                    <div class="font-weight-bold">Administrator</div>
-                    <small class="text-muted">Administrator</small>
+                    <div class="font-weight-bold">{{ Auth::user()->name }}</div>
+                    <small class="text-muted">{{ Auth::user()->role }}</small>
                 </div>
                 <div class="bg-primary rounded-circle d-flex align-items-center justify-content-center text-white font-weight-bold" style="width: 40px; height: 40px;">
                     AD
