@@ -14,6 +14,11 @@ Route::middleware(['auth', 'role:customer'])->group(function () {
     Route::get('/dashboard', function () {
         return view('customer.index');
     })->name('dashboard');
+    
+    // Route Profile Customer
+    Route::get('/customer/profile', [ProfileController::class, 'index'])->name('customer.profile.index');
+    Route::put('/customer/profile', [ProfileController::class, 'updateProfile'])->name('customer.profile.update');
+    Route::post('/customer/profile/upload-foto', [ProfileController::class, 'uploadFoto'])->name('customer.profile.upload-foto');
 });
 
 // Route khusus Admin
@@ -50,5 +55,3 @@ Route::get('/register', [AuthController::class, 'showRegistrationForm'])->name('
 
 // Proses Register
 Route::post('/register', [AuthController::class, 'register'])->name('register.post');
-
-
