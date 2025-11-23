@@ -10,11 +10,21 @@ class Rak extends Model
     use HasFactory;
 
     protected $fillable = [
-        'kode_rak', 'nama_rak', 'jenis_rak', 'deskripsi',
-        'kapasitas_berat', 'panjang', 'lebar', 'tinggi',
-        'jumlah_tingkat', 'lokasi_gudang', //'zona_gudang',
-        'harga_sewa_perbulan', 'status', 'foto',
-        'spesifikasi_tambahan', 'is_active'
+        'kode_rak',
+        'nama_rak',
+        'jenis_rak',
+        'deskripsi',
+        'kapasitas_berat',
+        'panjang',
+        'lebar',
+        'tinggi',
+        'jumlah_tingkat',
+        'lokasi_gudang', //'zona_gudang',
+        'harga_sewa_perbulan',
+        'status',
+        'foto',
+        'spesifikasi_tambahan',
+        'is_active'
     ];
 
     protected $casts = [
@@ -51,5 +61,10 @@ class Rak extends Model
     public function scopeActive($query)
     {
         return $query->where('is_active', true);
+    }
+
+    public function gudang()
+    {
+        return $this->belongsTo(Gudang::class, 'lokasi_gudang', 'nama_gudang');
     }
 }

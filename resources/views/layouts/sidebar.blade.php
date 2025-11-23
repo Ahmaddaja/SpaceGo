@@ -42,11 +42,11 @@
                     </a>
                 </li>
 
-                <!-- Kelola Gedung -->
+                <!-- Kelola Gudang -->
                 <li class="nav-item">
-                    <a href="/kelola-gedung" class="nav-link">
-                        <i class="nav-icon fas fa-building"></i>
-                        <p>Kelola Gedung</p>
+                    <a href="{{ route('gudangs.index') }}" class="nav-link">
+                        <i class="nav-icon fas fa-warehouse"></i>
+                        <p>Kelola Gudang</p>
                     </a>
                 </li>
 
