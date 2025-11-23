@@ -8,7 +8,7 @@
         <nav class="mt-2">
             <ul class="nav nav-pills nav-sidebar flex-column" data-widget="treeview" role="menu" data-accordion="false">
                 <li class="nav-header">MENU</li>
-                
+
                 <!-- Dashboard -->
                 <li class="nav-item has-treeview">
                     <a href="#" class="nav-link">
@@ -47,6 +47,14 @@
                     <a href="/kelola-gedung" class="nav-link">
                         <i class="nav-icon fas fa-building"></i>
                         <p>Kelola Gedung</p>
+                    </a>
+                </li>
+
+                <!-- Kelola Rak -->
+                <li class="nav-item">
+                    <a href="{{ route('raks.index') }}" class="nav-link">
+                        <i class="nav-icon fas fa-boxes"></i>
+                        <p>Kelola Rak</p>
                     </a>
                 </li>
 
