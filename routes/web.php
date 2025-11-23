@@ -5,7 +5,9 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\RakController;
 use App\Http\Controllers\ProfileAdminController;
+use App\Http\Controllers\CustomerController;
 use App\Http\Controllers\GudangController;
+use App\Http\Controllers\DashboardController;
 
 // Halaman awal
 Route::get('/', function () {
@@ -26,14 +28,16 @@ Route::middleware(['auth', 'role:customer'])->group(function () {
 
 // Route khusus Admin
 Route::middleware(['auth', 'role:admin'])->group(function () {
-    Route::get('/admin/dashboard', function () {
-        return view('admin.dashboard');
-    })->name('admin.dashboard');
+ Route::get('/admin/dashboard', [DashboardController::class, 'index'])
+    ->name('admin.dashboard');
     Route::resource('raks', RakController::class);
     Route::get('/admin/profile', [ProfileAdminController::class, 'index'])->name('admin.profile.index');
     Route::put('/admin/profile', [ProfileAdminController::class, 'update'])->name('admin.profile.update');
     Route::put('/admin/profile/password', [ProfileAdminController::class, 'updatePassword'])->name('admin.profile.updatePassword');
     Route::resource('gudangs', GudangController::class);
+  Route::get('/customers', [CustomerController::class, 'index'])
+    ->name('admin.pelanggan.pelanggan');
+
 });
 
 // Route Profile (untuk semua user yang login)

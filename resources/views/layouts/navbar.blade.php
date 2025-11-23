@@ -25,24 +25,6 @@
             </a>
         </li>
 
-        <!-- Notifications -->
-        <li class="nav-item dropdown">
-            <a class="nav-link" data-toggle="dropdown" href="#" aria-expanded="false">
-                <i class="far fa-bell"></i>
-                <span class="badge badge-warning navbar-badge">1</span>
-            </a>
-            <div class="dropdown-menu dropdown-menu-lg dropdown-menu-right">
-                <span class="dropdown-item dropdown-header">1 Notifikasi</span>
-                <div class="dropdown-divider"></div>
-                <a href="#" class="dropdown-item">
-                    <i class="fas fa-calendar-check mr-2"></i> Booking baru
-                    <span class="float-right text-muted text-sm">5 menit</span>
-                </a>
-                <div class="dropdown-divider"></div>
-                <a href="#" class="dropdown-item dropdown-footer">Lihat Semua Notifikasi</a>
-            </div>
-        </li>
-
         <!-- User Info & Avatar -->
         <li class="nav-item dropdown">
             <a class="nav-link d-flex align-items-center" data-toggle="dropdown" href="#" aria-expanded="false">
