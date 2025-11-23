@@ -12,7 +12,7 @@ class Rak extends Model
     protected $fillable = [
         'kode_rak', 'nama_rak', 'jenis_rak', 'deskripsi',
         'kapasitas_berat', 'panjang', 'lebar', 'tinggi',
-        'jumlah_tingkat', 'lokasi_gudang', 'zona_gudang',
+        'jumlah_tingkat', 'lokasi_gudang', //'zona_gudang',
         'harga_sewa_perbulan', 'status', 'foto',
         'spesifikasi_tambahan', 'is_active'
     ];

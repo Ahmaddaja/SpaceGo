@@ -20,12 +20,12 @@
                 <td class="font-weight-bold">Lokasi Gudang</td>
                 <td>: {{ $rak->lokasi_gudang }}</td>
             </tr>
-            @if($rak->zona_gudang)
+            {{-- @if($rak->zona_gudang)
             <tr>
                 <td class="font-weight-bold">Zona Gudang</td>
                 <td>: {{ $rak->zona_gudang }}</td>
             </tr>
-            @endif
+            @endif --}}
             <tr>
                 <td class="font-weight-bold">Status</td>
                 <td>: 

@@ -16,7 +16,7 @@
             @enderror
         </div>
 
-        <div class="form-group">
+        {{-- <div class="form-group">
             <label for="zona_gudang">Zona Gudang</label>
             <input type="text" 
                    class="form-control @error('zona_gudang') is-invalid @enderror" 
@@ -27,7 +27,7 @@
             @error('zona_gudang')
                 <div class="invalid-feedback">{{ $message }}</div>
             @enderror
-        </div>
+        </div> --}}
 
         <div class="form-group">
             <label for="harga_sewa_perbulan">Harga Sewa per Bulan (Rp) <span class="text-danger">*</span></label>
