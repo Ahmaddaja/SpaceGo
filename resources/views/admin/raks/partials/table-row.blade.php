@@ -26,9 +26,9 @@
     </td>
     <td class="align-middle">
         <div>{{ $rak->lokasi_gudang }}</div>
-        @if($rak->zona_gudang)
+        {{-- @if($rak->zona_gudang)
         <small class="text-muted">Zona: {{ $rak->zona_gudang }}</small>
-        @endif
+        @endif --}}
     </td>
     <td class="align-middle">
         <small>

@@ -33,7 +33,7 @@ class RakController extends Controller
             'tinggi' => 'required|numeric|min:0',
             'jumlah_tingkat' => 'required|integer|min:1',
             'lokasi_gudang' => 'required|string|max:255',
-            'zona_gudang' => 'nullable|string|max:50',
+            // 'zona_gudang' => 'nullable|string|max:50',
             'harga_sewa_perbulan' => 'required|numeric|min:0',
             // Hapus validasi status untuk create
             'foto' => 'nullable|image|mimes:jpeg,png,jpg|max:2048',
@@ -78,7 +78,7 @@ class RakController extends Controller
             'tinggi' => 'required|numeric|min:0',
             'jumlah_tingkat' => 'required|integer|min:1',
             'lokasi_gudang' => 'required|string|max:255',
-            'zona_gudang' => 'nullable|string|max:50',
+            // 'zona_gudang' => 'nullable|string|max:50',
             'harga_sewa_perbulan' => 'required|numeric|min:0',
             'status' => 'required|in:tersedia,terisi,maintenance',
             'foto' => 'nullable|image|mimes:jpeg,png,jpg|max:2048',
