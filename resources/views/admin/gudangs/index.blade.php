@@ -1,12 +1,11 @@
 @extends('layouts.main')
 
 @section('title-content')
-    <x-breadcrumb page="Index" />
+    <x-breadcrumb page="Edit" module="Gudang" routePrefix="gudangs" />
 @endsection
 
 @section('content')
 <div class="container-fluid">
-
     <x-alert />
 
     <div class="card border-0 shadow-sm">
@@ -16,24 +15,20 @@
                 <i class="fas fa-plus mr-2"></i>Tambah Gudang Baru
             </a>
         </div>
-
         <div class="card-body p-0">
             <div class="table-responsive">
                 <table class="table table-hover mb-0">
-
-                    <x-table-header />
-
+                    @include('admin.gudangs.partials.table-header')
                     <tbody>
                         @forelse($gudangs as $gudang)
-                            <x-table-row :gudang="$gudang" />
+                            @include('admin.gudangs.partials.table-row', ['gudang' => $gudang])
                         @empty
-                            <x-empty-state />
+                            @include('admin.gudangs.partials.empty-state')
                         @endforelse
                     </tbody>
                 </table>
             </div>
         </div>
-
         @if($gudangs->hasPages())
         <div class="card-footer bg-white border-0">
             {{ $gudangs->links() }}
@@ -51,5 +46,4 @@ function confirmDelete(id) {
 }
 </script>
 @endpush
-
 @endsection
