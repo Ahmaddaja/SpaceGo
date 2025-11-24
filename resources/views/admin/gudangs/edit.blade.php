@@ -1,7 +1,7 @@
 @extends('layouts.main')
 
 @section('title-content')
-    @include('admin.gudangs.partials.breadcrumb', ['page' => 'Edit'])
+    <x-breadcrumb page="Edit" />
 @endsection
 
 @section('content')
@@ -12,19 +12,19 @@
         
         <div class="row">
             <div class="col-lg-8">
-                @include('admin.gudangs.partials.form-basic-info', ['gudang' => $gudang])
-                @include('admin.gudangs.partials.form-location', ['gudang' => $gudang])
+                <x-form-basic-info :gudang="$gudang" />
+                <x-form-location :gudang="$gudang" />
             </div>
 
             <div class="col-lg-4">
-                @include('admin.gudangs.partials.form-photo', ['gudang' => $gudang])
-                @include('admin.gudangs.partials.form-actions', ['submitText' => 'Update Gudang', 'gudang' => $gudang])
+                <x-form-photo :gudang="$gudang" />
+                <x-form-actions submit-text="Update Gudang" :gudang="$gudang" />
             </div>
         </div>
     </form>
     
-    <form id="delete-form-{{ $gudang->id }}" 
-          action="{{ route('gudangs.destroy', $gudang->id) }}" 
+    <form id="delete-form-{{ $gudang->id }}"
+          action="{{ route('gudangs.destroy', $gudang->id) }}"
           method="POST" 
           style="display: none;">
         @csrf
