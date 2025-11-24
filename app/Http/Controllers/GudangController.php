@@ -11,10 +11,15 @@ class GudangController extends Controller
 {
     public function index()
     {
-        $gudangs = Gudang::withCount('raks')->latest()->paginate(10);
+        $gudangs = Gudang::latest()->paginate(10);
+
+        // Load count manual untuk setiap gudang
+        foreach ($gudangs as $gudang) {
+            $gudang->raks_count = \App\Models\Rak::where('lokasi_gudang', $gudang->nama_gudang)->count();
+        }
+
         return view('admin.gudangs.index', compact('gudangs'));
     }
-
     public function create()
     {
         return view('admin.gudangs.create');
@@ -47,10 +52,11 @@ class GudangController extends Controller
 
     public function show(Gudang $gudang)
     {
-        $gudang->loadCount('raks');
+        // Load count manual
+        $gudang->raks_count = \App\Models\Rak::where('lokasi_gudang', $gudang->nama_gudang)->count();
+
         return view('admin.gudangs.show', compact('gudang'));
     }
-
     public function edit(Gudang $gudang)
     {
         return view('admin.gudangs.edit', compact('gudang'));
@@ -67,8 +73,13 @@ class GudangController extends Controller
             'kode_pos' => 'nullable|string|max:10',
             'deskripsi' => 'nullable|string',
             'foto' => 'nullable|image|mimes:jpeg,png,jpg|max:2048',
-            'is_active' => 'boolean'
         ]);
+
+        // Handle is_active checkbox
+        $validated['is_active'] = $request->has('is_active') ? 1 : 0;
+
+        // Simpan nama gudang lama
+        $namaGudangLama = $gudang->nama_gudang;
 
         if ($request->hasFile('foto')) {
             if ($gudang->foto && Storage::disk('public')->exists($gudang->foto)) {
@@ -80,6 +91,12 @@ class GudangController extends Controller
         }
 
         $gudang->update($validated);
+
+        // Update lokasi_gudang di semua rak jika nama gudang berubah
+        if ($namaGudangLama !== $validated['nama_gudang']) {
+            \App\Models\Rak::where('lokasi_gudang', $namaGudangLama)
+                ->update(['lokasi_gudang' => $validated['nama_gudang']]);
+        }
 
         return redirect()->route('gudangs.index')->with('success', 'Gudang berhasil diperbarui!');
     }

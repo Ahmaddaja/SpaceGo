@@ -35,14 +35,14 @@
                 <td>: <strong class="text-primary">{{ $gudang->raks_count ?? 0 }} Rak</strong></td>
             </tr>
             <tr>
-                <td class="font-weight-bold">Status Aktif</td>
+                {{-- <td class="font-weight-bold">Status Aktif</td>
                 <td>: 
                     @if($gudang->is_active)
                         <span class="badge badge-success">Aktif</span>
                     @else
                         <span class="badge badge-secondary">Tidak Aktif</span>
                     @endif
-                </td>
+                </td> --}}
             </tr>
         </table>
 
