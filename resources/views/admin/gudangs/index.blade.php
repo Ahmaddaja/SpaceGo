@@ -1,11 +1,12 @@
 @extends('layouts.main')
 
 @section('title-content')
-    <x-breadcrumb page="Index" module="Gudang" routePrefix="gudangs" />
+    <x-breadcrumb page="Kelola" module="Gudang" routePrefix="gudangs" />
 @endsection
 
 @section('content')
 <div class="container-fluid">
+    <x-alert />
     <x-alert />
 
     <div class="card border-0 shadow-sm">

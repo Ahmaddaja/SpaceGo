@@ -20,6 +20,7 @@ class GudangController extends Controller
 
         return view('admin.gudangs.index', compact('gudangs'));
     }
+
     public function create()
     {
         return view('admin.gudangs.create');
