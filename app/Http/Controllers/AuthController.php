@@ -7,6 +7,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rules\Password;
+use App\Models\UserNotification;
 
 class AuthController extends Controller
 {
@@ -77,6 +78,11 @@ class AuthController extends Controller
             'email' => $validated['email'],
             'password' => Hash::make($validated['password']),
             'role' => 'customer', 
+        ]);
+
+        UserNotification::create([
+            'title'   => 'Pelanggan Baru',
+            'message' => 'Ada pelanggan baru yang mendaftar',
         ]);
 
         Auth::login($user);

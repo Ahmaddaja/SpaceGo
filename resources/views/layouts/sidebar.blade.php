@@ -85,31 +85,22 @@
                                 <p>Pendapatan</p>
                             </a>
                         </li>
-                        {{-- <li class="nav-item">
+                        <li class="nav-item">
                             <a href="/laporan/booking" class="nav-link">
                                 <i class="far fa-circle nav-icon"></i>
                                 <p>Booking</p>
                             </a>
-                        </li> --}}
+                        </li>
+                        <li class="nav-item">
+                            <a href="/laporan/semua" class="nav-link">
+                                <i class="far fa-circle nav-icon"></i>
+                                <p>Semua Laporan</p>
+                            </a>
+                        </li>
                     </ul>
                 </li>
-
-                <li class="nav-header">PENGATURAN</li>
-
-                <!-- Profile -->
-                <li class="nav-item">
-                     <a href="{{ route('admin.profile.index') }}" class="nav-link">
-                        <i class="nav-icon fas fa-user"></i>
-                        <p>Profile</p>
-                    </a>
-                </li>
-
-                <!-- Logout -->
-                <li class="nav-item">
-                    <a href="javascript:;" class="nav-link" onclick="document.getElementById('form-logout').submit();">
-                        <i class="nav-icon fas fa-sign-out-alt"></i>
-                        <p>Logout</p>
-                    </a>
+                        </li>
+                    </ul>
                 </li>
             </ul>
         </nav>
