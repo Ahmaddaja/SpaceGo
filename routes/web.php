@@ -26,6 +26,17 @@ Route::middleware(['auth', 'role:customer'])->group(function () {
     Route::get('/customer/profile', [ProfileController::class, 'index'])->name('customer.profile.index');
     Route::put('/customer/profile', [ProfileController::class, 'updateProfile'])->name('customer.profile.update');
     Route::post('/customer/profile/upload-foto', [ProfileController::class, 'uploadFoto'])->name('customer.profile.upload-foto');
+
+    //list-rak
+      Route::get('/customer/rak', [CustomerController::class, 'listRak'])
+        ->name('customer.list-rak.list-rak');
+    Route::get('/customer/rak/{id}', [CustomerController::class, 'showRak'])
+     ->name('customer.list-rak.show');
+
+
+    Route::get('/customer/bayar/{id}', function ($id) {
+        return "Halaman pembayaran rak ID: " . $id;
+    })->name('customer.bayar');
 });
 
 // Route khusus Admin

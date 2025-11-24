@@ -1,7 +1,7 @@
 @extends('layouts.main')
 
 @section('title-content')
-    @include('admin.gudangs.partials.breadcrumb', ['page' => 'Create'])
+    <x-breadcrumb page="Create" />
 @endsection
 
 @section('content')
@@ -11,13 +11,13 @@
         
         <div class="row">
             <div class="col-lg-8">
-                @include('admin.gudangs.partials.form-basic-info')
-                @include('admin.gudangs.partials.form-location')
+                <x-form-basic-info />
+                <x-form-location />
             </div>
 
             <div class="col-lg-4">
-                @include('admin.gudangs.partials.form-photo')
-                @include('admin.gudangs.partials.form-actions', ['submitText' => 'Simpan Gudang'])
+                <x-form-photo />
+                <x-form-actions submit-text="Simpan Gudang" />
             </div>
         </div>
     </form>

@@ -1,12 +1,13 @@
 @extends('layouts.main')
 
 @section('title-content')
-    @include('admin.raks.partials.breadcrumb', ['page' => 'Index'])
+    <x-breadcrumb page="Index" />
 @endsection
 
 @section('content')
 <div class="container-fluid">
-    @include('admin.raks.partials.alert')
+
+    <x-alert />
 
     <div class="card border-0 shadow-sm">
         <div class="card-header bg-white border-0 d-flex justify-content-between align-items-center py-3">
@@ -15,20 +16,25 @@
                 <i class="fas fa-plus mr-2"></i>Tambah Rak Baru
             </a>
         </div>
+
         <div class="card-body p-0">
             <div class="table-responsive">
                 <table class="table table-hover mb-0">
-                    @include('admin.raks.partials.table-header')
+
+                    <x-table-header />
+
                     <tbody>
                         @forelse($raks as $rak)
-                            @include('admin.raks.partials.table-row', ['rak' => $rak])
+                            <x-table-row :rak="$rak" />
                         @empty
-                            @include('admin.raks.partials.empty-state')
+                            <x-empty-state />
                         @endforelse
                     </tbody>
+
                 </table>
             </div>
         </div>
+
         @if($raks->hasPages())
         <div class="card-footer bg-white border-0">
             {{ $raks->links() }}
@@ -46,4 +52,5 @@ function confirmDelete(id) {
 }
 </script>
 @endpush
+
 @endsection
