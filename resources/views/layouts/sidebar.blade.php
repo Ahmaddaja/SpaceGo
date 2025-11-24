@@ -107,33 +107,13 @@
                                 <p>Booking</p>
                             </a>
                         </li>
+                        <li class="nav-item">
+                            <a href="/laporan/semua" class="nav-link">
+                                <i class="far fa-circle nav-icon"></i>
+                                <p>Semua Laporan</p>
+                            </a>
+                        </li>
                     </ul>
-                </li>
-
-                <li class="nav-header">PENGATURAN</li>
-
-                <!-- Pengaturan -->
-                <li class="nav-item">
-                    <a href="/pengaturan" class="nav-link">
-                        <i class="nav-icon fas fa-cog"></i>
-                        <p>Pengaturan</p>
-                    </a>
-                </li>
-
-                <!-- Profile -->
-                <li class="nav-item">
-                    <a href="/profile" class="nav-link">
-                        <i class="nav-icon fas fa-user"></i>
-                        <p>Profile</p>
-                    </a>
-                </li>
-
-                <!-- Logout -->
-                <li class="nav-item">
-                    <a href="javascript:;" class="nav-link" onclick="document.getElementById('form-logout').submit();">
-                        <i class="nav-icon fas fa-sign-out-alt"></i>
-                        <p>Logout</p>
-                    </a>
                 </li>
             </ul>
         </nav>

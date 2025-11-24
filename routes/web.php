@@ -5,6 +5,7 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\RakController;
 use App\Http\Controllers\ProfileAdminController;
+use App\Http\Controllers\NotificationController;
 
 // Halaman awal
 Route::get('/', function () {
@@ -32,6 +33,7 @@ Route::middleware(['auth', 'role:admin'])->group(function () {
     Route::get('/admin/profile', [ProfileAdminController::class, 'index'])->name('admin.profile.index');
     Route::put('/admin/profile', [ProfileAdminController::class, 'update'])->name('admin.profile.update');
     Route::put('/admin/profile/password', [ProfileAdminController::class, 'updatePassword'])->name('admin.profile.updatePassword');
+    Route::delete('/notif/{id}', [NotificationController::class, 'delete'])->name('notif.delete');
 });
 
 // Route Profile (untuk semua user yang login)

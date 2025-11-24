@@ -25,21 +25,57 @@
             </a>
         </li>
 
+        @php
+            $notifs = \App\Models\UserNotification::latest()->take(5)->get();
+            $notifCount = $notifs->count();
+        @endphp
+
         <!-- Notifications -->
         <li class="nav-item dropdown">
-            <a class="nav-link" data-toggle="dropdown" href="#" aria-expanded="false">
+            <a class="nav-link" data-toggle="dropdown" href="#">
                 <i class="far fa-bell"></i>
-                <span class="badge badge-warning navbar-badge">1</span>
+                @if($notifCount > 0)
+                    <span class="badge badge-warning navbar-badge">{{ $notifCount }}</span>
+                @endif
             </a>
+
             <div class="dropdown-menu dropdown-menu-lg dropdown-menu-right">
-                <span class="dropdown-item dropdown-header">1 Notifikasi</span>
+
+                <span class="dropdown-item dropdown-header">
+                    {{ $notifCount }} Notifikasi
+                </span>
+
                 <div class="dropdown-divider"></div>
-                <a href="#" class="dropdown-item">
-                    <i class="fas fa-calendar-check mr-2"></i> Booking baru
-                    <span class="float-right text-muted text-sm">5 menit</span>
+
+                @forelse($notifs as $notif)
+                    <div class="dropdown-item d-flex justify-content-between align-items-center">
+                        <div>
+                            <i class="fas fa-user-plus mr-2"></i>
+                            <b>{{ $notif->title }}</b><br>
+                            <small class="text-muted">
+                                {{ \Carbon\Carbon::parse($notif->created_at)->diffForHumans() }}
+                            </small>
+                        </div>
+
+                        <!-- Tombol X -->
+                    <form action="{{ route('notif.delete', $notif->id) }}" method="POST" class="ml-2">
+                        @csrf
+                        @method('DELETE')
+                        <button type="submit" style="border:none;background:none;color:red;font-size:18px;">
+                            &times;
+                        </button>
+                    </form>
+                    </div>
+                    <div class="dropdown-divider"></div>
+                @empty
+                    <span class="dropdown-item text-center text-muted">
+                        Tidak ada pesan apapun
+                    </span>
+                @endforelse
+
+                <a href="#" class="dropdown-item dropdown-footer">
+                    Lihat Semua Notifikasi
                 </a>
-                <div class="dropdown-divider"></div>
-                <a href="#" class="dropdown-item dropdown-footer">Lihat Semua Notifikasi</a>
             </div>
         </li>
 
