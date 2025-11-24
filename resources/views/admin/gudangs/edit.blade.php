@@ -1,7 +1,7 @@
 @extends('layouts.main')
 
 @section('title-content')
-    <x-breadcrumb page="Edit" />
+    <x-breadcrumb page="Edit" module="Gudang" routePrefix="gudangs" />
 @endsection
 
 section('content')
@@ -12,13 +12,13 @@ section('content')
         
         <div class="row">
             <div class="col-lg-8">
-                <x-form-basic-info :gudang="$gudang" />
-                <x-form-location :gudang="$gudang" />
+                @include('admin.gudangs.partials.form-basic-info')
+                @include('admin.gudangs.partials.form-location')
             </div>
 
             <div class="col-lg-4">
-                <x-form-photo :gudang="$gudang" />
-                <x-form-actions submit-text="Update Gudang" :gudang="$gudang" />
+                @include('admin.gudangs.partials.form-photo')
+                @include('admin.gudangs.partials.form-actions', ['submitText' => 'Update Gudang'])
             </div>
         </div>
     </form>
