@@ -100,36 +100,70 @@
     <form method="POST" action="{{ route('register') }}">
         @csrf
 
-        <!-- Name -->
+        <!-- Nama -->
         <div class="mb-3">
-            <label class="form-label fw-semibold">Nama</label>
-            <x-text-input id="name" class="form-control"
-                          type="text" name="name" :value="old('name')" required autofocus />
-            <x-input-error :messages="$errors->get('name')" class="text-danger small mt-1" />
+            <label class="form-label fw-semibold">Nama Lengkap</label>
+            <input id="name" type="text" name="name"
+                   class="form-control @error('name') is-invalid @enderror"
+                   value="{{ old('name') }}" required autofocus>
+            @error('name')
+                <div class="invalid-feedback">{{ $message }}</div>
+            @enderror
+        </div>
+
+        <!-- Username -->
+        <div class="mb-3">
+            <label class="form-label fw-semibold">Username</label>
+            <input id="username" type="text" name="username"
+                   class="form-control @error('username') is-invalid @enderror"
+                   value="{{ old('username') }}" required>
+            @error('username')
+                <div class="invalid-feedback">{{ $message }}</div>
+            @enderror
         </div>
 
         <!-- Email -->
         <div class="mb-3">
             <label class="form-label fw-semibold">Email</label>
-            <x-text-input id="email" class="form-control"
-                          type="email" name="email" :value="old('email')" required />
-            <x-input-error :messages="$errors->get('email')" class="text-danger small mt-1" />
+            <input id="email" type="email" name="email"
+                   class="form-control @error('email') is-invalid @enderror"
+                   value="{{ old('email') }}" required>
+            @error('email')
+                <div class="invalid-feedback">{{ $message }}</div>
+            @enderror
+        </div>
+
+        <!-- Nomor Telepon -->
+        <div class="mb-3">
+            <label class="form-label fw-semibold">Nomor Telepon</label>
+            <input id="phone" type="text" name="phone"
+                   class="form-control @error('phone') is-invalid @enderror"
+                   value="{{ old('phone') }}" required>
+            @error('phone')
+                <div class="invalid-feedback">{{ $message }}</div>
+            @enderror
         </div>
 
         <!-- Password -->
         <div class="mb-3">
             <label class="form-label fw-semibold">Password</label>
-            <x-text-input id="password" class="form-control"
-                          type="password" name="password" required />
-            <x-input-error :messages="$errors->get('password')" class="text-danger small mt-1" />
+            <input id="password" type="password" name="password"
+                   class="form-control @error('password') is-invalid @enderror"
+                   required>
+            @error('password')
+                <div class="invalid-feedback">{{ $message }}</div>
+            @enderror
         </div>
 
         <!-- Confirm Password -->
         <div class="mb-3">
             <label class="form-label fw-semibold">Konfirmasi Password</label>
-            <x-text-input id="password_confirmation" class="form-control"
-                          type="password" name="password_confirmation" required />
-            <x-input-error :messages="$errors->get('password_confirmation')" class="text-danger small mt-1" />
+            <input id="password_confirmation" type="password" name="password_confirmation"
+                   class="form-control @error('password_confirmation') is-invalid @enderror"
+                   required>
+            @error('password_confirmation')
+                <div class="invalid-feedback">{{ $message }}</div>
+            @enderror
         </div>
 
         <!-- Button Register -->

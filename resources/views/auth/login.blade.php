@@ -12,6 +12,9 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&display=swap" rel="stylesheet">
 
+    <!-- BOOTSTRAP ICONS -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+
     <!-- CUSTOM STYLE -->
     <style>
         body {
@@ -79,18 +82,39 @@
             text-decoration: underline;
         }
 
-        /* mobile improvements */
-        @media (max-width: 480px) {
-            .login-card {
-                padding: 28px 22px;
-                border-radius: 18px;
-            }
-            h3 {
-                font-size: 1.4rem;
-            }
-            p {
-                font-size: 0.85rem;
-            }
+        /* Password Toggle Styling */
+        .password-wrapper {
+            position: relative;
+        }
+
+        .password-toggle {
+            position: absolute;
+            right: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: none;
+            border: none;
+            color: #6b7280;
+            cursor: pointer;
+            padding: 0;
+            width: 24px;
+            height: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: color 0.2s ease;
+        }
+
+        .password-toggle:hover {
+            color: #4f46e5;
+        }
+
+        .password-toggle i {
+            font-size: 18px;
+        }
+
+        .password-wrapper .form-control {
+            padding-right: 45px;
         }
     </style>
 </head>
@@ -100,7 +124,6 @@
 <div class="login-card shadow-lg">
     <div class="text-center">
 
-        <!-- LOGO STORAGE (lebih clean & modern) -->
         <svg class="logo-storage" fill="#4f46e5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
             <path d="M3 10L12 3L21 10V21H3V10ZM5 12V19H19V12L12 7L5 12Z"/>
         </svg>
@@ -112,21 +135,26 @@
     <form method="POST" action="{{ route('login') }}">
         @csrf
 
-        <!-- Email -->
+        <!-- Email / Username -->
         <div class="mb-3">
-            <label class="form-label fw-semibold">Email</label>
-            <input id="email" type="email" name="email" required autofocus
-                   class="form-control" value="{{ old('email') }}">
-            @error('email')
+            <label class="form-label fw-semibold">Email atau Username</label>
+            <input id="login" type="text" name="login" required autofocus
+                   class="form-control" value="{{ old('login') }}">
+            @error('login')
                 <small class="text-danger">{{ $message }}</small>
             @enderror
         </div>
 
-        <!-- Password -->
+        <!-- Password with Toggle -->
         <div class="mb-3">
             <label class="form-label fw-semibold">Password</label>
-            <input id="password" type="password" name="password" required
-                   class="form-control">
+            <div class="password-wrapper">
+                <input id="password" type="password" name="password" required
+                       class="form-control">
+                <button type="button" class="password-toggle" onclick="togglePassword()">
+                    <i id="toggleIcon" class="bi bi-eye"></i>
+                </button>
+            </div>
             @error('password')
                 <small class="text-danger">{{ $message }}</small>
             @enderror
@@ -138,25 +166,33 @@
             <label for="remember" class="form-check-label small">Ingat saya</label>
         </div>
 
-        <!-- Button Login -->
         <button type="submit" class="btn btn-login text-white w-100 py-2 mb-3">
             Masuk
         </button>
 
-        <!-- Forgot Password -->
-        @if (Route::has('password.request'))
-        <div class="text-end mb-2">
-            <a href="{{ route('password.request') }}" class="small text-secondary">Lupa password?</a>
-        </div>
-        @endif
-
-        <!-- Register Link -->
         <div class="text-center register-link mt-2">
             <span class="text-muted small">Belum punya akun?</span>
             <a href="{{ route('register') }}">Daftar</a>
         </div>
     </form>
 </div>
+
+<script>
+    function togglePassword() {
+        const passwordInput = document.getElementById('password');
+        const toggleIcon = document.getElementById('toggleIcon');
+        
+        if (passwordInput.type === 'password') {
+            passwordInput.type = 'text';
+            toggleIcon.classList.remove('bi-eye');
+            toggleIcon.classList.add('bi-eye-slash');
+        } else {
+            passwordInput.type = 'password';
+            toggleIcon.classList.remove('bi-eye-slash');
+            toggleIcon.classList.add('bi-eye');
+        }
+    }
+</script>
 
 </body>
 </html>
