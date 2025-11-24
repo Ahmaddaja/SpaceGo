@@ -17,13 +17,13 @@
                     </a>
                 </li>
 
-                <!-- Jadwal Booking -->
+                {{-- <!-- Jadwal Booking -->
                 <li class="nav-item">
                     <a href="/jadwal-booking" class="nav-link">
                         <i class="nav-icon fas fa-calendar-check"></i>
                         <p>Jadwal Booking</p>
                     </a>
-                </li>
+                </li> --}}
 
                 <!-- Kelola Gudang -->
                 <li class="nav-item">
@@ -85,12 +85,12 @@
                                 <p>Pendapatan</p>
                             </a>
                         </li>
-                        <li class="nav-item">
+                        {{-- <li class="nav-item">
                             <a href="/laporan/booking" class="nav-link">
                                 <i class="far fa-circle nav-icon"></i>
                                 <p>Booking</p>
                             </a>
-                        </li>
+                        </li> --}}
                     </ul>
                 </li>
 
