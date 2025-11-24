@@ -1,7 +1,7 @@
 @extends('layouts.main')
 
 @section('title-content')
-    <x-breadcrumb page="Index" module="Rak" routePrefix="raks" />
+    <x-breadcump-rak page="Index" module="Rak" routePrefix="raks" />
 @endsection
 
 @section('content')
