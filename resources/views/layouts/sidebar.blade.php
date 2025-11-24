@@ -98,7 +98,7 @@
 
                 <!-- Profile -->
                 <li class="nav-item">
-                    <a href="/profile" class="nav-link">
+                    <a href="{{ route('admin.profile.index') }}" class="nav-link">
                         <i class="nav-icon fas fa-user"></i>
                         <p>Profile</p>
                     </a>
