@@ -24,6 +24,7 @@
             </div>
             
             <div class="flex items-center space-x-6">
+                <a href="#tentang" class="text-gray-600 hover:text-blue-600 transition hidden md:block">Home</a>
                 <a href="#tentang" class="text-gray-600 hover:text-blue-600 transition hidden md:block">Tentang</a>
                 <a href="#layanan" class="text-gray-600 hover:text-blue-600 transition hidden md:block">Layanan</a>
                 <a href="#kontak" class="text-gray-600 hover:text-blue-600 transition hidden md:block">Kontak</a>
