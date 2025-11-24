@@ -1,7 +1,7 @@
 @extends('layouts.main')
 
 @section('title-content')
-    <x-breadcrumb page="Edit" module="Gudang" routePrefix="gudangs" />
+    <x-breadcrumb page="Index" module="Gudang" routePrefix="gudangs" />
 @endsection
 
 @section('content')
