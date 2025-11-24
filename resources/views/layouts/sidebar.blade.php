@@ -10,43 +10,26 @@
                 <li class="nav-header">MENU</li>
 
                 <!-- Dashboard -->
-                <li class="nav-item has-treeview">
-                    <a href="#" class="nav-link">
+                <li class="nav-item">
+                    <a href="{{ route('admin.dashboard') }}" class="nav-link">
                         <i class="nav-icon fas fa-tachometer-alt"></i>
-                        <p>
-                            Dashboard
-                            <i class="right fas fa-angle-left"></i>
-                        </p>
+                        <p>Dashboard</p>
                     </a>
-                    <ul class="nav nav-treeview">
-                        <li class="nav-item">
-                            <a href="/dashboard/analytics" class="nav-link">
-                                <i class="far fa-circle nav-icon"></i>
-                                <p>Analytics</p>
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a href="/dashboard/reports" class="nav-link">
-                                <i class="far fa-circle nav-icon"></i>
-                                <p>Reports</p>
-                            </a>
-                        </li>
-                    </ul>
                 </li>
 
-                <!-- Jadwal Booking -->
+                {{-- <!-- Jadwal Booking -->
                 <li class="nav-item">
                     <a href="/jadwal-booking" class="nav-link">
                         <i class="nav-icon fas fa-calendar-check"></i>
                         <p>Jadwal Booking</p>
                     </a>
-                </li>
+                </li> --}}
 
-                <!-- Kelola Gedung -->
+                <!-- Kelola Gudang -->
                 <li class="nav-item">
-                    <a href="/kelola-gedung" class="nav-link">
-                        <i class="nav-icon fas fa-building"></i>
-                        <p>Kelola Gedung</p>
+                    <a href="{{ route('gudangs.index') }}" class="nav-link">
+                        <i class="nav-icon fas fa-warehouse"></i>
+                        <p>Kelola Gudang</p>
                     </a>
                 </li>
 
@@ -79,11 +62,12 @@
 
                 <!-- Pelanggan -->
                 <li class="nav-item">
-                    <a href="/pelanggan" class="nav-link">
+                    <a href="{{ route('admin.pelanggan.pelanggan') }}" class="nav-link">
                         <i class="nav-icon fas fa-users"></i>
                         <p>Pelanggan</p>
                     </a>
                 </li>
+
 
                 <!-- Laporan -->
                 <li class="nav-item has-treeview">
@@ -112,6 +96,9 @@
                                 <i class="far fa-circle nav-icon"></i>
                                 <p>Semua Laporan</p>
                             </a>
+                        </li>
+                    </ul>
+                </li>
                         </li>
                     </ul>
                 </li>

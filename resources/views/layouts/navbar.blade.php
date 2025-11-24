@@ -24,7 +24,7 @@
                 <i class="fas fa-moon"></i>
             </a>
         </li>
-
+        
         @php
             $notifs = \App\Models\UserNotification::latest()->take(5)->get();
             $notifCount = $notifs->count();
@@ -78,7 +78,6 @@
                 </a>
             </div>
         </li>
-
         <!-- User Info & Avatar -->
         <li class="nav-item dropdown">
             <a class="nav-link d-flex align-items-center" data-toggle="dropdown" href="#" aria-expanded="false">

@@ -6,6 +6,7 @@ use App\Models\Rak;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
+use App\Models\Gudang;
 
 class RakController extends Controller
 {
@@ -17,7 +18,10 @@ class RakController extends Controller
 
     public function create()
     {
-        return view('admin.raks.create');
+        $gudangs = Gudang::where('is_active', true)
+            ->orderBy('nama_gudang')
+            ->get();
+        return view('admin.raks.create', compact('gudangs'));
     }
 
     public function store(Request $request)
@@ -62,7 +66,10 @@ class RakController extends Controller
 
     public function edit(Rak $rak)
     {
-        return view('admin.raks.edit', compact('rak'));
+        $gudangs = Gudang::where('is_active', true)
+            ->orderBy('nama_gudang')
+            ->get();
+        return view('admin.raks.edit', compact('rak', 'gudangs'));
     }
 
     public function update(Request $request, Rak $rak)
