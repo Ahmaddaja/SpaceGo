@@ -49,6 +49,11 @@ class CustomerController extends Controller
         return view('customer.list-rak.show', compact('rak'));
     }
 
+    public function dashboard()
+{
+    return view('customer.index');
+}
+
 
 
 }
