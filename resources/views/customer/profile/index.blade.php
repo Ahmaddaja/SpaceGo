@@ -32,6 +32,33 @@
         animation: modalAppear 0.3s ease-out;
     }
     
+    .password-toggle {
+        position: absolute;
+        right: 12px;
+        top: 50%;
+        transform: translateY(-50%);
+        background: none;
+        border: none;
+        color: #6b7280;
+        cursor: pointer;
+        padding: 4px;
+        border-radius: 4px;
+        transition: all 0.3s ease;
+    }
+    
+    .password-toggle:hover {
+        color: #374151;
+        background-color: #f3f4f6;
+    }
+    
+    .password-input-container {
+        position: relative;
+    }
+    
+    .password-input-container input {
+        padding-right: 45px;
+    }
+    
     @keyframes modalAppear {
         from {
             opacity: 0;
@@ -159,8 +186,14 @@
                                 <div class="grid md:grid-cols-3 gap-6">
                                     <div>
                                         <label class="block text-gray-700 font-semibold mb-3">Password Lama</label>
-                                        <input type="password" name="password_lama" 
-                                               class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-300 input-focus @error('password_lama') border-red-500 @enderror">
+                                        <div class="password-input-container">
+                                            <input type="password" name="password_lama" 
+                                                   class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-300 input-focus @error('password_lama') border-red-500 @enderror"
+                                                   id="password_lama">
+                                            <button type="button" class="password-toggle" data-target="password_lama">
+                                                <i class="fas fa-eye"></i>
+                                            </button>
+                                        </div>
                                         @error('password_lama')
                                         <p class="text-red-500 text-sm mt-2 flex items-center">
                                             <i class="fas fa-exclamation-triangle mr-1"></i>{{ $message }}
@@ -170,8 +203,14 @@
 
                                     <div>
                                         <label class="block text-gray-700 font-semibold mb-3">Password Baru</label>
-                                        <input type="password" name="password" 
-                                               class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-300 input-focus @error('password') border-red-500 @enderror">
+                                        <div class="password-input-container">
+                                            <input type="password" name="password" 
+                                                   class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-300 input-focus @error('password') border-red-500 @enderror"
+                                                   id="password">
+                                            <button type="button" class="password-toggle" data-target="password">
+                                                <i class="fas fa-eye"></i>
+                                            </button>
+                                        </div>
                                         @error('password')
                                         <p class="text-red-500 text-sm mt-2 flex items-center">
                                             <i class="fas fa-exclamation-triangle mr-1"></i>{{ $message }}
@@ -181,8 +220,14 @@
 
                                     <div>
                                         <label class="block text-gray-700 font-semibold mb-3">Konfirmasi Password</label>
-                                        <input type="password" name="password_confirmation" 
-                                               class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-300 input-focus">
+                                        <div class="password-input-container">
+                                            <input type="password" name="password_confirmation" 
+                                                   class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-300 input-focus"
+                                                   id="password_confirmation">
+                                            <button type="button" class="password-toggle" data-target="password_confirmation">
+                                                <i class="fas fa-eye"></i>
+                                            </button>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -244,6 +289,27 @@
                 closePhotoModal();
             }
         });
+
+        // Password toggle functionality
+        const passwordToggles = document.querySelectorAll('.password-toggle');
+        
+        passwordToggles.forEach(toggle => {
+            toggle.addEventListener('click', function() {
+                const targetId = this.getAttribute('data-target');
+                const input = document.getElementById(targetId);
+                const icon = this.querySelector('i');
+                
+                if (input.type === 'password') {
+                    input.type = 'text';
+                    icon.classList.remove('fa-eye');
+                    icon.classList.add('fa-eye-slash');
+                } else {
+                    input.type = 'password';
+                    icon.classList.remove('fa-eye-slash');
+                    icon.classList.add('fa-eye');
+                }
+            });
+        });
     });
 </script>
-@endpush
+@endpush 
