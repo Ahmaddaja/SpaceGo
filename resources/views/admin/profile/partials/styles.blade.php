@@ -160,6 +160,64 @@
     textarea::-webkit-scrollbar-thumb:hover {
         background: #555;
     }
+    
+    .profile-avatar {
+        width: 120px;
+        height: 120px;
+        font-size: 2.5rem;
+        position: relative;
+        overflow: hidden;
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+
+    .profile-avatar:hover {
+        transform: scale(1.05);
+        box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+    }
+
+    .profile-avatar-lg {
+        width: 150px;
+        height: 150px;
+        font-size: 3rem;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .profile-avatar img,
+    .profile-avatar-lg img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+
+    .info-label {
+        color: #6c757d;
+        font-weight: 500;
+        text-transform: uppercase;
+        font-size: 0.75rem;
+        letter-spacing: 0.5px;
+    }
+
+    .info-value {
+        color: #343a40;
+        font-weight: 600;
+        font-size: 0.9rem;
+    }
+
+    #new-photo-preview {
+        max-width: 100%;
+        max-height: 100%;
+        object-fit: cover;
+    }
+
+    .photo-preview-container {
+        border: 2px dashed #dee2e6;
+        border-radius: 10px;
+        padding: 20px;
+        text-align: center;
+        background: #f8f9fa;
+    }
 
     /* Animation untuk form */
     .form-control, .form-group {

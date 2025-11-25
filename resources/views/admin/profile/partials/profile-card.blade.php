@@ -2,12 +2,18 @@
     <div class="card border-0 shadow-sm">
         <div class="card-body text-center">
             <div class="mb-3">
-                <div class="bg-primary rounded-circle d-inline-flex align-items-center justify-content-center text-white font-weight-bold profile-avatar" onclick="document.getElementById('photo-input').click()">
+                <div class="bg-primary rounded-circle d-inline-flex align-items-center justify-content-center text-white font-weight-bold profile-avatar" 
+                     data-toggle="modal" data-target="#photoUploadModal" style="cursor: pointer;">
                     @if(Auth::user()->photo)
-                        <img src="{{ asset(Auth::user()->photo) }}" alt="Profile Photo" id="profile-photo-display">
+                        <img src="{{ asset(Auth::user()->photo) }}" alt="Profile Photo" id="profile-photo-display" class="rounded-circle">
                     @else
                         <span id="profile-initials">{{ strtoupper(substr(Auth::user()->name, 0, 2)) }}</span>
                     @endif
+                </div>
+                <div class="mt-2">
+                    <button type="button" class="btn btn-outline-primary btn-sm" data-toggle="modal" data-target="#photoUploadModal">
+                        <i class="fas fa-camera mr-1"></i> Ubah Foto
+                    </button>
                 </div>
             </div>
 
@@ -34,3 +40,6 @@
         </div>
     </div>
 </div>
+
+<!-- Include Photo Upload Modal -->
+@include('admin.profile.partials.photo-modal')
