@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
 
 class ProfileAdminController extends Controller
@@ -80,5 +81,29 @@ class ProfileAdminController extends Controller
 
         return redirect()->route('admin.profile.index')
             ->with('success', 'Password berhasil diubah!');
+    }
+
+    public function uploadPhoto(Request $request): RedirectResponse
+    {
+        $request->validate([
+            'foto' => ['required', 'image', 'mimes:jpg,jpeg,png', 'max:2048'],
+        ]);
+
+        $user = $request->user();
+
+        // Delete old photo if exists
+        if ($user->foto && \Storage::disk('public')->exists($user->foto)) {
+            \Storage::disk('public')->delete($user->foto);
+        }
+
+        // Store new photo with unique name
+        $file = $request->file('foto');
+        $filename = time() . '_' . $user->id . '.' . $file->getClientOriginalExtension();
+        $path = $file->storeAs('profile-photos', $filename, 'public');
+        
+        $user->foto = $path;
+        $user->save();
+
+        return redirect()->route('adin.profile.index')->with('success', 'Foto profile berhasil diperbarui!');
     }
 }

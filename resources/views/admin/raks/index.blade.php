@@ -1,7 +1,10 @@
-@extends('layouts.main')
+@extends('layouts.main', ['title' => 'Kelola Rak'])
 
 @section('title-content')
-    <x-breadcump-rak page="Kelola" module="Rak" routePrefix="raks" />
+    <div class="d-flex justify-content-between align-items-right">
+        <h1 class="m-0">Kelola Rak</h1>
+        <x-breadcump-rak page="Kelola" module="Rak" routePrefix="raks" />
+    </div>  
 @endsection
 
 @section('content')
