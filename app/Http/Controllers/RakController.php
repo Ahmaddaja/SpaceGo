@@ -117,4 +117,11 @@ class RakController extends Controller
 
         return redirect()->route('raks.index')->with('success', 'Rak berhasil dihapus!');
     }
+
+    public function rakDibeli()
+    {
+        $raks = Rak::where('status', 'terisi')->paginate(10);
+        return view('customer.list-rak.rak', compact('raks'));
+    }
+
 }

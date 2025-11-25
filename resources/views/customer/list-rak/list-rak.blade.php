@@ -171,21 +171,20 @@
                     <!-- Status Badge -->
                     <div class="absolute top-4 right-4">
                         @if ($rak->status === 'tersedia')
-                            <span class="px-4 py-2 bg-green-500 text-white text-sm font-semibold rounded-full shadow-lg flex items-center space-x-1">
-                                <i class="fas fa-check text-xs"></i>
-                                <span>Tersedia</span>
+                            <span class="px-3 py-1 bg-green-500 text-white text-xs font-semibold rounded-full shadow-lg">
+                                ✓ Tersedia
                             </span>
                         @elseif($rak->status === 'terisi')
-                            <span class="px-4 py-2 bg-red-500 text-white text-sm font-semibold rounded-full shadow-lg flex items-center space-x-1">
-                                <i class="fas fa-times text-xs"></i>
-                                <span>Terisi</span>
+                            <span class="px-3 py-1 bg-red-500 text-white text-xs font-semibold rounded-full shadow-lg">
+                                ✕ Terisi
                             </span>
                         @else
-                            <span class="px-4 py-2 bg-yellow-500 text-white text-sm font-semibold rounded-full shadow-lg flex items-center space-x-1">
-                                <i class="fas fa-tools text-xs"></i>
-                                <span>Maintenance</span>
+                            <span class="px-3 py-1 bg-yellow-500 text-white text-xs font-semibold rounded-full shadow-lg">
+                                ⚙ Maintenance
                             </span>
                         @endif
+
+
                     </div>
 
                     <!-- Jenis Badge -->
@@ -256,9 +255,8 @@
 
                         @if ($rak->status === 'tersedia')
                             <a href="{{ route('customer.bayar', $rak->id) }}"
-                               class="flex-1 bg-gradient-to-r from-blue-600 to-purple-600 text-center text-white py-3 rounded-xl hover:shadow-lg transition-all duration-300 shadow-md font-medium flex items-center justify-center space-x-2">
-                                <i class="fas fa-shopping-cart text-sm"></i>
-                                <span>Sewa</span>
+                               class="flex-1 bg-gradient-to-r from-blue-600 to-blue-700 text-center text-white py-3 rounded-xl hover:from-blue-700 hover:to-blue-800 transition shadow-md hover:shadow-lg font-medium">
+                                Sewa Sekarang
                             </a>
                         @else
                             <button class="flex-1 bg-gray-300 text-gray-500 py-3 rounded-xl cursor-not-allowed font-medium flex items-center justify-center space-x-2">
