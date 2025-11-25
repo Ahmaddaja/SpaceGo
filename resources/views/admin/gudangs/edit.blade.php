@@ -12,19 +12,19 @@
         
         <div class="row">
             <div class="col-lg-8">
-                @include('admin.gudangs.partials.form-basic-info', ['gudang' => $gudang])
-                @include('admin.gudangs.partials.form-location', ['gudang' => $gudang])
+                @include('admin.gudangs.partials.form-basic-info')
+                @include('admin.gudangs.partials.form-location')
             </div>
 
             <div class="col-lg-4">
-                @include('admin.gudangs.partials.form-photo', ['gudang' => $gudang])
-                @include('admin.gudangs.partials.form-actions', ['submitText' => 'Update Gudang', 'gudang' => $gudang])
+                @include('admin.gudangs.partials.form-photo')
+                @include('admin.gudangs.partials.form-actions', ['submitText' => 'Update Gudang'])
             </div>
         </div>
     </form>
     
-    <form id="delete-form-{{ $gudang->id }}" 
-          action="{{ route('gudangs.destroy', $gudang->id) }}" 
+    <form id="delete-form-{{ $gudang->id }}"
+          action="{{ route('gudangs.destroy', $gudang->id) }}"
           method="POST" 
           style="display: none;">
         @csrf
