@@ -1,7 +1,14 @@
-@extends('layouts.main')
+@extends('layouts.main', ['title' => 'Daftar Pelanggan'])
+
+@section('styles')
+    @include('admin.pelanggan.partials.styles')
+@endsection
 
 @section('title-content')
-    @include('admin.raks.partials.breadcrumb', ['page' => 'Daftar Pelanggan'])
+<div class="d-flex justify-content-between align-items-right">
+    <h1 class="m-0">Daftar Pelanggan</h1>
+    @include('admin.pelanggan.partials.breadcrumb', ['page' => 'Kelola Pelanggan']) 
+</div>   
 @endsection
 
 @section('content')
@@ -88,30 +95,4 @@
 
 <!-- Tambahkan Font Awesome untuk ikon -->
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-
-<style>
-.bg-gradient-to-r {
-    background: linear-gradient(to right, #2563eb, #9333ea);
-}
-
-.rounded-lg {
-    border-radius: 0.5rem;
-}
-
-.shadow-sm {
-    box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
-}
-
-.object-cover {
-    object-fit: cover;
-}
-
-.border-2 {
-    border-width: 2px;
-}
-
-.border-white {
-    border-color: white;
-}
-</style>
 @endsection
