@@ -4,7 +4,7 @@
     <x-breadcrumb page="Edit" module="Gudang" routePrefix="gudangs" />
 @endsection
 
-section('content')
+@section('content')
 <div class="container-fluid">
     <form action="{{ route('gudangs.update', $gudang->id) }}" method="POST" enctype="multipart/form-data" id="update-form">
         @csrf
