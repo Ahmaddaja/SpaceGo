@@ -254,7 +254,7 @@
                         </a>
 
                         @if ($rak->status === 'tersedia')
-                            <a href="{{ route('customer.bayar', $rak->id) }}"
+                            <a href="{{ route('customer.payment.checkout', $rak->id) }}"
                                class="flex-1 bg-gradient-to-r from-blue-600 to-blue-700 text-center text-white py-3 rounded-xl hover:from-blue-700 hover:to-blue-800 transition shadow-md hover:shadow-lg font-medium">
                                 Sewa Sekarang
                             </a>
