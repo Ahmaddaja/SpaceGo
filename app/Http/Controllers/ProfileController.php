@@ -8,6 +8,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Redirect;
 use Illuminate\View\View;
+use Illuminate\Support\Facades\Storage;
 
 class ProfileController extends Controller
 {
@@ -78,8 +79,8 @@ class ProfileController extends Controller
         $user = $request->user();
 
         // Delete old photo if exists
-        if ($user->foto && \Storage::disk('public')->exists($user->foto)) {
-            \Storage::disk('public')->delete($user->foto);
+        if ($user->foto && Storage::disk('public')->exists($user->foto)) {
+            Storage::disk('public')->delete($user->foto);
         }
 
         // Store new photo with unique name
@@ -91,6 +92,25 @@ class ProfileController extends Controller
         $user->save();
 
         return redirect()->route('customer.profile.index')->with('success', 'Foto profile berhasil diperbarui!');
+    }
+
+    /**
+     * Delete profile photo.
+     */
+    public function hapusFoto(Request $request): RedirectResponse
+    {
+        $user = $request->user();
+
+        // Hapus file dari storage
+        if ($user->foto && Storage::disk('public')->exists($user->foto)) {
+            Storage::disk('public')->delete($user->foto);
+        }
+
+        // Update database
+        $user->foto = null;
+        $user->save();
+
+        return redirect()->route('customer.profile.index')->with('success', 'Foto profile berhasil dihapus.');
     }
 
     /**
