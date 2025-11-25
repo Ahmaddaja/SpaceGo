@@ -50,9 +50,9 @@
                     </div>
 
                     <div class="form-group">
-                        <label for="telepon" class="font-weight-bold">No. Telepon</label>
-                        <input type="tel" class="form-control @error('telepon') is-invalid @enderror" id="telepon" name="telepon" value="{{ old('telepon', Auth::user()->telepon ?? '') }}" placeholder="08xxxxxxxxxx">
-                        @error('telepon')
+                        <label for="phone" class="font-weight-bold">No. Telepon</label>
+                        <input type="tel" class="form-control @error('phone') is-invalid @enderror" id="phone" name="phone" value="{{ old('phone', Auth::user()->phone ?? '') }}" placeholder="08xxxxxxxxxx">
+                        @error('phone')
                         <div class="invalid-feedback">{{ $message }}</div>
                         @enderror
                     </div>

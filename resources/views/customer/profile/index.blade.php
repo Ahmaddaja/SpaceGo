@@ -217,10 +217,10 @@
                                         <i class="fas fa-phone text-green-500 mr-2"></i>
                                         No. Telepon
                                     </label>
-                                    <input type="text" name="telepon" 
+                                    <input type="text" name="phone" 
                                            class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-300 @error('telepon') border-red-500 @enderror" 
-                                           value="{{ old('telepon', $user->telepon ?? '') }}">
-                                    @error('telepon')
+                                           value="{{ old('phone', $user->phone ?? '') }}">
+                                    @error('phone')
                                     <p class="text-red-500 text-sm mt-2 flex items-center">
                                         <i class="fas fa-exclamation-triangle mr-1"></i>{{ $message }}
                                     </p>
