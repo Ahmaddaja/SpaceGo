@@ -26,7 +26,7 @@
 
         .register-card {
             width: 100%;
-            max-width: 450px;
+            max-width: 900px; /* Diperlebar untuk layout berjajar */
             padding: 35px 30px;
             background: rgba(255, 255, 255, 0.85);
             backdrop-filter: blur(10px);
@@ -70,6 +70,37 @@
             box-shadow: 0 0 0 3px rgba(79, 70, 229, .25);
         }
 
+        textarea.form-control {
+            height: auto;
+            min-height: 100px;
+        }
+
+        .form-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            margin-bottom: 15px;
+        }
+
+        .form-group {
+            flex: 1;
+            min-width: 200px;
+        }
+
+        .full-width {
+            flex: 1 0 100%;
+        }
+
+        @media (max-width: 768px) {
+            .register-card {
+                max-width: 100%;
+            }
+            
+            .form-group {
+                flex: 1 0 100%;
+            }
+        }
+
         @media (max-width: 480px) {
             .register-card {
                 padding: 28px 22px;
@@ -87,7 +118,7 @@
 <div class="register-card">
 
     <!-- Logo & Judul -->
-    <div class="text-center mb-3">
+    <div class="text-center mb-4">
         <svg class="logo-storage" fill="#4f46e5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
             <path d="M3 10L12 3L21 10V21H3V10ZM5 12V19H19V12L12 7L5 12Z"/>
         </svg>
@@ -100,76 +131,94 @@
     <form method="POST" action="{{ route('register') }}">
         @csrf
 
-        <!-- Nama -->
-        <div class="mb-3">
-            <label class="form-label fw-semibold">Nama Lengkap</label>
-            <input id="name" type="text" name="name"
-                   class="form-control @error('name') is-invalid @enderror"
-                   value="{{ old('name') }}" required autofocus>
-            @error('name')
-                <div class="invalid-feedback">{{ $message }}</div>
-            @enderror
+        <!-- Baris 1: Nama dan Username -->
+        <div class="form-row">
+            <div class="form-group">
+                <label class="form-label fw-semibold">Nama Lengkap</label>
+                <input id="name" type="text" name="name"
+                       class="form-control @error('name') is-invalid @enderror"
+                       value="{{ old('name') }}" required autofocus>
+                @error('name')
+                    <div class="invalid-feedback">{{ $message }}</div>
+                @enderror
+            </div>
+
+            <div class="form-group">
+                <label class="form-label fw-semibold">Username</label>
+                <input id="username" type="text" name="username"
+                       class="form-control @error('username') is-invalid @enderror"
+                       value="{{ old('username') }}" required>
+                @error('username')
+                    <div class="invalid-feedback">{{ $message }}</div>
+                @enderror
+            </div>
         </div>
 
-        <!-- Username -->
-        <div class="mb-3">
-            <label class="form-label fw-semibold">Username</label>
-            <input id="username" type="text" name="username"
-                   class="form-control @error('username') is-invalid @enderror"
-                   value="{{ old('username') }}" required>
-            @error('username')
-                <div class="invalid-feedback">{{ $message }}</div>
-            @enderror
+        <!-- Baris 2: Email dan Nomor Telepon -->
+        <div class="form-row">
+            <div class="form-group">
+                <label class="form-label fw-semibold">Email</label>
+                <input id="email" type="email" name="email"
+                       class="form-control @error('email') is-invalid @enderror"
+                       value="{{ old('email') }}" required>
+                @error('email')
+                    <div class="invalid-feedback">{{ $message }}</div>
+                @enderror
+            </div>
+
+            <div class="form-group">
+                <label class="form-label fw-semibold">Nomor Telepon</label>
+                <input id="phone" type="text" name="phone"
+                       class="form-control @error('phone') is-invalid @enderror"
+                       value="{{ old('phone') }}" required>
+                @error('phone')
+                    <div class="invalid-feedback">{{ $message }}</div>
+                @enderror
+            </div>
         </div>
 
-        <!-- Email -->
-        <div class="mb-3">
-            <label class="form-label fw-semibold">Email</label>
-            <input id="email" type="email" name="email"
-                   class="form-control @error('email') is-invalid @enderror"
-                   value="{{ old('email') }}" required>
-            @error('email')
+        <!-- Baris 3: Alamat (Full Width) -->
+        
+        <!-- Baris 4: Password dan Konfirmasi Password -->
+        <div class="form-row">
+            <div class="form-group">
+                <label class="form-label fw-semibold">Password</label>
+                <input id="password" type="password" name="password"
+                class="form-control @error('password') is-invalid @enderror"
+                required>
+                @error('password')
                 <div class="invalid-feedback">{{ $message }}</div>
-            @enderror
-        </div>
-
-        <!-- Nomor Telepon -->
-        <div class="mb-3">
-            <label class="form-label fw-semibold">Nomor Telepon</label>
-            <input id="phone" type="text" name="phone"
-                   class="form-control @error('phone') is-invalid @enderror"
-                   value="{{ old('phone') }}" required>
-            @error('phone')
+                @enderror
+            </div>
+            
+            <div class="form-group">
+                <label class="form-label fw-semibold">Konfirmasi Password</label>
+                <input id="password_confirmation" type="password" name="password_confirmation"
+                class="form-control @error('password_confirmation') is-invalid @enderror"
+                required>
+                @error('password_confirmation')
                 <div class="invalid-feedback">{{ $message }}</div>
-            @enderror
+                @enderror
+            </div>
         </div>
-
-        <!-- Password -->
-        <div class="mb-3">
-            <label class="form-label fw-semibold">Password</label>
-            <input id="password" type="password" name="password"
-                   class="form-control @error('password') is-invalid @enderror"
-                   required>
-            @error('password')
-                <div class="invalid-feedback">{{ $message }}</div>
-            @enderror
+        
+        <div class="form-row">
+            <div class="form-group full-width">
+                <label class="form-label fw-semibold">Alamat Lengkap</label>
+                <textarea id="address" name="alamat"
+                       class="form-control @error('address') is-invalid @enderror"
+                       required>{{ old('address') }}</textarea>
+                @error('address')
+                    <div class="invalid-feedback">{{ $message }}</div>
+                @enderror
+            </div>
         </div>
-
-        <!-- Confirm Password -->
-        <div class="mb-3">
-            <label class="form-label fw-semibold">Konfirmasi Password</label>
-            <input id="password_confirmation" type="password" name="password_confirmation"
-                   class="form-control @error('password_confirmation') is-invalid @enderror"
-                   required>
-            @error('password_confirmation')
-                <div class="invalid-feedback">{{ $message }}</div>
-            @enderror
-        </div>
-
         <!-- Button Register -->
-        <button type="submit" class="btn btn-register text-white w-100 py-2 mb-3">
-            Daftar
-        </button>
+        <div class="mt-4">
+            <button type="submit" class="btn btn-register text-white w-100 py-2 mb-3">
+                Daftar
+            </button>
+        </div>
 
         <!-- Login Link -->
         <div class="text-center">
