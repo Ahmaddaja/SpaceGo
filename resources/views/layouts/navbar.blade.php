@@ -85,8 +85,13 @@
                     <div class="font-weight-bold">{{ Auth::user()->name }}</div>
                     <small class="text-muted">{{ Auth::user()->role }}</small>
                 </div>
-                <div class="bg-primary rounded-circle d-flex align-items-center justify-content-center text-white font-weight-bold" style="width: 40px; height: 40px;">
-                    {{ strtoupper(substr(Auth::user()->name, 0, 2)) }}
+                <div class="bg-primary rounded-circle d-flex align-items-center justify-content-center text-white font-weight-bold overflow-hidden" style="width: 40px; height: 40px;">
+                    @if(Auth::user()->foto)
+                        <img src="{{ Storage::disk('public')->exists(Auth::user()->foto) ? Storage::url(Auth::user()->foto) : asset(Auth::user()->foto) }}" 
+                             alt="Profile Photo" class="w-100 h-100" style="object-fit: cover;">
+                    @else
+                        <span>{{ strtoupper(substr(Auth::user()->name, 0, 2)) }}</span>
+                    @endif
                 </div>
                 <i class="fas fa-caret-down ml-2"></i>
             </a>

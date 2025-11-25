@@ -33,16 +33,25 @@
             @enderror
         </div> --}}
 
-                <div class="form-group">
-                    <label for="harga_sewa_perbulan">Harga Sewa per Bulan (Rp) <span class="text-danger">*</span></label>
-                    <input type="number" class="form-control @error('harga_sewa_perbulan') is-invalid @enderror"
-                        id="harga_sewa_perbulan" name="harga_sewa_perbulan"
-                        value="{{ old('harga_sewa_perbulan', $rak->harga_sewa_perbulan ?? '') }}"
-                        placeholder="Contoh: 5000000">
-                    @error('harga_sewa_perbulan')
-                        <div class="invalid-feedback">{{ $message }}</div>
-                    @enderror
-                </div>
+            <div class="form-group">
+                <label for="harga_sewa_perbulan">
+                    Harga Sewa per Bulan (Rp) <span class="text-danger">*</span>
+                </label>
+
+                <input 
+                    type="text"
+                    class="form-control @error('harga_sewa_perbulan') is-invalid @enderror"
+                    id="harga_sewa_perbulan" 
+                    name="harga_sewa_perbulan"
+                    value="{{ old('harga_sewa_perbulan', $rak->harga_sewa_perbulan ?? '') }}"
+                    placeholder="Contoh: 100.000"
+                    autocomplete="off"
+                >
+
+                @error('harga_sewa_perbulan')
+                    <div class="invalid-feedback">{{ $message }}</div>
+                @enderror
+            </div>
 
                 <!-- Hanya tampilkan dropdown status saat EDIT, tidak saat CREATE -->
                 @if (isset($rak))
@@ -82,3 +91,19 @@
                 </div>
             </div>
         </div>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const inputHarga = document.getElementById('harga_sewa_perbulan');
+
+    inputHarga.addEventListener('input', function (e) {
+        let value = this.value.replace(/\D/g, '');
+        if (value) {
+            this.value = formatRupiah(value);
+        }
+    });
+
+    function formatRupiah(angka) {
+        return angka.replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+    }
+});
+</script>

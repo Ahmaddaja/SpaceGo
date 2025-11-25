@@ -2,12 +2,21 @@
     <div class="card border-0 shadow-sm">
         <div class="card-body text-center">
             <div class="mb-3">
-                <div class="bg-primary rounded-circle d-inline-flex align-items-center justify-content-center text-white font-weight-bold profile-avatar" onclick="document.getElementById('photo-input').click()">
-                    @if(Auth::user()->photo)
-                        <img src="{{ asset(Auth::user()->photo) }}" alt="Profile Photo" id="profile-photo-display">
+                <div class="bg-primary rounded-circle d-inline-flex align-items-center justify-content-center text-white font-weight-bold profile-avatar" 
+                     data-toggle="modal" data-target="#photoUploadModal" style="cursor: pointer; width: 120px; height: 120px; overflow: hidden;">
+                    @if(Auth::user()->foto)
+                        <img src="{{ Storage::disk('public')->exists(Auth::user()->foto) ? Storage::url(Auth::user()->foto) : asset(Auth::user()->foto) }}?t={{ time() }}" 
+                             alt="Profile Photo" id="profile-photo-display" class="rounded-circle w-100 h-100" style="object-fit: cover;">
                     @else
-                        <span id="profile-initials">{{ strtoupper(substr(Auth::user()->name, 0, 2)) }}</span>
+                        <div class="w-100 h-100 d-flex align-items-center justify-content-center bg-primary text-white font-weight-bold" id="profile-initials">
+                            {{ strtoupper(substr(Auth::user()->name, 0, 2)) }}
+                        </div>
                     @endif
+                </div>
+                <div class="mt-2">
+                    <button type="button" class="btn btn-outline-primary btn-sm" data-toggle="modal" data-target="#photoUploadModal">
+                        <i class="fas fa-camera mr-1"></i> Ubah Foto
+                    </button>
                 </div>
             </div>
 
@@ -34,3 +43,6 @@
         </div>
     </div>
 </div>
+
+<!-- Include Photo Upload Modal -->
+@include('admin.profile.partials.photo-modal')

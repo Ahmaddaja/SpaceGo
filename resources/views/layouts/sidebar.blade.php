@@ -42,22 +42,11 @@
                 </li>
 
                 <!-- Transaksi -->
-                <li class="nav-item has-treeview">
+                <li class="nav-item">
                     <a href="#" class="nav-link">
                         <i class="nav-icon fas fa-file-invoice-dollar"></i>
-                        <p>
-                            Transaksi
-                            <i class="right fas fa-angle-left"></i>
-                        </p>
+                        <p>Pelanggan</p>
                     </a>
-                    <ul class="nav nav-treeview">
-                        <li class="nav-item">
-                            <a href="/transaksi" class="nav-link">
-                                <i class="far fa-circle nav-icon"></i>
-                                <p>Semua Transaksi</p>
-                            </a>
-                        </li>
-                    </ul>
                 </li>
 
                 <!-- Pelanggan -->

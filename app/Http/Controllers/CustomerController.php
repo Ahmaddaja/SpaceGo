@@ -42,7 +42,7 @@ class CustomerController extends Controller
         return view('customer.list-rak.list-rak', compact('raks', 'jenisList'));
     }
 
-        public function showRak($id)
+    public function showRak($id)
     {
         $rak = Rak::with('gudang')->findOrFail($id);
 
@@ -50,10 +50,20 @@ class CustomerController extends Controller
     }
 
     public function dashboard()
-{
-    return view('customer.index');
-}
+    {
+        return view('customer.index');
+    }
 
+    // TAMBAHKAN METHOD BAYAR INI
+    public function bayar($id)
+    {
+        $rak = Rak::with('gudang')->findOrFail($id);
+        
+        // Validasi ketersediaan rak
+        if ($rak->status !== 'tersedia') {
+            return redirect()->back()->with('error', 'Rak tidak tersedia untuk disewa.');
+        }
 
-
+        return view('customer.bayar', compact('rak'));
+    }
 }

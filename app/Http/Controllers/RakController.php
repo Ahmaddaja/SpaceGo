@@ -26,6 +26,10 @@ class RakController extends Controller
 
     public function store(Request $request)
     {
+        $request->merge([
+            'harga_sewa_perbulan' => str_replace('.', '', $request->harga_sewa_perbulan)
+        ]);
+
         $validated = $request->validate([
             'kode_rak' => 'required|unique:raks,kode_rak',
             'nama_rak' => 'required|string|max:255',
@@ -73,7 +77,10 @@ class RakController extends Controller
     }
 
     public function update(Request $request, Rak $rak)
-    {
+    {        
+        $request->merge([
+            'harga_sewa_perbulan' => str_replace('.', '', $request->harga_sewa_perbulan)
+        ]);
         $validated = $request->validate([
             'kode_rak' => 'required|unique:raks,kode_rak,' . $rak->id,
             'nama_rak' => 'required|string|max:255',
