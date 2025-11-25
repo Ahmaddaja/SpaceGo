@@ -20,9 +20,6 @@
                     <span class="text-2xl font-bold text-gray-800">SPACEGO</span>
                 </div>
                 
-                <div class="hidden md:block text-gray-600 text-sm border-l pl-4">
-                    Selamat datang, <span class="font-semibold text-blue-600">{{ Auth::user()->name }}</span>
-                </div>
             </div>
             
             <div class="flex items-center space-x-6">
