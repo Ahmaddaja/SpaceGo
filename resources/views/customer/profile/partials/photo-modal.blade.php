@@ -11,7 +11,7 @@
             </button>
         </div>
         
-        <form action="{{ route('customer.profile.upload-foto') }}" method="POST" enctype="multipart/form-data">
+        <form action="{{ route('customer.profile.upload-foto') }}" method="POST" enctype="multipart/form-data" id="uploadFotoForm">
             @csrf
             <div class="p-6">
                 <div class="text-center mb-6">
@@ -40,6 +40,21 @@
                         Format: JPG, PNG. Maksimal 2MB
                     </small>
                 </div>
+
+                <!-- Tombol Hapus Foto Profile -->
+                @if($user->foto)
+                <div class="mt-6 pt-4 border-t border-gray-200">
+                    <button type="button" onclick="hapusFotoProfile()" 
+                            class="w-full px-4 py-3 bg-red-500 text-white rounded-xl hover:bg-red-600 transition-all duration-300 font-medium flex items-center justify-center">
+                        <i class="fas fa-trash mr-2"></i>
+                        Hapus Foto Profile
+                    </button>
+                    <small class="text-gray-500 text-sm mt-2 block text-center">
+                        <i class="fas fa-exclamation-triangle mr-1"></i>
+                        Foto akan dihapus secara permanen
+                    </small>
+                </div>
+                @endif
             </div>
             
             <div class="border-t border-gray-200 px-6 py-4 flex justify-end gap-3">
@@ -54,3 +69,30 @@
         </form>
     </div>
 </div>
+
+<!-- Form untuk hapus foto (hidden) -->
+<form id="hapusFotoForm" action="{{ route('customer.profile.hapus-foto') }}" method="POST" class="hidden">
+    @csrf
+    @method('DELETE')
+</form>
+
+<script>
+// Fungsi untuk menghapus foto profile
+function hapusFotoProfile() {
+    if (confirm('Apakah Anda yakin ingin menghapus foto profile?')) {
+        document.getElementById('hapusFotoForm').submit();
+    }
+}
+
+// Fungsi untuk preview foto sebelum upload
+document.getElementById('fotoInput').addEventListener('change', function(e) {
+    const file = e.target.files[0];
+    if (file) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            document.getElementById('previewFoto').src = e.target.result;
+        }
+        reader.readAsDataURL(file);
+    }
+});
+</script>

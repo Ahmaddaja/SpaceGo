@@ -50,7 +50,7 @@
                                                  height="40"
                                                  style="object-fit: cover;">
                                         @else
-                                            <div class="bg-gradient-to-r from-blue-600 to-purple-600 rounded-lg d-flex align-items-center justify-content-center text-white font-weight-bold shadow-sm"
+                                            <div class="d-flex align-items-center justify-content-center customer-initial-text"
                                                  style="width: 40px; height: 40px;">
                                                 {{ strtoupper(substr($customer->name, 0, 1)) }}
                                             </div>
@@ -95,4 +95,70 @@
 
 <!-- Tambahkan Font Awesome untuk ikon -->
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+<style>
+/* Style untuk inisial customer yang transparan */
+.customer-initial-text {
+    background: transparent !important;
+    border: none !important;
+    font-weight: bold !important;
+    font-size: 16px !important;
+}
+
+/* Default: Mode terang - warna gelap untuk kontras dengan background putih */
+.customer-initial-text {
+    color: #374151 !important; /* gray-700 - gelap untuk mode terang */
+}
+
+/* Mode gelap - warna putih untuk kontras dengan background gelap */
+@media (prefers-color-scheme: dark) {
+    .customer-initial-text {
+        color: #ffffff !important; /* putih untuk mode gelap */
+    }
+}
+
+/* Bootstrap 5 dark theme */
+[data-bs-theme="dark"] .customer-initial-text {
+    color: #ffffff !important;
+}
+
+/* Jika ada class dark mode custom */
+.dark-mode .customer-initial-text,
+body.dark .customer-initial-text,
+.dark .customer-initial-text {
+    color: #ffffff !important;
+}
+
+/* Untuk elemen dengan background gelap */
+.bg-dark .customer-initial-text,
+.table-dark .customer-initial-text,
+.dark-theme .customer-initial-text {
+    color: #ffffff !important;
+}
+
+/* Untuk elemen dengan background terang */
+.bg-light .customer-initial-text,
+.bg-white .customer-initial-text,
+.light-theme .customer-initial-text {
+    color: #374151 !important;
+}
+
+/* Fallback menggunakan CSS currentColor untuk inherit dari parent */
+.customer-initial-text {
+    color: currentColor !important;
+}
+
+/* Alternatif menggunakan CSS variables untuk kontrol yang lebih baik */
+:root {
+    --customer-initial-color: #374151; /* default mode terang */
+}
+
+[data-bs-theme="dark"] {
+    --customer-initial-color: #ffffff; /* mode gelap */
+}
+
+.customer-initial-text {
+    color: var(--customer-initial-color, currentColor) !important;
+}
+</style>
 @endsection
