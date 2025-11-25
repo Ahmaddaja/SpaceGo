@@ -9,7 +9,7 @@
 
 @section('content')
 <div class="container-fluid">
-    <x-alert />
+    
     <x-alert />
 
     <div class="card border-0 shadow-sm">
