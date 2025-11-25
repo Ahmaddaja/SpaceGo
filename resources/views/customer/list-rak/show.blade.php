@@ -24,7 +24,7 @@
                     </div>
                 </div>
                 
-<<<<<<< HEAD
+
                 <div class="flex items-center space-x-8">
                     <a href="{{ route('customer.index') }}" class="flex flex-col items-center text-gray-600 hover:text-blue-600 group transition-all duration-300">
                         <div class="bg-gray-100 p-3 rounded-xl shadow-sm group-hover:bg-blue-100">
@@ -38,6 +38,16 @@
                             <i class="fas fa-pallet"></i>
                         </div>
                         <span class="text-xs mt-2 font-medium">Rak</span>
+                    </a>
+
+                    <a href="{{ route('customer.list-rak.rak') }}" class="flex flex-col items-center text-gray-600 hover:text-blue-600 group transition-all duration-300">
+                        <div class="bg-gray-100 p-3 rounded-xl shadow-sm group-hover:bg-blue-100">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M5 13l4 4L19 7" />
+                            </svg>
+                        </div>
+                        <span class="text-xs mt-2 font-medium">Rak Dibeli</span>
                     </a>
                     
                     <a href="{{ route('customer.profile.index') }}" class="flex flex-col items-center text-gray-600 hover:text-blue-600 group transition-all duration-300">
@@ -93,8 +103,7 @@
                         </div>
                     </div>
                 </div>
-=======
->>>>>>> e393bb3f56c00fe6cc4e3d9fe1954073c1cd17b3
+
             </div>
         </div>
     </nav>
@@ -274,10 +283,13 @@
                         <p class="text-gray-700 text-sm font-medium">Dimensi (P × L × T)</p>
                     </div>
                     <p class="text-gray-800 font-bold text-lg">
-                        {{ $rak->panjang }} × {{ $rak->lebar }} × {{ $rak->tinggi }} <span class="text-sm font-normal text-gray-600">cm</span>
+                        {{ $rak->panjang }} × {{ $rak->lebar }} × {{ $rak->tinggi }} m
+                        <span class="text-sm font-normal text-gray-500">
+                            ({{ number_format($rak->panjang * $rak->lebar * $rak->tinggi, 0, ',', '.') }} m³)
+                        </span>
                     </p>
                 </div>
-
+                
                 <div class="bg-gradient-to-br from-orange-50 to-orange-100 p-5 rounded-2xl border border-orange-200 hover:shadow-md transition-all duration-300">
                     <div class="flex items-center space-x-3 mb-3">
                         <div class="bg-orange-500 p-2 rounded-lg">
@@ -340,9 +352,9 @@
                 <span>Kembali ke Daftar Rak</span>
             </a>
 
-<<<<<<< HEAD
+
             @if ($rak->status === 'tersedia')
-                <a href="{{ route('customer.bayar', $rak->id) }}"
+                <a href="{{ route('customer.payment.checkout', $rak->id) }}"
                    class="flex-1 flex items-center justify-center space-x-3 px-8 py-4 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-xl hover:shadow-xl transition-all duration-300 font-semibold shadow-lg">
                     <i class="fas fa-shopping-cart"></i>
                     <span>Sewa Sekarang</span>
@@ -353,7 +365,7 @@
                     <span>Tidak Tersedia</span>
                 </button>
             @endif
-=======
+
            @if($rak->status != 'terisi')
             <a href="{{ route('customer.payment.checkout', $rak->id) }}"
                 class="block bg-blue-600 hover:bg-blue-700 text-white font-semibold text-center py-3 rounded-lg transition">
@@ -364,7 +376,7 @@
                 Sudah Dibeli
             </div>
         @endif
->>>>>>> e393bb3f56c00fe6cc4e3d9fe1954073c1cd17b3
+
 
         </div>
 

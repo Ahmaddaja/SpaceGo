@@ -1,7 +1,10 @@
-@extends('layouts.main')
+@extends('layouts.main', ['title' => 'Kelola Gudang'])
 
 @section('title-content')
+<div class="d-flex justify-content-between align-items-right">
+    <h1 class="m-0">Kelola Gudang</h1>
     <x-breadcrumb page="Kelola" module="Gudang" routePrefix="gudangs" />
+</div>  
 @endsection
 
 @section('content')
