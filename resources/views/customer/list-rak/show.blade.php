@@ -43,6 +43,14 @@
                     </svg>
                     <span class="text-xs mt-1 hidden md:block">Rak</span>
                 </a>
+                 <a href="{{ route('customer.list-rak.rak') }}" 
+                    class="flex flex-col items-center text-gray-600 hover:text-blue-600 group transition">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M5 13l4 4L19 7" />
+                    </svg>
+                    <span class="text-xs mt-1 hidden md:block">Rak Dibeli</span>
+                </a>
                 
                 <a href="{{ route('customer.profile.index') }}" class="flex flex-col items-center text-gray-600 hover:text-blue-600 group transition">
                     <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">

@@ -38,6 +38,14 @@
                         </div>
                         <span class="text-xs mt-2 font-medium">Rak</span>
                     </a>
+                     <a href="{{ route('customer.list-rak.rak') }}" 
+                        class="flex flex-col items-center text-gray-600 hover:text-blue-600 group transition">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M5 13l4 4L19 7" />
+                        </svg>
+                        <span class="text-xs mt-1 hidden md:block">Rak Dibeli</span>
+                    </a>
                     
                     <a href="{{ route('customer.profile.index') }}" class="flex flex-col items-center text-gray-600 hover:text-blue-600 group transition-all duration-300">
                         <div class="bg-gray-100 p-3 rounded-xl shadow-sm group-hover:bg-blue-100">
@@ -52,6 +60,7 @@
                         </div>
                         <span class="text-xs mt-2 font-medium">History</span>
                     </a>
+
                     
                     <!-- Dropdown Profile -->
                     <div class="relative group">
@@ -254,7 +263,7 @@
                         </a>
 
                         @if ($rak->status === 'tersedia')
-                            <a href="{{ route('customer.bayar', $rak->id) }}"
+                            <a href="{{ route('customer.payment.checkout', $rak->id) }}"
                                class="flex-1 bg-gradient-to-r from-blue-600 to-blue-700 text-center text-white py-3 rounded-xl hover:from-blue-700 hover:to-blue-800 transition shadow-md hover:shadow-lg font-medium">
                                 Sewa Sekarang
                             </a>
