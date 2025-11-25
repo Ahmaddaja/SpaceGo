@@ -29,7 +29,7 @@ class ProfileAdminController extends Controller
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'email', 'max:255', Rule::unique('users')->ignore($user->id)],
-            'telepon' => ['nullable', 'string', 'max:15', 'regex:/^[0-9+\-\s()]*$/'],
+            'phone' => ['nullable', 'string', 'max:15', 'regex:/^[0-9+\-\s()]*$/'],
             'alamat' => ['nullable', 'string', 'max:500'],
         ], [
             'name.required' => 'Nama lengkap wajib diisi',

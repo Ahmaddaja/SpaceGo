@@ -37,7 +37,13 @@ class User extends Authenticatable //implements MustVerifyEmail
     //         'password' => 'hashed',
     //     ];
     // }
-
+    public function rakDibeli()
+        {
+            return $this->belongsToMany(Rak::class, 'transaksis', 'user_id', 'rak_id')
+                        ->withPivot(['tanggal_mulai', 'tanggal_berakhir', 'status', 'total_harga'])
+                        ->withTimestamps();
+        }
+        
     public function isAdmin()
     {
         return $this->role === 'admin';

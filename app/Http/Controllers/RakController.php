@@ -3,13 +3,72 @@
 namespace App\Http\Controllers;
 
 use App\Models\Rak;
+use Illuminate\Support\Facades\Auth; 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use App\Models\Gudang;
+use App\Models\User;
 
 class RakController extends Controller
 {
+    public function rakDibeli()
+    {
+        // Ambil user yang sedang login
+        $user = Auth::user();
+        
+        // Debug untuk melihat user
+        if (!$user) {
+            abort(403, 'User tidak ditemukan.');
+        }
+        
+        // Asumsi ada relasi 'rakDibeli' di model User
+        // Jika belum ada relasi, kita bisa query manual dulu
+        try {
+            // Coba dengan relasi jika ada
+            if (method_exists($user, 'rakDibeli')) {
+                $raks = $user->rakDibeli()
+                            ->with('gudang')
+                            ->orderBy('created_at', 'desc')
+                            ->paginate(9);
+            } else {
+                // Fallback: query manual (sesuaikan dengan struktur database kamu)
+                $raks = \App\Models\Rak::where('user_id', $user->id) // atau sesuaikan dengan kolom yang tepat
+                            ->with('gudang')
+                            ->orderBy('created_at', 'desc')
+                            ->paginate(9);
+            }
+            
+            return view('customer.list-rak.rak', compact('raks'));
+            
+        } catch (\Exception $e) {
+            // Fallback jika ada error
+            $raks = collect(); // empty collection
+            return view('customer.list-rak.rak', compact('raks'));
+        }
+    }
+
+    public function detailRak($id)
+    {
+        $rak = \App\Models\Rak::with('gudang')->findOrFail($id);
+        
+        // Cek apakah user memiliki akses ke rak ini
+        $user = Auth::user();
+        if (!$this->userMemilikiRak($rak->id, $user)) {
+            abort(403, 'Anda tidak memiliki akses ke rak ini.');
+        }
+        
+        return view('customer.detail-rak', compact('rak'));
+    }
+    
+    private function userMemilikiRak($rakId, $user)
+    {
+        // Sesuaikan dengan logika bisnis kamu
+        // Contoh sederhana: cek apakah rak memiliki user_id yang sama
+        $rak = \App\Models\Rak::find($rakId);
+        return $rak && $rak->user_id == $user->id;
+    }
+
     public function index()
     {
         $raks = Rak::latest()->paginate(10);
@@ -123,12 +182,6 @@ class RakController extends Controller
         $rak->delete();
 
         return redirect()->route('raks.index')->with('success', 'Rak berhasil dihapus!');
-    }
-
-    public function rakDibeli()
-    {
-        $raks = Rak::where('status', 'terisi')->paginate(10);
-        return view('customer.list-rak.rak', compact('raks'));
     }
 
 }

@@ -45,7 +45,7 @@
                 <li class="nav-item">
                     <a href="#" class="nav-link">
                         <i class="nav-icon fas fa-file-invoice-dollar"></i>
-                        <p>Pelanggan</p>
+                        <p>Transaksi</p>
                     </a>
                 </li>
 

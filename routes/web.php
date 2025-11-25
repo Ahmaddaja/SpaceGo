@@ -39,6 +39,8 @@ Route::middleware(['auth', 'role:customer'])->group(function () {
     // List Rak
     Route::get('/customer/rak', [CustomerController::class, 'listRak'])
         ->name('customer.list-rak.list-rak');
+    Route::get('/rak-dibeli', [RakController::class, 'rakDibeli'])->name('customer.list-rak.rak');
+     Route::get('/rak-dibeli/{id}', [RakController::class, 'detailRak'])->name('customer.list-rak.detail');
         
     Route::get('/customer/rak/{id}', [CustomerController::class, 'showRak'])
         ->name('customer.list-rak.show');
