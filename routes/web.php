@@ -61,16 +61,25 @@ Route::middleware(['auth', 'role:customer'])->group(function () {
 
 // Route khusus Admin
 Route::middleware(['auth', 'role:admin'])->group(function () {
- Route::get('/admin/dashboard', [DashboardController::class, 'index'])
-    ->name('admin.dashboard');
+    Route::get('/admin/dashboard', [DashboardController::class, 'index'])
+        ->name('admin.dashboard');
     Route::resource('raks', RakController::class);
-    Route::get('/admin/profile', [ProfileAdminController::class, 'index'])->name('admin.profile.index');
-    Route::put('/admin/profile', [ProfileAdminController::class, 'update'])->name('admin.profile.update');
-    Route::put('/admin/profile/password', [ProfileAdminController::class, 'updatePassword'])->name('admin.profile.updatePassword');
+    
+    // Profile Admin Routes - DIUPDATE DENGAN ROUTE UPLOAD PHOTO
+    Route::prefix('admin/profile')->group(function () {
+        Route::get('/', [ProfileAdminController::class, 'index'])->name('admin.profile.index');
+        Route::put('/', [ProfileAdminController::class, 'update'])->name('admin.profile.update');
+        Route::put('/password', [ProfileAdminController::class, 'updatePassword'])->name('admin.profile.updatePassword');
+        
+        // Tambahkan route untuk foto profil
+        Route::post('/upload-photo', [ProfileAdminController::class, 'uploadPhoto'])->name('admin.profile.upload-photo');
+        Route::delete('/delete-photo', [ProfileAdminController::class, 'deletePhoto'])->name('admin.profile.delete-photo');
+    });
+    
     Route::delete('/notif/{id}', [NotificationController::class, 'delete'])->name('notif.delete');
     Route::resource('gudangs', GudangController::class);
     Route::get('/customers', [CustomerController::class, 'index'])
-    ->name('admin.pelanggan.pelanggan');
+        ->name('admin.pelanggan.pelanggan');
 });
 
 // Route Profile (untuk semua user yang login)
