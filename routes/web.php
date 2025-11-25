@@ -71,9 +71,8 @@ Route::middleware(['auth', 'role:admin'])->group(function () {
         Route::put('/', [ProfileAdminController::class, 'update'])->name('admin.profile.update');
         Route::put('/password', [ProfileAdminController::class, 'updatePassword'])->name('admin.profile.updatePassword');
         
-        // Tambahkan route untuk foto profil
+        // Tambahkan route untuk foto profil - TAMBAHKAN INI
         Route::post('/upload-photo', [ProfileAdminController::class, 'uploadPhoto'])->name('admin.profile.upload-photo');
-        Route::delete('/delete-photo', [ProfileAdminController::class, 'deletePhoto'])->name('admin.profile.delete-photo');
     });
     
     Route::delete('/notif/{id}', [NotificationController::class, 'delete'])->name('notif.delete');
