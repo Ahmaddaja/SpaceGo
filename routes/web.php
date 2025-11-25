@@ -11,7 +11,6 @@ use App\Http\Controllers\GudangController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\PaymentController;
 
-
 // Halaman awal
 Route::get('/', function () {
     return view('welcome');
@@ -21,8 +20,6 @@ Route::get('/test-midtrans', function () {
     return config('midtrans');
 });
 
-
-    
 // Route untuk Customer (default user)
 Route::middleware(['auth', 'role:customer'])->group(function () {
 
@@ -46,18 +43,20 @@ Route::middleware(['auth', 'role:customer'])->group(function () {
     Route::get('/customer/rak/{id}', [CustomerController::class, 'showRak'])
         ->name('customer.list-rak.show');
 
-    // Bayar rak
+    // Bayar rak - TAMBAHKAN ROUTE INI
     Route::get('/customer/bayar/{id}', [PaymentController::class, 'bayar'])
-    ->name('customer.payment.checkout');
+        ->name('customer.bayar'); // Tambahkan nama route ini
+
+    // Route payment yang sudah ada
+    Route::get('/customer/bayar/{id}', [PaymentController::class, 'bayar'])
+        ->name('customer.payment.checkout');
+    
     //callback
     Route::post('/midtrans/callback', [PaymentController::class, 'callback'])->name('midtrans.callback');
+    
     Route::get('/customer/list-rak/rak', [RakController::class, 'rakDibeli'])
-    ->name('customer.list-rak.rak');
-
-
-
+        ->name('customer.list-rak.rak');
 });
-
 
 // Route khusus Admin
 Route::middleware(['auth', 'role:admin'])->group(function () {
@@ -100,6 +99,7 @@ Route::post('/login', [AuthController::class, 'login'])->name('login.post');
 
 // Logout
 Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
+
 // ========================
 // Route Register
 // ========================
