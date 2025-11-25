@@ -24,6 +24,7 @@
                     </div>
                 </div>
                 
+<<<<<<< HEAD
                 <div class="flex items-center space-x-8">
                     <a href="{{ route('customer.index') }}" class="flex flex-col items-center text-gray-600 hover:text-blue-600 group transition-all duration-300">
                         <div class="bg-gray-100 p-3 rounded-xl shadow-sm group-hover:bg-blue-100">
@@ -92,6 +93,8 @@
                         </div>
                     </div>
                 </div>
+=======
+>>>>>>> e393bb3f56c00fe6cc4e3d9fe1954073c1cd17b3
             </div>
         </div>
     </nav>
@@ -337,6 +340,7 @@
                 <span>Kembali ke Daftar Rak</span>
             </a>
 
+<<<<<<< HEAD
             @if ($rak->status === 'tersedia')
                 <a href="{{ route('customer.bayar', $rak->id) }}"
                    class="flex-1 flex items-center justify-center space-x-3 px-8 py-4 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-xl hover:shadow-xl transition-all duration-300 font-semibold shadow-lg">
@@ -349,6 +353,18 @@
                     <span>Tidak Tersedia</span>
                 </button>
             @endif
+=======
+           @if($rak->status != 'terisi')
+            <a href="{{ route('customer.payment.checkout', $rak->id) }}"
+                class="block bg-blue-600 hover:bg-blue-700 text-white font-semibold text-center py-3 rounded-lg transition">
+                Bayar Sekarang
+            </a>
+        @else
+            <div class="bg-green-100 text-green-700 text-center py-3 rounded-lg font-semibold">
+                Sudah Dibeli
+            </div>
+        @endif
+>>>>>>> e393bb3f56c00fe6cc4e3d9fe1954073c1cd17b3
 
         </div>
 
