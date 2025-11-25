@@ -283,22 +283,16 @@
                 <span>Kembali</span>
             </a>
 
-            @if ($rak->status === 'tersedia')
-                <a href="{{ route('customer.bayar', $rak->id) }}"
-                   class="flex-1 flex items-center justify-center space-x-2 px-8 py-4 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-xl hover:from-blue-700 hover:to-blue-800 transition font-semibold shadow-lg hover:shadow-xl">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"></path>
-                    </svg>
-                    <span>Sewa Sekarang</span>
-                </a>
-            @else
-                <button class="flex-1 flex items-center justify-center space-x-2 px-8 py-4 bg-gray-300 text-gray-500 rounded-xl cursor-not-allowed font-semibold">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"></path>
-                    </svg>
-                    <span>Tidak Tersedia</span>
-                </button>
-            @endif
+           @if($rak->status != 'terisi')
+            <a href="{{ route('customer.payment.checkout', $rak->id) }}"
+                class="block bg-blue-600 hover:bg-blue-700 text-white font-semibold text-center py-3 rounded-lg transition">
+                Bayar Sekarang
+            </a>
+        @else
+            <div class="bg-green-100 text-green-700 text-center py-3 rounded-lg font-semibold">
+                Sudah Dibeli
+            </div>
+        @endif
 
         </div>
 

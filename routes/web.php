@@ -9,6 +9,7 @@ use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\CustomerController;
 use App\Http\Controllers\GudangController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\PaymentController;
 
 
 // Halaman awal
@@ -16,6 +17,12 @@ Route::get('/', function () {
     return view('welcome');
 });
 
+Route::get('/test-midtrans', function () {
+    return config('midtrans');
+});
+
+
+    
 // Route untuk Customer (default user)
 Route::middleware(['auth', 'role:customer'])->group(function () {
 
@@ -40,9 +47,15 @@ Route::middleware(['auth', 'role:customer'])->group(function () {
         ->name('customer.list-rak.show');
 
     // Bayar rak
-    Route::get('/customer/bayar/{id}', function ($id) {
-        return "Halaman pembayaran rak ID: " . $id;
-    })->name('customer.bayar');
+    Route::get('/customer/bayar/{id}', [PaymentController::class, 'bayar'])
+    ->name('customer.payment.checkout');
+    //callback
+    Route::post('/midtrans/callback', [PaymentController::class, 'callback'])->name('midtrans.callback');
+    Route::get('/customer/list-rak/rak', [RakController::class, 'rakDibeli'])
+    ->name('customer.list-rak.rak');
+
+
+
 });
 
 
