@@ -7,6 +7,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
+use Illuminate\Support\Facades\Schema;
 
 class ProfileAdminController extends Controller
 {
@@ -83,27 +84,73 @@ class ProfileAdminController extends Controller
             ->with('success', 'Password berhasil diubah!');
     }
 
-    public function uploadPhoto(Request $request): RedirectResponse
+    /**
+     * Upload user's profile photo.
+     */
+    public function uploadPhoto(Request $request)
     {
         $request->validate([
-            'foto' => ['required', 'image', 'mimes:jpg,jpeg,png', 'max:2048'],
+            'photo' => ['required', 'image', 'mimes:jpg,jpeg,png', 'max:2048'],
+        ], [
+            'photo.required' => 'Foto wajib dipilih',
+            'photo.image' => 'File harus berupa gambar',
+            'photo.mimes' => 'Format gambar harus JPG, JPEG, atau PNG',
+            'photo.max' => 'Ukuran gambar maksimal 2MB',
         ]);
 
-        $user = $request->user();
+        try {
+            $user = Auth::user();
+            
+            // Cek kolom foto di database - gunakan 'foto' karena biasanya di Indonesia menggunakan 'foto'
+            $photoColumn = 'foto';
 
-        // Delete old photo if exists
-        if ($user->foto && \Storage::disk('public')->exists($user->foto)) {
-            \Storage::disk('public')->delete($user->foto);
+            // Jika kolom foto tidak ada, coba kolom lain
+            if (!Schema::hasColumn('users', $photoColumn)) {
+                // Coba kolom alternatif
+                $possibleColumns = ['photo', 'profile_photo', 'profile_photo_path', 'avatar', 'gambar'];
+                foreach ($possibleColumns as $column) {
+                    if (Schema::hasColumn('users', $column)) {
+                        $photoColumn = $column;
+                        break;
+                    }
+                }
+                
+                // Jika tidak ada kolom foto sama sekali, buat kolom baru
+                if (!Schema::hasColumn('users', $photoColumn)) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Kolom untuk foto profile tidak ditemukan. Silakan tambahkan kolom "foto" di tabel users.'
+                    ], 500);
+                }
+            }
+
+            // Delete old photo if exists
+            if ($user->$photoColumn && Storage::disk('public')->exists($user->$photoColumn)) {
+                Storage::disk('public')->delete($user->$photoColumn);
+            }
+
+            // Store new photo in profiles-photos directory
+            $file = $request->file('photo');
+            $filename = 'admin_' . $user->id . '_' . time() . '.' . $file->getClientOriginalExtension();
+            $path = $file->storeAs('profiles-photos', $filename, 'public');
+            
+            // Update user photo
+            $user->update([
+                $photoColumn => $path
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'photo_url' => Storage::url($path) . '?t=' . time(), // Tambahkan timestamp untuk cache busting
+                'message' => 'Foto profile berhasil diupload!'
+            ]);
+
+        } catch (\Exception $e) {
+            \Log::error('Upload photo error: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Terjadi kesalahan saat mengupload foto: ' . $e->getMessage()
+            ], 500);
         }
-
-        // Store new photo with unique name
-        $file = $request->file('foto');
-        $filename = time() . '_' . $user->id . '.' . $file->getClientOriginalExtension();
-        $path = $file->storeAs('profile-photos', $filename, 'public');
-        
-        $user->foto = $path;
-        $user->save();
-
-        return redirect()->route('adin.profile.index')->with('success', 'Foto profile berhasil diperbarui!');
     }
 }
