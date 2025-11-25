@@ -280,14 +280,14 @@
                         </div>
                         <p class="text-gray-700 text-sm font-medium">Dimensi (P × L × T)</p>
                     </div>
-<p class="text-gray-800 font-bold text-lg">
-    {{ $rak->panjang }} × {{ $rak->lebar }} × {{ $rak->tinggi }} m
-    <span class="text-sm font-normal text-gray-500">
-        ({{ number_format($rak->panjang * $rak->lebar * $rak->tinggi, 0, ',', '.') }} m³)
-    </span>
-</p>
+                    <p class="text-gray-800 font-bold text-lg">
+                        {{ $rak->panjang }} × {{ $rak->lebar }} × {{ $rak->tinggi }} m
+                        <span class="text-sm font-normal text-gray-500">
+                            ({{ number_format($rak->panjang * $rak->lebar * $rak->tinggi, 0, ',', '.') }} m³)
+                        </span>
+                    </p>
                 </div>
-
+                
                 <div class="bg-gradient-to-br from-orange-50 to-orange-100 p-5 rounded-2xl border border-orange-200 hover:shadow-md transition-all duration-300">
                     <div class="flex items-center space-x-3 mb-3">
                         <div class="bg-orange-500 p-2 rounded-lg">
