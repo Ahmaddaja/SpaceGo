@@ -67,4 +67,12 @@ class Rak extends Model
     {
         return $this->belongsTo(Gudang::class, 'lokasi_gudang', 'nama_gudang');
     }
+
+    /**
+     * Relasi ke Transactions
+     */
+    public function transactions()
+    {
+        return $this->hasMany(Transaction::class);
+    }
 }

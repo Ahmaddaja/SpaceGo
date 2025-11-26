@@ -30,7 +30,7 @@ Route::middleware(['auth', 'role:customer'])->group(function () {
     Route::get('/dashboard', function () {
         return view('customer.index');
     })->name('dashboard');
-    
+
     // Profile
     Route::get('/customer/profile', [ProfileController::class, 'index'])->name('customer.profile.index');
     Route::put('/customer/profile', [ProfileController::class, 'updateProfile'])->name('customer.profile.update');
@@ -40,8 +40,8 @@ Route::middleware(['auth', 'role:customer'])->group(function () {
     Route::get('/customer/rak', [CustomerController::class, 'listRak'])
         ->name('customer.list-rak.list-rak');
     Route::get('/rak-dibeli', [RakController::class, 'rakDibeli'])->name('customer.list-rak.rak');
-     Route::get('/rak-dibeli/{id}', [RakController::class, 'detailRak'])->name('customer.list-rak.detail');
-        
+    Route::get('/rak-dibeli/{id}', [RakController::class, 'detailRak'])->name('customer.list-rak.detail');
+
     Route::get('/customer/rak/{id}', [CustomerController::class, 'showRak'])
         ->name('customer.list-rak.show');
 
@@ -52,30 +52,42 @@ Route::middleware(['auth', 'role:customer'])->group(function () {
     // Route payment yang sudah ada
     Route::get('/customer/bayar/{id}', [PaymentController::class, 'bayar'])
         ->name('customer.payment.checkout');
-    
+
     //callback
     Route::post('/midtrans/callback', [PaymentController::class, 'callback'])->name('midtrans.callback');
-    
+
     Route::get('/customer/list-rak/rak', [RakController::class, 'rakDibeli'])
         ->name('customer.list-rak.rak');
+
+    // Route untuk halaman checkout/pembayaran
+    Route::get('/payment/checkout/{id}', [PaymentController::class, 'bayar'])
+        ->name('customer.payment.checkout');
+
+    // Route untuk update status dari frontend (setelah bayar di popup)
+    Route::post('/payment/update-status', [PaymentController::class, 'updateStatus'])
+        ->name('payment.update-status');
 });
+
+// Route untuk callback dari Midtrans (tidak perlu auth)
+Route::post('/payment/callback', [PaymentController::class, 'callback'])
+    ->name('payment.callback');
 
 // Route khusus Admin
 Route::middleware(['auth', 'role:admin'])->group(function () {
     Route::get('/admin/dashboard', [DashboardController::class, 'index'])
         ->name('admin.dashboard');
     Route::resource('raks', RakController::class);
-    
+
     // Profile Admin Routes - DIUPDATE DENGAN ROUTE UPLOAD PHOTO
     Route::prefix('admin/profile')->group(function () {
         Route::get('/', [ProfileAdminController::class, 'index'])->name('admin.profile.index');
         Route::put('/', [ProfileAdminController::class, 'update'])->name('admin.profile.update');
         Route::put('/password', [ProfileAdminController::class, 'updatePassword'])->name('admin.profile.updatePassword');
-        
+
         // Tambahkan route untuk foto profil - TAMBAHKAN INI
         Route::post('/upload-photo', [ProfileAdminController::class, 'uploadPhoto'])->name('admin.profile.upload-photo');
     });
-    
+
     Route::delete('/notif/{id}', [NotificationController::class, 'delete'])->name('notif.delete');
     Route::resource('gudangs', GudangController::class);
     Route::get('/customers', [CustomerController::class, 'index'])
