@@ -105,7 +105,45 @@ Route::middleware(['auth', 'role:admin'])->group(function () {
         Route::post('/upload-photo', [ProfileAdminController::class, 'uploadPhoto'])->name('admin.profile.upload-photo');
     });
 
-    Route::delete('/notif/{id}', [NotificationController::class, 'delete'])->name('notif.delete');
+// routes/web.php
+Route::prefix('notifications')->group(function () {
+    Route::get('/', [NotificationController::class, 'index'])->name('notifications.index');
+    Route::get('/notifications/check-updates', function() {
+    $newUsersCount = \App\Models\User::where('created_at', '>=', now()->subMinutes(5))->count();
+    $newTransactionsCount = \App\Models\Transaction::where('created_at', '>=', now()->subMinutes(5))->count();
+    $newNotificationsCount = \App\Models\UserNotification::where('created_at', '>=', now()->subMinutes(5))->count();
+    
+    return response()->json([
+        'has_new' => ($newUsersCount + $newTransactionsCount + $newNotificationsCount) > 0,
+        'unread_count' => \App\Models\UserNotification::where('is_read', false)->count(),
+        'new_users' => $newUsersCount,
+        'new_transactions' => $newTransactionsCount
+    ]);
+});
+// routes/api.php
+Route::get('/transactions/check-new', function() {
+    $newTransactionsCount = \App\Models\Transaction::where('created_at', '>=', now()->subMinutes(5))->count();
+    $latestTransaction = \App\Models\Transaction::with('user')
+                            ->where('created_at', '>=', now()->subMinutes(5))
+                            ->latest()
+                            ->first();
+    
+    return response()->json([
+        'new_transactions_count' => $newTransactionsCount,
+        'latest_transaction' => $latestTransaction ? [
+            'order_id' => $latestTransaction->order_id,
+            'amount' => $latestTransaction->amount,
+            'user_name' => $latestTransaction->user->name ?? 'Unknown'
+        ] : null
+    ]);
+});
+    Route::post('/{id}/read', [NotificationController::class, 'markAsRead'])->name('notifications.read');
+    Route::post('/read-all', [NotificationController::class, 'markAllAsRead'])->name('notifications.read-all');
+    Route::delete('/{id}', [NotificationController::class, 'destroy'])->name('notifications.delete');
+    Route::delete('/category/{category}', [NotificationController::class, 'clearByCategory'])->name('notifications.clear-category');
+});
+
+Route::get('/api/notifications', [NotificationController::class, 'getNotifications']);
     Route::resource('gudangs', GudangController::class);
     Route::get('/customers', [CustomerController::class, 'index'])
         ->name('admin.pelanggan.pelanggan');

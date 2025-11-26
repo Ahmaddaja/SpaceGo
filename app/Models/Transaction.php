@@ -91,4 +91,44 @@ class Transaction extends Model
     {
         return $this->transaction_status === 'pending';
     }
+
+    // app/Models/Transaction.php
+public function getStatusBadgeColor()
+{
+    switch ($this->transaction_status) {
+        case 'settlement':
+        case 'success':
+            return 'success';
+        case 'pending':
+            return 'warning';
+        case 'deny':
+        case 'expire':
+        case 'cancel':
+            return 'danger';
+        case 'capture':
+            return 'info';
+        default:
+            return 'secondary';
+    }
+}
+
+// Method untuk mendapatkan icon berdasarkan status
+public function getStatusIcon()
+{
+    switch ($this->transaction_status) {
+        case 'settlement':
+        case 'success':
+            return 'fas fa-check-circle';
+        case 'pending':
+            return 'fas fa-clock';
+        case 'deny':
+        case 'expire':
+        case 'cancel':
+            return 'fas fa-times-circle';
+        case 'capture':
+            return 'fas fa-camera';
+        default:
+            return 'fas fa-question-circle';
+    }
+}
 }
