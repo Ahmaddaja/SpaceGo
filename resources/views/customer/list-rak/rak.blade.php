@@ -7,6 +7,8 @@
     .rak-card {
         transition: all 0.3s ease;
         border: 1px solid #e5e7eb;
+        position: relative;
+        overflow: hidden;
     }
     
     .rak-card:hover {
@@ -14,25 +16,37 @@
         box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
     }
     
-    .status-badge {
+    /* Ribbon Styles */
+    .status-ribbon {
+        position: absolute;
+        top: 20px;
+        right: -30px;
+        padding: 8px 40px;
         font-size: 0.75rem;
-        font-weight: 600;
-        padding: 0.25rem 0.75rem;
-        border-radius: 9999px;
-        backdrop-filter: blur(8px);
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        transform: rotate(45deg);
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        z-index: 10;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        min-width: 120px;
+        justify-content: center;
     }
     
-    .status-available {
+    .ribbon-available {
         background: linear-gradient(135deg, #10b981, #059669);
         color: white;
     }
     
-    .status-occupied {
+    .ribbon-occupied {
         background: linear-gradient(135deg, #ef4444, #dc2626);
         color: white;
     }
     
-    .status-maintenance {
+    .ribbon-maintenance {
         background: linear-gradient(135deg, #f59e0b, #d97706);
         color: white;
     }
@@ -41,6 +55,11 @@
         background: rgba(255, 255, 255, 0.95);
         color: #374151;
         border: 1px solid #e5e7eb;
+        font-size: 0.75rem;
+        font-weight: 600;
+        padding: 0.25rem 0.75rem;
+        border-radius: 9999px;
+        backdrop-filter: blur(8px);
     }
     
     .price-gradient {
@@ -150,6 +169,16 @@
         -webkit-text-fill-color: transparent;
         background-clip: text;
     }
+    
+    /* Ribbon icon animation */
+    .ribbon-icon {
+        animation: pulse 2s infinite;
+    }
+    
+    @keyframes pulse {
+        0%, 100% { transform: scale(1); }
+        50% { transform: scale(1.1); }
+    }
 </style>
 @endpush
 
@@ -172,16 +201,16 @@
             <!-- Stats Summary -->
             <div class="flex justify-center items-center space-x-6 mt-6">
                 <div class="flex items-center space-x-2 text-sm text-gray-500">
-    <div class="w-2 h-2 bg-green-500 rounded-full"></div>
-    <span>Total: <strong class="text-gray-700">
-        @php
-            $totalRak = \App\Models\CustomerHistory::where('customer_id', Auth::id())
-                ->where('activity_type', 'NEW_RENTAL')
-                ->count();
-        @endphp
-        {{ $totalRak }} rak
-    </strong></span>
-</div>
+                    <div class="w-2 h-2 bg-green-500 rounded-full"></div>
+                    <span>Total: <strong class="text-gray-700">
+                        @php
+                            $totalRak = \App\Models\CustomerHistory::where('customer_id', Auth::id())
+                                ->where('activity_type', 'NEW_RENTAL')
+                                ->count();
+                        @endphp
+                        {{ $totalRak }} rak
+                    </strong></span>
+                </div>
                 <div class="flex items-center space-x-2 text-sm text-gray-500">
                     <div class="w-2 h-2 bg-blue-500 rounded-full"></div>
                     <span>Aktif: <strong class="text-gray-700">{{ $raks->where('status', 'terisi')->count() }} rak</strong></span>
@@ -215,36 +244,34 @@
             @foreach($raks as $rak)
             <div class="rak-card bg-white rounded-2xl shadow-lg overflow-hidden">
                 
+                <!-- Status Ribbon -->
+                @if($rak->status == 'terisi')
+                <div class="status-ribbon ribbon-occupied">
+                    <i class="fas fa-box ribbon-icon"></i>
+                    <span>Terisi</span>
+                </div>
+                @elseif($rak->status == 'tersedia')
+                <div class="status-ribbon ribbon-available">
+                    <i class="fas fa-check ribbon-icon"></i>
+                    <span>Tersedia</span>
+                </div>
+                @else
+                <div class="status-ribbon ribbon-maintenance">
+                    <i class="fas fa-tools ribbon-icon"></i>
+                    <span>Maintenance</span>
+                </div>
+                @endif
+                
                 <!-- Image Section -->
                 <div class="relative">
                     <img src="{{ $rak->foto ? asset('storage/' . $rak->foto) : asset('images/default-rak.jpg') }}"
                          class="w-full h-48 object-cover"
                          alt="{{ $rak->nama_rak }}"
                          onerror="this.src='https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1000&q=80'">
-                    
-                    <!-- Status Badge -->
-                    <div class="absolute top-4 right-4">
-                        @if($rak->status == 'terisi')
-                        <span class="status-badge status-occupied flex items-center space-x-1">
-                            <i class="fas fa-box text-xs"></i>
-                            <span>Terisi</span>
-                        </span>
-                        @elseif($rak->status == 'tersedia')
-                        <span class="status-badge status-available flex items-center space-x-1">
-                            <i class="fas fa-check text-xs"></i>
-                            <span>Tersedia</span>
-                        </span>
-                        @else
-                        <span class="status-badge status-maintenance flex items-center space-x-1">
-                            <i class="fas fa-tools text-xs"></i>
-                            <span>Maintenance</span>
-                        </span>
-                        @endif
-                    </div>
 
                     <!-- Type Badge -->
                     <div class="absolute top-4 left-4">
-                        <span class="status-badge type-badge flex items-center space-x-1">
+                        <span class="type-badge flex items-center space-x-1">
                             <i class="fas fa-layer-group text-blue-500"></i>
                             <span>{{ $rak->jenis_rak }}</span>
                         </span>
@@ -372,6 +399,18 @@
             
             btn.addEventListener('mouseleave', function() {
                 this.style.transform = 'translateY(0)';
+            });
+        });
+
+        // Ribbon hover effect
+        const ribbons = document.querySelectorAll('.status-ribbon');
+        ribbons.forEach(ribbon => {
+            ribbon.addEventListener('mouseenter', function() {
+                this.style.transform = 'rotate(45deg) scale(1.05)';
+            });
+            
+            ribbon.addEventListener('mouseleave', function() {
+                this.style.transform = 'rotate(45deg)';
             });
         });
     });
