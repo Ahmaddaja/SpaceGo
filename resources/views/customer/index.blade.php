@@ -50,12 +50,12 @@
                         <span class="text-xs mt-2 font-medium">Rak Dibeli</span>
                     </a>
                     
-                    <a href="#" class="flex flex-col items-center text-gray-600 hover:text-blue-600 group transition-all duration-300">
-                        <div class="bg-gray-100 p-3 rounded-xl shadow-sm group-hover:bg-blue-100">
-                            <i class="fas fa-history"></i>
-                        </div>
-                        <span class="text-xs mt-2 font-medium">History</span>
-                    </a>
+                    <a href="{{ route('customer.history') }}" class="flex flex-col items-center text-gray-600 hover:text-blue-600 group transition-all duration-300">
+    <div class="bg-gray-100 p-3 rounded-xl shadow-sm group-hover:bg-blue-100">
+        <i class="fas fa-history"></i>
+    </div>
+    <span class="text-xs mt-2 font-medium">History</span>
+</a>
                     
                     <!-- Dropdown Profile -->
                     <div class="relative group">
