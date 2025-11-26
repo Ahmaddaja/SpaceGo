@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SPACEGO - Sewa Gudang</title>
+    <title>SPACEGO - Sewa Rak</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         html {
@@ -43,10 +43,10 @@
             <div class="grid md:grid-cols-2 gap-12 items-center">
                 <div>
                     <h1 class="text-5xl font-bold text-blue-600 mb-6 leading-tight">
-                        Sewa Gudang untuk Bisnis Anda
+                        Sewa Rak untuk Bisnis Anda
                     </h1>
                     <p class="text-xl text-gray-700 mb-8 leading-relaxed">
-                        Solusi penyimpanan yang aman, Fleksibel, dan Terjangkau. Kelola inventori Anda dengan mudah bersama SPACEGO.
+                        Solusi penyimpanan rak yang aman, Fleksibel, dan Terjangkau. Kelola inventori Anda dengan mudah bersama SPACEGO.
                     </p>
                     <a href="#kontak">
                         <button class="bg-blue-600 text-white px-8 py-4 rounded-lg text-lg hover:bg-blue-700 shadow-lg transition">
@@ -111,11 +111,11 @@
             </div>
             <div>
                 <div class="text-4xl font-bold text-blue-600 mb-2">25+</div>
-                <div class="text-gray-600">Lokasi Gudang</div>
+                <div class="text-gray-600">Lokasi Rak</div>
             </div>
             <div>
-                <div class="text-4xl font-bold text-blue-600 mb-2">2,500 m²</div>
-                <div class="text-gray-600">Total Area</div>
+                <div class="text-4xl font-bold text-blue-600 mb-2">2,500+</div>
+                <div class="text-gray-600">Rak Tersedia</div>
             </div>
             <div>
                 <div class="text-4xl font-bold text-blue-600 mb-2">24/7</div>
@@ -129,17 +129,17 @@
         <div class="max-w-6xl mx-auto">
             <h2 class="text-4xl font-bold text-center mb-4 text-gray-800">Tentang SPACEGO</h2>
             <p class="text-center text-gray-600 mb-12 max-w-2xl mx-auto">
-                Solusi penyimpanan terpercaya untuk bisnis modern
+                Solusi penyimpanan rak terpercaya untuk bisnis modern
             </p>
             
             <div class="grid md:grid-cols-2 gap-12 items-center mb-16">
                 <div>
                     <h3 class="text-2xl font-bold text-gray-800 mb-4">Siapa Kami?</h3>
                     <p class="text-gray-600 mb-4 leading-relaxed">
-                        SPACEGO adalah perusahaan penyedia layanan sewa gudang dan ruang penyimpanan yang telah berpengalaman lebih dari 10 tahun dalam industri logistik dan warehousing. Kami memahami bahwa setiap bisnis memiliki kebutuhan penyimpanan yang unik.
+                        SPACEGO adalah perusahaan penyedia layanan sewa rak dan ruang penyimpanan yang telah berpengalaman lebih dari 10 tahun dalam industri logistik dan warehousing. Kami memahami bahwa setiap bisnis memiliki kebutuhan penyimpanan yang unik.
                     </p>
                     <p class="text-gray-600 mb-4 leading-relaxed">
-                        Dengan jaringan gudang yang tersebar di berbagai lokasi strategis, kami menawarkan solusi penyimpanan yang fleksibel, aman, dan efisien untuk berbagai jenis industri mulai dari e-commerce, retail, manufaktur, hingga distribusi.
+                        Dengan jaringan rak yang tersebar di berbagai lokasi strategis, kami menawarkan solusi penyimpanan yang fleksibel, aman, dan efisien untuk berbagai jenis industri mulai dari e-commerce, retail, manufaktur, hingga distribusi.
                     </p>
                 </div>
                 <div class="bg-white rounded-xl shadow-lg p-8">
@@ -163,7 +163,7 @@
                             </div>
                             <div>
                                 <h4 class="font-semibold text-gray-800 mb-1">Teknologi Modern</h4>
-                                <p class="text-gray-600 text-sm">Sistem manajemen gudang berbasis digital untuk kemudahan monitoring</p>
+                                <p class="text-gray-600 text-sm">Sistem manajemen rak berbasis digital untuk kemudahan monitoring</p>
                             </div>
                         </div>
                         <div class="flex items-start space-x-4">
@@ -187,7 +187,7 @@
                     <div class="bg-white/10 backdrop-blur rounded-xl p-6">
                         <h4 class="text-xl font-semibold mb-3">Visi</h4>
                         <p class="text-blue-50">
-                            Menjadi penyedia layanan gudang dan penyimpanan terdepan di Indonesia yang dikenal dengan inovasi, keandalan, dan kepuasan pelanggan.
+                            Menjadi penyedia layanan rak dan penyimpanan terdepan di Indonesia yang dikenal dengan inovasi, keandalan, dan kepuasan pelanggan.
                         </p>
                     </div>
                     <div class="bg-white/10 backdrop-blur rounded-xl p-6">
@@ -248,7 +248,7 @@
     <section id="kontak" class="py-16 px-6 bg-blue-600">
         <div class="max-w-6xl mx-auto text-center text-white">
             <h2 class="text-4xl font-bold mb-8">Hubungi Kami</h2>
-            <p class="text-blue-100 mb-8 text-lg">Siap membantu kebutuhan penyimpanan bisnis Anda</p>
+            <p class="text-blue-100 mb-8 text-lg">Siap membantu kebutuhan penyimpanan rak bisnis Anda</p>
             <div class="grid md:grid-cols-3 gap-8 mb-8">
                 <div class="bg-white/10 backdrop-blur rounded-lg p-6 hover:bg-white/20 transition">
                     <div class="font-semibold text-lg mb-2">Telepon</div>
