@@ -1,9 +1,12 @@
 <aside class="main-sidebar sidebar-dark-primary elevation-4 sidebar-theme">
-    <!-- Brand Logo -->
-    <a href="/" class="brand-link">
-        <i class="fas fa-building mr-2"></i>
+    <!-- Brand Logo - Diubah dari <a> menjadi <div> agar tidak bisa diklik -->
+    <div class="brand-link" style="cursor: default;">
+        <!-- Logo yang telah diganti dengan ukuran lebih besar -->
+        <svg class="brand-icon mr-2" fill="currentColor" width="30" height="30" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+            <path d="M3 10L12 3L21 10V21H3V10ZM5 12V19H19V12L12 7L5 12Z"/>
+        </svg>
         <span class="brand-text font-weight-light">{{ config('app.name') }}</span>
-    </a>
+    </div>
     <div class="sidebar">
         <nav class="mt-2">
             <ul class="nav nav-pills nav-sidebar flex-column" data-widget="treeview" role="menu" data-accordion="false">
