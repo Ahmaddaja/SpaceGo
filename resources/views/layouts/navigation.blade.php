@@ -34,18 +34,16 @@
                     @endif
                 </a>
                  
-                <!-- Rak Dibeli -->
-                <a href="{{ route('customer.list-rak.rak') }}" class="flex flex-col items-center group transition-all duration-300 {{ request()->routeIs('customer.list-rak.rak') ? 'text-blue-600' : 'text-gray-600 hover:text-blue-600' }}">
-                    <div class="p-3 rounded-xl shadow-sm transition-all duration-300 transform {{ request()->routeIs('customer.list-rak.rak') ? 'bg-blue-100 shadow-md scale-110' : 'bg-gray-100 group-hover:bg-blue-100 group-hover:shadow-md group-hover:scale-110' }}">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
-                        </svg>
-                    </div>
-                    <span class="text-xs mt-2 font-medium">Rak Dibeli</span>
-                    @if(request()->routeIs('customer.list-rak.rak'))
-                    <div class="absolute -top-1 -right-1 w-3 h-3 bg-blue-500 rounded-full animate-pulse"></div>
-                    @endif
-                </a>
+                <!-- Rak Anda -->
+<a href="{{ route('customer.list-rak.rak') }}" class="flex flex-col items-center group transition-all duration-300 {{ request()->routeIs('customer.list-rak.rak') ? 'text-blue-600' : 'text-gray-600 hover:text-blue-600' }}">
+    <div class="p-3 rounded-xl shadow-sm transition-all duration-300 transform {{ request()->routeIs('customer.list-rak.rak') ? 'bg-blue-100 shadow-md scale-110' : 'bg-gray-100 group-hover:bg-blue-100 group-hover:shadow-md group-hover:scale-110' }}">
+        <i class="fas fa-th-large w-5 h-5"></i>
+    </div>
+    <span class="text-xs mt-2 font-medium">Rak Anda</span>
+    @if(request()->routeIs('customer.list-rak.rak'))
+    <div class="absolute -top-1 -right-1 w-3 h-3 bg-blue-500 rounded-full animate-pulse"></div>
+    @endif
+</a>
                 
                 <!-- History -->
                 <a href="{{ route('customer.history') }}" class="flex flex-col items-center group transition-all duration-300 {{ request()->routeIs('customer.history') ? 'text-blue-600' : 'text-gray-600 hover:text-blue-600' }}">
