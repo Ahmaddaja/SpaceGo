@@ -33,7 +33,7 @@ class Rak extends Model
         'lebar' => 'decimal:2',
         'tinggi' => 'decimal:2',
         'jumlah_tingkat' => 'integer',
-        'harga_sewa_perbulan' => 'decimal:2',
+        'harga_sewa_perbulan' => 'integer',
         'is_active' => 'boolean',
     ];
 
