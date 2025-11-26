@@ -12,7 +12,7 @@ return new class extends Migration
             $table->id();
             $table->string('kode_rak')->unique();
             $table->string('nama_rak');
-            $table->enum('jenis_rak', ['Heavy Duty', 'Medium Duty', 'Light Duty', 'Pallet Rack', 'Cantilever']);
+            $table->enum('jenis_rak', ['Heavy Duty', 'Medium Duty', 'Light Duty', 'Cantilever']);
             $table->text('deskripsi')->nullable();
             $table->integer('kapasitas_berat'); // kg
             $table->decimal('panjang', 8, 2); // meter
