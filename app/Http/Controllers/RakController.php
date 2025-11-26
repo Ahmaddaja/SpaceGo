@@ -221,6 +221,23 @@ class RakController extends Controller
 
     public function destroy(Rak $rak)
     {
+        // Cek apakah rak sudah terisi (ada transaksi yang berhasil)
+        $hasActiveTransaction = Transaction::where('rak_id', $rak->id)
+            ->whereIn('transaction_status', ['capture', 'settlement'])
+            ->exists();
+
+        if ($hasActiveTransaction) {
+            return redirect()->route('raks.index')
+                ->with('error', 'Rak tidak dapat dihapus karena sedang terisi/disewa oleh customer!');
+        }
+
+        // Cek berdasarkan status rak
+        if ($rak->status === 'terisi') {
+            return redirect()->route('raks.index')
+                ->with('error', 'Rak tidak dapat dihapus karena statusnya masih terisi!');
+        }
+
+        // Hapus foto jika ada
         if ($rak->foto && Storage::disk('public')->exists($rak->foto)) {
             Storage::disk('public')->delete($rak->foto);
         }
