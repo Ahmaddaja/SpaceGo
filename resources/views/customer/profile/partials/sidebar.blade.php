@@ -25,7 +25,7 @@
             <div class="space-y-4 pt-4 border-t border-gray-200">
                 <div class="flex justify-between items-center">
                     <span class="text-gray-600 flex items-center">
-                        <i class="fas fa-calendar-alt mr-2 text-green-500"></i>Member Sejak
+                        <i class="fas fa-calendar-alt mr-2 text-green-500"></i>Penguna Sejak
                     </span>
                     <strong class="text-gray-800">{{ $user->created_at->format('d M Y') }}</strong>
                 </div>
