@@ -68,15 +68,15 @@
                         </button>
                         
                         <!-- Dropdown Menu -->
-                        <div class="absolute right-0 top-full mt-2 w-48 bg-white rounded-xl shadow-xl border border-gray-200 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 transform translate-y-2 group-hover:translate-y-0 z-50">
+                        <div class="absolute right-0 top-full mt-2 w-56 bg-white rounded-xl shadow-xl border border-gray-200 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 transform translate-y-2 group-hover:translate-y-0 z-50">
                             <div class="p-4 border-b border-gray-100">
                                 <div class="flex items-center space-x-3">
                                     <img src="{{ Auth::user()->foto ? asset('storage/' . Auth::user()->foto) : 'https://ui-avatars.com/api/?name=' . urlencode(Auth::user()->name) . '&size=40&background=4A90E2&color=fff' }}" 
                                          alt="Profile" 
                                          class="w-10 h-10 rounded-lg object-cover border-2 border-blue-500 shadow-sm">
-                                    <div>
-                                        <p class="text-sm font-semibold text-gray-800">{{ Auth::user()->name }}</p>
-                                        <p class="text-xs text-gray-500">{{ Auth::user()->email }}</p>
+                                    <div class="min-w-0 flex-1">
+                                        <p class="text-sm font-semibold text-gray-800 truncate">{{ Auth::user()->name }}</p>
+                                        <p class="text-xs text-gray-500 truncate">{{ Auth::user()->email }}</p>
                                     </div>
                                 </div>
                             </div>

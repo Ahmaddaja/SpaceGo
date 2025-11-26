@@ -67,30 +67,30 @@
                                  alt="Profile" 
                                  class="w-8 h-8 rounded-lg object-cover border-2 border-white shadow-sm">
                             <span class="text-sm font-medium text-gray-700 hidden md:block">{{ Auth::user()->name }}</span>
-                            <i class="fas fa-chevron-down text-gray-500 text-xs"></i>
+                            <i class="fas fa-chevron-down text-gray-500 text-xs transition-transform duration-300 group-hover:rotate-180"></i>
                         </button>
                         
                         <!-- Dropdown Menu -->
-                        <div class="absolute right-0 top-full mt-2 w-48 bg-white rounded-xl shadow-xl border border-gray-200 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 transform translate-y-2 group-hover:translate-y-0 z-50">
+                        <div class="absolute right-0 top-full mt-2 w-56 bg-white rounded-xl shadow-xl border border-gray-200 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 transform translate-y-2 group-hover:translate-y-0 z-50">
                             <div class="p-4 border-b border-gray-100">
                                 <div class="flex items-center space-x-3">
                                     <img src="{{ Auth::user()->foto ? asset('storage/' . Auth::user()->foto) : 'https://ui-avatars.com/api/?name=' . urlencode(Auth::user()->name) . '&size=40&background=4A90E2&color=fff' }}" 
                                          alt="Profile" 
-                                         class="w-10 h-10 rounded-lg object-cover border-2 border-blue-500 shadow-sm">
-                                    <div>
-                                        <p class="text-sm font-semibold text-gray-800">{{ Auth::user()->name }}</p>
-                                        <p class="text-xs text-gray-500">{{ Auth::user()->email }}</p>
+                                         class="w-10 h-10 rounded-lg object-cover border-2 border-blue-500 shadow-sm flex-shrink-0">
+                                    <div class="min-w-0 flex-1">
+                                        <p class="text-sm font-semibold text-gray-800 truncate">{{ Auth::user()->name }}</p>
+                                        <p class="text-xs text-gray-500 truncate">{{ Auth::user()->email }}</p>
                                     </div>
                                 </div>
                             </div>
                             <div class="p-2">
-                                <a href="{{ route('customer.profile.index') }}" class="flex items-center space-x-3 px-4 py-3 text-gray-700 hover:bg-blue-50 rounded-lg transition-all duration-300 text-sm font-medium mb-1">
+                                <a href="{{ route('customer.profile.index') }}" class="flex items-center space-x-3 px-4 py-3 text-gray-700 hover:bg-blue-50 rounded-lg transition-all duration-300 text-sm font-medium mb-1 hover:text-blue-600 hover:transform hover:translate-x-1">
                                     <i class="fas fa-user-edit text-blue-500"></i>
                                     <span>Edit Profile</span>
                                 </a>
                                 <form action="{{ route('logout') }}" method="POST">
                                     @csrf
-                                    <button type="submit" class="w-full flex items-center space-x-3 px-4 py-3 text-red-600 hover:bg-red-50 rounded-lg transition-all duration-300 text-sm font-medium">
+                                    <button type="submit" class="w-full flex items-center space-x-3 px-4 py-3 text-red-600 hover:bg-red-50 rounded-lg transition-all duration-300 text-sm font-medium hover:transform hover:translate-x-1">
                                         <i class="fas fa-sign-out-alt"></i>
                                         <span>Keluar</span>
                                     </button>
