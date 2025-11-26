@@ -33,7 +33,9 @@
                     <span class="text-gray-600 flex items-center">
                         <i class="fas fa-warehouse mr-2 text-purple-500"></i>Total Sewa
                     </span>
-                    <strong class="text-gray-800">0 Rak</strong>
+                    <strong class="text-gray-800">
+                        {{ \App\Models\CustomerHistory::where('customer_id', Auth::id())->where('activity_type', 'NEW_RENTAL')->count() }} Rak
+                    </strong>
                 </div>
             </div>
         </div>
