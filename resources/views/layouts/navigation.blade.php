@@ -48,51 +48,36 @@
                 </a>
                 
                 <!-- History -->
-                <!-- History - YANG DIUBAH -->
-<a href="{{ route('customer.history') }}" class="flex flex-col items-center group transition-all duration-300 {{ request()->routeIs('customer.history') ? 'text-blue-600' : 'text-gray-600 hover:text-blue-600' }}">
-    <div class="p-3 rounded-xl shadow-sm transition-all duration-300 transform {{ request()->routeIs('customer.history') ? 'bg-blue-100 shadow-md scale-110' : 'bg-gray-100 group-hover:bg-blue-100 group-hover:shadow-md group-hover:scale-110' }}">
-        <i class="fas fa-history"></i>
-    </div>
-    <span class="text-xs mt-2 font-medium">History</span>
-    @if(request()->routeIs('customer.history'))
-    <div class="absolute -top-1 -right-1 w-3 h-3 bg-blue-500 rounded-full animate-pulse"></div>
-    @endif
-</a>
+                <a href="{{ route('customer.history') }}" class="flex flex-col items-center group transition-all duration-300 {{ request()->routeIs('customer.history') ? 'text-blue-600' : 'text-gray-600 hover:text-blue-600' }}">
+                    <div class="p-3 rounded-xl shadow-sm transition-all duration-300 transform {{ request()->routeIs('customer.history') ? 'bg-blue-100 shadow-md scale-110' : 'bg-gray-100 group-hover:bg-blue-100 group-hover:shadow-md group-hover:scale-110' }}">
+                        <i class="fas fa-history"></i>
+                    </div>
+                    <span class="text-xs mt-2 font-medium">History</span>
+                    @if(request()->routeIs('customer.history'))
+                    <div class="absolute -top-1 -right-1 w-3 h-3 bg-blue-500 rounded-full animate-pulse"></div>
+                    @endif
+                </a>
                 
                 <!-- Dropdown Profile -->
-                <div class="relative group" x-data="{ open: false }">
-                    <button 
-                        @click="open = !open"
-                        class="flex items-center space-x-3 bg-gray-100 hover:bg-gray-200 rounded-xl px-4 py-2 transition-all duration-300 shadow-sm hover:shadow-md transform hover:scale-105"
-                    >
+                <div class="relative group">
+                    <button class="flex items-center space-x-3 bg-gray-100 hover:bg-gray-200 rounded-xl px-4 py-2 transition-all duration-300 shadow-sm hover:shadow-md transform hover:scale-105">
                         <img src="{{ Auth::user()->foto ? asset('storage/' . Auth::user()->foto) : 'https://ui-avatars.com/api/?name=' . urlencode(Auth::user()->name) . '&size=32&background=4A90E2&color=fff' }}" 
                              alt="Profile" 
                              class="w-8 h-8 rounded-lg object-cover border-2 border-white shadow-sm">
                         <span class="text-sm font-medium text-gray-700 hidden md:block">{{ Auth::user()->name }}</span>
-                        <i class="fas fa-chevron-down text-gray-500 text-xs transition-transform duration-300" :class="{ 'rotate-180': open }"></i>
+                        <i class="fas fa-chevron-down text-gray-500 text-xs transition-transform duration-300 group-hover:rotate-180"></i>
                     </button>
                     
                     <!-- Dropdown Menu -->
-                    <div 
-                        x-show="open"
-                        @click.outside="open = false"
-                        x-transition:enter="transition ease-out duration-300"
-                        x-transition:enter-start="opacity-0 transform -translate-y-2"
-                        x-transition:enter-end="opacity-100 transform translate-y-0"
-                        x-transition:leave="transition ease-in duration-200"
-                        x-transition:leave-start="opacity-100 transform translate-y-0"
-                        x-transition:leave-end="opacity-0 transform -translate-y-2"
-                        class="absolute right-0 top-full mt-2 w-48 bg-white rounded-xl shadow-xl border border-gray-200 z-50"
-                        style="display: none;"
-                    >
+                    <div class="absolute right-0 top-full mt-2 w-56 bg-white rounded-xl shadow-xl border border-gray-200 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 transform translate-y-2 group-hover:translate-y-0 z-50">
                         <div class="p-4 border-b border-gray-100">
                             <div class="flex items-center space-x-3">
                                 <img src="{{ Auth::user()->foto ? asset('storage/' . Auth::user()->foto) : 'https://ui-avatars.com/api/?name=' . urlencode(Auth::user()->name) . '&size=40&background=4A90E2&color=fff' }}" 
                                      alt="Profile" 
-                                     class="w-10 h-10 rounded-lg object-cover border-2 border-blue-500 shadow-sm">
-                                <div>
-                                    <p class="text-sm font-semibold text-gray-800">{{ Auth::user()->name }}</p>
-                                    <p class="text-xs text-gray-500">{{ Auth::user()->email }}</p>
+                                     class="w-10 h-10 rounded-lg object-cover border-2 border-blue-500 shadow-sm flex-shrink-0">
+                                <div class="min-w-0 flex-1">
+                                    <p class="text-sm font-semibold text-gray-800 truncate">{{ Auth::user()->name }}</p>
+                                    <p class="text-xs text-gray-500 truncate">{{ Auth::user()->email }}</p>
                                 </div>
                             </div>
                         </div>
