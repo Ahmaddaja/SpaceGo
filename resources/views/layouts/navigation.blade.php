@@ -3,7 +3,10 @@
         <div class="flex items-center justify-between">
             <div class="flex items-center space-x-4">
                 <div class="bg-gradient-to-r from-blue-600 to-purple-600 p-3 rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105">
-                    <i class="fas fa-warehouse text-white text-xl"></i>
+                    <!-- Logo yang telah diganti -->
+                    <svg class="w-6 h-6 text-white" fill="currentColor" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+                        <path d="M3 10L12 3L21 10V21H3V10ZM5 12V19H19V12L12 7L5 12Z"/>
+                    </svg>
                 </div>
                 <div>
                     <span class="text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">SPACEGO</span>
