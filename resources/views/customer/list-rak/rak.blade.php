@@ -318,9 +318,6 @@
                            class="flex-1 action-btn btn-detail text-center py-3 px-4 rounded-lg font-semibold text-sm">
                             <i class="fas fa-eye mr-2"></i> Detail Rak
                         </a>
-                        <button class="action-btn btn-history py-3 px-4 rounded-lg font-semibold text-sm">
-                            <i class="fas fa-history mr-2"></i> Riwayat
-                        </button>
                     </div>
                 </div>
             </div>
