@@ -11,6 +11,8 @@ use App\Models\Transaction;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Auth;
+// TAMBAHKAN INI - Import HistoryService
+use App\Services\HistoryService;
 
 class PaymentController extends Controller
 {
@@ -154,6 +156,27 @@ class PaymentController extends Controller
                 // Jika pembayaran sukses, update status rak
                 if (in_array($transactionStatus, ['capture', 'settlement'])) {
                     $this->handleSuccessPayment($transaction);
+                    
+                    // ===========================================
+                    // TAMBAHKAN LOG HISTORY PEMBAYARAN BERHASIL
+                    // ===========================================
+                    try {
+                        HistoryService::logPaymentSuccess(
+                            Auth::id(),
+                            $transaction->amount,
+                            $transaction->id,
+                            $paymentType ?? 'Midtrans',
+                            Auth::user()->name
+                        );
+                        
+                        Log::info('Payment history logged successfully', [
+                            'transaction_id' => $transaction->id,
+                            'customer_id' => Auth::id()
+                        ]);
+                    } catch (\Exception $historyError) {
+                        Log::error('Failed to log payment history: ' . $historyError->getMessage());
+                        // Jangan rollback transaksi utama hanya karena gagal log history
+                    }
                 }
 
                 DB::commit();
@@ -233,12 +256,73 @@ class PaymentController extends Controller
                 if ($transactionStatus == 'capture') {
                     if ($fraudStatus == 'accept') {
                         $this->handleSuccessPayment($transaction);
+                        
+                        // ===========================================
+                        // TAMBAHKAN LOG HISTORY DARI CALLBACK
+                        // ===========================================
+                        try {
+                            HistoryService::logPaymentSuccess(
+                                $transaction->user_id,
+                                $transaction->amount,
+                                $transaction->id,
+                                $paymentType ?? 'Midtrans',
+                                'System'
+                            );
+                            
+                            Log::info('Payment history logged from callback', [
+                                'transaction_id' => $transaction->id,
+                                'customer_id' => $transaction->user_id
+                            ]);
+                        } catch (\Exception $historyError) {
+                            Log::error('Failed to log payment history from callback: ' . $historyError->getMessage());
+                        }
                     }
                 } elseif ($transactionStatus == 'settlement') {
                     $this->handleSuccessPayment($transaction);
+                    
+                    // ===========================================
+                    // TAMBAHKAN LOG HISTORY DARI CALLBACK
+                    // ===========================================
+                    try {
+                        HistoryService::logPaymentSuccess(
+                            $transaction->user_id,
+                            $transaction->amount,
+                            $transaction->id,
+                            $paymentType ?? 'Midtrans',
+                            'System'
+                        );
+                        
+                        Log::info('Payment history logged from callback settlement', [
+                            'transaction_id' => $transaction->id,
+                            'customer_id' => $transaction->user_id
+                        ]);
+                    } catch (\Exception $historyError) {
+                        Log::error('Failed to log payment history from callback settlement: ' . $historyError->getMessage());
+                    }
                 } elseif (in_array($transactionStatus, ['deny', 'expire', 'cancel'])) {
                     Log::info('Payment Failed/Cancelled', ['order_id' => $orderId]);
                     // Bisa tambahkan logic untuk handle pembayaran gagal
+                    
+                    // ===========================================
+                    // TAMBAHKAN LOG HISTORY PEMBAYARAN GAGAL
+                    // ===========================================
+                    try {
+                        HistoryService::logPaymentFailed(
+                            $transaction->user_id,
+                            $transaction->amount,
+                            $transaction->id,
+                            $transactionStatus,
+                            'System'
+                        );
+                        
+                        Log::info('Failed payment history logged', [
+                            'transaction_id' => $transaction->id,
+                            'customer_id' => $transaction->user_id,
+                            'status' => $transactionStatus
+                        ]);
+                    } catch (\Exception $historyError) {
+                        Log::error('Failed to log failed payment history: ' . $historyError->getMessage());
+                    }
                 }
 
                 DB::commit();
@@ -275,6 +359,27 @@ class PaymentController extends Controller
                 'rak_name' => $rak->nama_rak,
                 'transaction_id' => $transaction->id
             ]);
+            
+            // ===========================================
+            // TAMBAHKAN LOG HISTORY SEWA RAK BARU
+            // ===========================================
+            try {
+                HistoryService::logNewRental(
+                    $transaction->user_id,
+                    $rak->kode_rak ?? $rak->nama_rak,
+                    30, // Default 30 hari (1 bulan)
+                    $transaction->amount,
+                    'System'
+                );
+                
+                Log::info('New rental history logged', [
+                    'transaction_id' => $transaction->id,
+                    'customer_id' => $transaction->user_id,
+                    'rak_id' => $rak->id
+                ]);
+            } catch (\Exception $historyError) {
+                Log::error('Failed to log new rental history: ' . $historyError->getMessage());
+            }
         }
 
         // TODO: Tambahkan logic tambahan seperti:

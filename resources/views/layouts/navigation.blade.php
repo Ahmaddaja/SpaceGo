@@ -48,12 +48,16 @@
                 </a>
                 
                 <!-- History -->
-                <a href="#" class="flex flex-col items-center text-gray-600 hover:text-blue-600 group transition-all duration-300">
-                    <div class="bg-gray-100 p-3 rounded-xl shadow-sm group-hover:bg-blue-100 group-hover:shadow-md transition-all duration-300 transform group-hover:scale-110">
-                        <i class="fas fa-history"></i>
-                    </div>
-                    <span class="text-xs mt-2 font-medium">History</span>
-                </a>
+                <!-- History - YANG DIUBAH -->
+<a href="{{ route('customer.history') }}" class="flex flex-col items-center group transition-all duration-300 {{ request()->routeIs('customer.history') ? 'text-blue-600' : 'text-gray-600 hover:text-blue-600' }}">
+    <div class="p-3 rounded-xl shadow-sm transition-all duration-300 transform {{ request()->routeIs('customer.history') ? 'bg-blue-100 shadow-md scale-110' : 'bg-gray-100 group-hover:bg-blue-100 group-hover:shadow-md group-hover:scale-110' }}">
+        <i class="fas fa-history"></i>
+    </div>
+    <span class="text-xs mt-2 font-medium">History</span>
+    @if(request()->routeIs('customer.history'))
+    <div class="absolute -top-1 -right-1 w-3 h-3 bg-blue-500 rounded-full animate-pulse"></div>
+    @endif
+</a>
                 
                 <!-- Dropdown Profile -->
                 <div class="relative group" x-data="{ open: false }">

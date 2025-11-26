@@ -10,6 +10,8 @@ use App\Http\Controllers\CustomerController;
 use App\Http\Controllers\GudangController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\PaymentController;
+// TAMBAHKAN INI - Import HistoryController
+use App\Http\Controllers\HistoryController;
 
 // Halaman awal
 Route::get('/', function () {
@@ -66,6 +68,21 @@ Route::middleware(['auth', 'role:customer'])->group(function () {
     // Route untuk update status dari frontend (setelah bayar di popup)
     Route::post('/payment/update-status', [PaymentController::class, 'updateStatus'])
         ->name('payment.update-status');
+
+    // ===========================================
+    // TAMBAHKAN ROUTE HISTORY CUSTOMER DI SINI
+    // ===========================================
+    Route::prefix('customer/history')->group(function () {
+        // Semua history aktivitas
+        Route::get('/', [HistoryController::class, 'index'])->name('customer.history');
+        
+        // History pembayaran khusus
+        Route::get('/payments', [HistoryController::class, 'paymentHistory'])->name('customer.history.payments');
+        
+        // API untuk get history JSON (jika diperlukan)
+        Route::get('/json', [HistoryController::class, 'getHistoryJson'])->name('customer.history.json');
+    });
+    // ===========================================
 });
 
 // Route untuk callback dari Midtrans (tidak perlu auth)
