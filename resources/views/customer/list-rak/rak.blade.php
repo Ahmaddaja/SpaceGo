@@ -342,7 +342,7 @@
                         </p>
                         <p class="text-green-600 text-2xl font-bold">
                             Rp {{ number_format($rak->harga_sewa_perbulan, 0, ',', '.') }}
-                            <span class="text-sm font-normal text-green-500">/bulan</span>
+                            <span class="text-sm font-normal text-green-500">/30 hari</span>
                         </p>
                     </div>
 
@@ -359,11 +359,72 @@
 
         </div>
 
-        <!-- PAGINATION -->
+        <!-- PAGINATION - MODIFIED SECTION -->
         @if($raks->hasPages())
         <div class="pagination-container mt-12 p-6">
-            <div class="flex justify-center">
-                {{ $raks->links() }}
+            <div class="flex items-center justify-between">
+                <div class="text-sm text-gray-700">
+                    Menampilkan 
+                    <span class="font-medium">{{ $raks->firstItem() }}</span> 
+                    sampai 
+                    <span class="font-medium">{{ $raks->lastItem() }}</span> 
+                    dari 
+                    <span class="font-medium">{{ $raks->total() }}</span> 
+                    rak
+                </div>
+                <div class="flex space-x-2">
+                    <!-- Previous Page -->
+                    @if ($raks->onFirstPage())
+                        <span class="px-3 py-2 bg-gray-100 text-gray-400 rounded-lg cursor-not-allowed">
+                            <i class="fas fa-chevron-left"></i>
+                        </span>
+                    @else
+                        <a href="{{ $raks->previousPageUrl() }}" class="px-3 py-2 bg-white text-gray-700 rounded-lg border border-gray-300 hover:bg-gray-50 transition duration-200">
+                            <i class="fas fa-chevron-left"></i>
+                        </a>
+                    @endif
+
+                    <!-- Page Numbers -->
+                    @php
+                        $current = $raks->currentPage();
+                        $last = $raks->lastPage();
+                        $start = max(1, $current - 2);
+                        $end = min($last, $current + 2);
+                    @endphp
+
+                    @if($start > 1)
+                        <a href="{{ $raks->url(1) }}" class="px-3 py-2 bg-white text-gray-700 rounded-lg border border-gray-300 hover:bg-gray-50 transition duration-200">1</a>
+                        @if($start > 2)
+                            <span class="px-3 py-2 text-gray-500">...</span>
+                        @endif
+                    @endif
+
+                    @for ($page = $start; $page <= $end; $page++)
+                        @if ($page == $current)
+                            <span class="px-3 py-2 bg-blue-600 text-white rounded-lg font-medium">{{ $page }}</span>
+                        @else
+                            <a href="{{ $raks->url($page) }}" class="px-3 py-2 bg-white text-gray-700 rounded-lg border border-gray-300 hover:bg-gray-50 transition duration-200">{{ $page }}</a>
+                        @endif
+                    @endfor
+
+                    @if($end < $last)
+                        @if($end < $last - 1)
+                            <span class="px-3 py-2 text-gray-500">...</span>
+                        @endif
+                        <a href="{{ $raks->url($last) }}" class="px-3 py-2 bg-white text-gray-700 rounded-lg border border-gray-300 hover:bg-gray-50 transition duration-200">{{ $last }}</a>
+                    @endif
+
+                    <!-- Next Page -->
+                    @if ($raks->hasMorePages())
+                        <a href="{{ $raks->nextPageUrl() }}" class="px-3 py-2 bg-white text-gray-700 rounded-lg border border-gray-300 hover:bg-gray-50 transition duration-200">
+                            <i class="fas fa-chevron-right"></i>
+                        </a>
+                    @else
+                        <span class="px-3 py-2 bg-gray-100 text-gray-400 rounded-lg cursor-not-allowed">
+                            <i class="fas fa-chevron-right"></i>
+                        </span>
+                    @endif
+                </div>
             </div>
         </div>
         @endif
