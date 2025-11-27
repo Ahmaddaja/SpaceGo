@@ -192,7 +192,7 @@
                 <i class="fas fa-boxes text-white text-2xl"></i>
             </div>
             <h1 class="text-4xl md:text-5xl font-bold text-gray-900 mb-4 gradient-text">
-                Rak Yang Sudah Dibeli
+                Rak Yang Sudah Disewa
             </h1>
             <p class="text-lg md:text-xl text-gray-600 max-w-2xl mx-auto leading-relaxed">
                 Kelola dan pantau semua rak penyimpanan yang telah Anda sewa dalam satu tempat

@@ -15,7 +15,7 @@ class HistoryController extends Controller
         
         $histories = CustomerHistory::where('customer_id', $customer->id)
             ->orderBy('created_at', 'desc')
-            ->paginate(20);
+            ->paginate(10); // Diubah dari 20 menjadi 10
 
         return view('customer.history.index', compact('histories'));
     }
@@ -28,7 +28,7 @@ class HistoryController extends Controller
         $payments = CustomerHistory::where('customer_id', $customer->id)
             ->whereIn('activity_type', ['PAYMENT_SUCCESS', 'PAYMENT_FAILED', 'RENTAL_PAYMENT'])
             ->orderBy('created_at', 'desc')
-            ->paginate(15);
+            ->paginate(10); // Diubah dari 15 menjadi 10
 
         return view('customer.history.payment', compact('payments'));
     }
@@ -40,7 +40,7 @@ class HistoryController extends Controller
         
         $histories = CustomerHistory::where('customer_id', $customer->id)
             ->orderBy('created_at', 'desc')
-            ->get()
+            ->get() // Tetap menggunakan get() untuk API agar tidak mengubah struktur response
             ->map(function ($history) {
                 return [
                     'id' => $history->id,
