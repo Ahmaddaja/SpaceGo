@@ -43,21 +43,12 @@
     <div class="p-6">
         <!-- KODE -->
         <div class="mb-4">
-            <p class="text-xs text-gray-500 uppercase tracking-wide mb-1">Kode Rak</p>
-            <h3 class="text-2xl font-bold text-blue-600">{{ $rak->kode_rak }}</h3>
+            <p class="text-xs text-gray-500 uppercase tracking-wide mb-1">Nama Rak</p>
+            <h3 class="text-2xl font-bold text-blue-600">{{ $rak->nama_rak }}</h3>
         </div>
 
         <!-- INFO -->
         <div class="space-y-4 text-sm mb-4">
-            <div class="flex items-start">
-                <div class="bg-blue-100 p-2 rounded-lg mr-3">
-                    <i class="fas fa-tag text-blue-600 text-sm"></i>
-                </div>
-                <div>
-                    <p class="text-gray-500 text-xs">Nama Rak</p>
-                    <p class="text-gray-800 font-semibold">{{ $rak->nama_rak }}</p>
-                </div>
-            </div>
 
             <div class="flex items-start">
                 <div class="bg-green-100 p-2 rounded-lg mr-3">
