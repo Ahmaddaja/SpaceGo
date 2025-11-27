@@ -1,4 +1,4 @@
-@extends('layouts.app')
+@extends('layouts.app', ['title' => 'Bayar Rak - SPACEGO'])
 
 @section('title', 'Bayar Rak - SPACEGO')
 
@@ -44,42 +44,202 @@
         .back-button:hover {
             transform: translateX(-5px);
         }
-
-        /* Loading overlay */
-        .loading-overlay {
-            display: none;
+        /* Modern Modal Styles */
+        .alert-modal {
             position: fixed;
             top: 0;
             left: 0;
             width: 100%;
             height: 100%;
             background: rgba(0, 0, 0, 0.5);
-            z-index: 9999;
+            display: flex;
             justify-content: center;
             align-items: center;
+            z-index: 10000;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s ease;
         }
 
-        .loading-overlay.active {
-            display: flex;
+        .alert-modal.show {
+            opacity: 1;
+            visibility: visible;
         }
 
-        .spinner {
-            border: 4px solid #f3f3f3;
-            border-top: 4px solid #3b82f6;
+        .alert-modal-content {
+            background: white;
+            border-radius: 20px;
+            padding: 0;
+            max-width: 400px;
+            width: 90%;
+            transform: scale(0.7) translateY(-50px);
+            opacity: 0;
+            transition: all 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+            overflow: hidden;
+            text-align: center;
+        }
+
+        .alert-modal.show .alert-modal-content {
+            transform: scale(1) translateY(0);
+            opacity: 1;
+        }
+
+        .alert-modal-header {
+            padding: 2rem 2rem 1rem;
+            background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+            color: white;
+        }
+
+        .alert-modal-body {
+            padding: 2rem;
+        }
+
+        .alert-modal-icon {
+            width: 80px;
+            height: 80px;
             border-radius: 50%;
-            width: 50px;
-            height: 50px;
-            animation: spin 1s linear infinite;
+            margin: 0 auto 1rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2rem;
+            background: rgba(255, 255, 255, 0.2);
+            backdrop-filter: blur(10px);
         }
 
-        @keyframes spin {
-            0% {
-                transform: rotate(0deg);
-            }
+        .alert-modal-title {
+            font-size: 1.5rem;
+            font-weight: bold;
+            margin-bottom: 0.5rem;
+        }
 
-            100% {
-                transform: rotate(360deg);
+        .alert-modal-message {
+            color: #6b7280;
+            line-height: 1.5;
+        }
+
+        .alert-modal-footer {
+            padding: 0 2rem 2rem;
+            display: flex;
+            gap: 1rem;
+        }
+
+        .alert-modal-button {
+            flex: 1;
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+        }
+
+        .alert-modal-button-primary {
+            background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+            color: white;
+        }
+
+        .alert-modal-button-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px -5px rgba(59, 130, 246, 0.4);
+        }
+
+        .alert-modal-button-secondary {
+            background: #f3f4f6;
+            color: #374151;
+        }
+
+        .alert-modal-button-secondary:hover {
+            background: #e5e7eb;
+        }
+
+        .alert-countdown {
+            margin-top: 1rem;
+            font-size: 0.875rem;
+            color: #9ca3af;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+        }
+
+        .countdown-number {
+            background: #3b82f6;
+            color: white;
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.75rem;
+            font-weight: bold;
+            animation: pulse 1s infinite;
+        }
+
+        /* Success Theme */
+        .alert-modal-success .alert-modal-header {
+            background: linear-gradient(135deg, #10b981, #059669);
+        }
+
+        .alert-modal-success .alert-modal-button-primary {
+            background: linear-gradient(135deg, #10b981, #059669);
+        }
+
+        /* Error Theme */
+        .alert-modal-error .alert-modal-header {
+            background: linear-gradient(135deg, #ef4444, #dc2626);
+        }
+
+        .alert-modal-error .alert-modal-button-primary {
+            background: linear-gradient(135deg, #ef4444, #dc2626);
+        }
+
+        /* Warning Theme */
+        .alert-modal-warning .alert-modal-header {
+            background: linear-gradient(135deg, #f59e0b, #d97706);
+        }
+
+        .alert-modal-warning .alert-modal-button-primary {
+            background: linear-gradient(135deg, #f59e0b, #d97706);
+        }
+
+        /* Info Theme */
+        .alert-modal-info .alert-modal-header {
+            background: linear-gradient(135deg, #3b82f6, #2563eb);
+        }
+
+        .alert-modal-info .alert-modal-button-primary {
+            background: linear-gradient(135deg, #3b82f6, #2563eb);
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+        }
+
+        @keyframes bounce {
+            0%, 20%, 53%, 80%, 100% {
+                transform: translate3d(0,0,0);
             }
+            40%, 43% {
+                transform: translate3d(0,-8px,0);
+            }
+            70% {
+                transform: translate3d(0,-4px,0);
+            }
+            90% {
+                transform: translate3d(0,-2px,0);
+            }
+        }
+
+        .alert-modal-icon {
+            animation: bounce 1s ease infinite;
         }
     </style>
 @endpush
@@ -88,111 +248,29 @@
     <div class="py-12">
         <div class="max-w-4xl mx-auto sm:px-6 lg:px-8">
             <!-- Back Button -->
-            <a href="{{ route('customer.list-rak.list-rak') }}"
-                class="inline-flex items-center text-blue-600 hover:text-blue-800 mb-8 transition-all duration-300 back-button group">
-                <i class="fas fa-arrow-left mr-3 group-hover:-translate-x-1 transition-transform"></i>
-                Kembali ke Daftar Rak
-            </a>
-
+            @include('customer.payment.partials.back-button')
+            
             <!-- Payment Card -->
             <div class="bg-white rounded-2xl shadow-xl overflow-hidden border border-gray-100 payment-card">
                 <!-- Header with Gradient -->
-                <div class="gradient-header p-8 text-white">
-                    <div class="flex items-center mb-4">
-                        <div class="bg-white/20 p-4 rounded-2xl mr-6 backdrop-blur-sm">
-                            <i class="fas fa-credit-card text-2xl"></i>
-                        </div>
-                        <div>
-                            <h1 class="text-3xl font-bold">Pembayaran Sewa Rak</h1>
-                            <p class="text-blue-100 mt-2 text-lg">Selesaikan pembayaran Anda dengan mudah dan aman</p>
-                        </div>
-                    </div>
-                </div>
-
+                @include('customer.payment.partials.payment-header')
+                
                 <!-- Payment Details -->
                 <div class="p-8">
                     <!-- Rack Info -->
-                    <div
-                        class="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl p-6 mb-8 border border-blue-100 shadow-sm">
-                        <div class="flex items-start justify-between">
-                            <div class="flex items-start space-x-4">
-                                <div
-                                    class="bg-gradient-to-r from-blue-600 to-purple-600 text-white p-4 rounded-xl shadow-md">
-                                    <i class="fas fa-pallet text-xl"></i>
-                                </div>
-                                <div>
-                                    <p class="text-sm text-gray-600 font-medium mb-1">Nama Rak</p>
-                                    <h2 class="text-2xl font-bold text-gray-800">{{ $rak->nama_rak }}</h2>
-                                    <p class="text-gray-600 mt-2 flex items-center">
-                                        <i class="fas fa-map-marker-alt text-blue-500 mr-2"></i>
-                                        Lokasi: {{ $rak->lokasi_gudang ?? 'Gudang Utama' }}
-                                    </p>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
+                    @include('customer.payment.partials.rack-info', ['rak' => $rak])
+                    
                     <!-- Price Breakdown -->
-                    <div class="price-breakdown rounded-xl p-6 mb-8 border border-gray-200">
-                        <h3 class="text-lg font-semibold text-gray-800 mb-4 flex items-center">
-                            <i class="fas fa-receipt text-blue-600 mr-3"></i>
-                            Rincian Pembayaran
-                        </h3>
-
-                        <div class="space-y-4">
-                            <div class="flex justify-between items-center py-3 border-b border-gray-200">
-                                <span class="text-gray-600 flex items-center">
-                                    <i class="fas fa-calendar-alt text-blue-500 mr-2"></i>
-                                    Sewa per Bulan
-                                </span>
-                                <span class="font-semibold text-gray-800">Rp
-                                    {{ number_format($rak->harga_sewa_perbulan, 0, ',', '.') }}</span>
-                            </div>
-
-                            <div class="flex justify-between items-center py-3 border-b border-gray-200">
-                                <span class="text-gray-600 flex items-center">
-                                    <i class="fas fa-cog text-green-500 mr-2"></i>
-                                    Biaya Admin
-                                </span>
-                                <span class="font-semibold text-green-600">Gratis</span>
-                            </div>
-
-                            <div class="flex justify-between items-center pt-4">
-                                <span class="text-xl font-bold text-gray-800 flex items-center">
-                                    <i class="fas fa-tag text-purple-600 mr-2"></i>
-                                    Total Pembayaran
-                                </span>
-                                <span class="text-2xl font-bold text-blue-600">Rp
-                                    {{ number_format($rak->harga_sewa_perbulan, 0, ',', '.') }}</span>
-                            </div>
-                        </div>
-                    </div>
-
+                    @include('customer.payment.partials.price-breakdown', ['rak' => $rak])
+                    
                     <!-- Payment Methods Info -->
-                    <div class="bg-blue-50 border border-blue-200 rounded-xl p-6 mb-8">
-                        <div class="flex items-start">
-                            <i class="fas fa-info-circle text-blue-600 text-lg mr-4 mt-1"></i>
-                            <div>
-                                <p class="font-semibold text-blue-900 mb-2 text-lg">Metode Pembayaran Tersedia</p>
-                                <p class="text-blue-700">Transfer Bank, Kartu Kredit, E-Wallet, Virtual Account, dan lainnya
-                                    melalui Midtrans</p>
-                            </div>
-                        </div>
-                    </div>
-
+                    @include('customer.payment.partials.payment-methods-info')
+                    
                     <!-- Payment Button -->
-                    <button id="pay-button"
-                        class="w-full pay-button text-white py-4 rounded-xl font-bold text-lg transition-all duration-300 shadow-lg flex items-center justify-center group">
-                        <i class="fas fa-lock mr-3 group-hover:scale-110 transition-transform"></i>
-                        Bayar Sekarang
-                        <i class="fas fa-arrow-right ml-3 group-hover:translate-x-1 transition-transform"></i>
-                    </button>
-
+                    @include('customer.payment.partials.payment-button')
+                    
                     <!-- Security Info -->
-                    <div class="mt-6 flex items-center justify-center text-sm text-gray-500">
-                        <i class="fas fa-shield-alt text-green-600 mr-2"></i>
-                        Pembayaran Anda aman dan terenkripsi
-                    </div>
+                    @include('customer.payment.partials.security-info')
                 </div>
             </div>
 
@@ -204,32 +282,166 @@
     </div>
 
     <!-- Loading Overlay -->
-    <div id="loading-overlay" class="loading-overlay">
-        <div class="text-center">
-            <div class="spinner mx-auto mb-4"></div>
-            <p class="text-white text-lg font-semibold">Memproses pembayaran...</p>
-        </div>
-    </div>
-
+    @include('customer.payment.partials.loading-overlay')
+    
     <!-- WhatsApp Button -->
     @include('customer.payment.partials.whatsapp-button')
+    
+    <!-- Alert Container -->
+    @include('customer.payment.partials.alert-container')
 @endsection
 
 @push('scripts')
-    <script src="https://app.sandbox.midtrans.com/snap/snap.js" data-client-key="{{ config('midtrans.client_key') }}">
-    </script>
+    <script src="https://app.sandbox.midtrans.com/snap/snap.js" data-client-key="{{ config('midtrans.client_key') }}"></script>
     <script>
         const payButton = document.getElementById('pay-button');
         const loadingOverlay = document.getElementById('loading-overlay');
+        const alertContainer = document.getElementById('alert-container');
+
+        // Fungsi untuk menampilkan modal alert
+        function showAlert(message, type = 'info', autoRedirect = false, redirectUrl = null) {
+            const alertTypes = {
+                success: {
+                    icon: 'fas fa-check-circle',
+                    class: 'alert-modal-success',
+                    title: 'Sukses!',
+                    buttonText: 'Lanjutkan'
+                },
+                error: {
+                    icon: 'fas fa-exclamation-triangle',
+                    class: 'alert-modal-error',
+                    title: 'Error!',
+                    buttonText: 'Coba Lagi'
+                },
+                warning: {
+                    icon: 'fas fa-bolt',
+                    class: 'alert-modal-warning',
+                    title: 'Peringatan!',
+                    buttonText: 'Mengerti'
+                },
+                info: {
+                    icon: 'fas fa-info-circle',
+                    class: 'alert-modal-info',
+                    title: 'Informasi',
+                    buttonText: 'OK'
+                }
+            };
+
+            const alertConfig = alertTypes[type] || alertTypes.info;
+            const alertId = 'alert-' + Date.now();
+            
+            const alertHTML = `
+                <div id="${alertId}" class="alert-modal ${alertConfig.class}">
+                    <div class="alert-modal-content">
+                        <div class="alert-modal-header">
+                            <div class="alert-modal-icon">
+                                <i class="${alertConfig.icon}"></i>
+                            </div>
+                            <div class="alert-modal-title">${alertConfig.title}</div>
+                        </div>
+                        <div class="alert-modal-body">
+                            <div class="alert-modal-message">${message}</div>
+                            ${autoRedirect ? `
+                                <div class="alert-countdown">
+                                    <i class="fas fa-clock"></i>
+                                    Akan dialihkan dalam 
+                                    <span class="countdown-number" id="countdown-${alertId}">5</span> 
+                                    detik
+                                </div>
+                            ` : ''}
+                        </div>
+                        <div class="alert-modal-footer">
+                            <button onclick="closeAlert('${alertId}')" class="alert-modal-button alert-modal-button-secondary">
+                                <i class="fas fa-times mr-2"></i>
+                                Tutup
+                            </button>
+                            <button onclick="handleAlertAction('${alertId}', ${autoRedirect}, '${redirectUrl}')" 
+                                    class="alert-modal-button alert-modal-button-primary">
+                                <i class="fas fa-check mr-2"></i>
+                                ${alertConfig.buttonText}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            alertContainer.insertAdjacentHTML('beforeend', alertHTML);
+            
+            const alertElement = document.getElementById(alertId);
+            
+            // Show modal
+            setTimeout(() => {
+                alertElement.classList.add('show');
+            }, 100);
+
+            // Auto redirect countdown
+            if (autoRedirect) {
+                startCountdown(alertId, redirectUrl);
+            }
+
+            return alertId;
+        }
+
+        // Fungsi countdown
+        function startCountdown(alertId, redirectUrl) {
+            let countdown = 5;
+            const countdownElement = document.getElementById(`countdown-${alertId}`);
+            const countdownInterval = setInterval(() => {
+                countdown--;
+                if (countdownElement) {
+                    countdownElement.textContent = countdown;
+                }
+                
+                if (countdown <= 0) {
+                    clearInterval(countdownInterval);
+                    handleAlertAction(alertId, true, redirectUrl);
+                }
+            }, 1000);
+
+            // Store interval ID for cleanup
+            const alertElement = document.getElementById(alertId);
+            alertElement.dataset.countdownInterval = countdownInterval;
+        }
+
+        // Fungsi untuk handle tombol action
+        function handleAlertAction(alertId, autoRedirect = false, redirectUrl = null) {
+            closeAlert(alertId);
+            
+            if (autoRedirect && redirectUrl) {
+                setTimeout(() => {
+                    window.location.href = redirectUrl;
+                }, 300);
+            }
+        }
+
+        // Fungsi untuk menutup alert
+        function closeAlert(alertId) {
+            const alertElement = document.getElementById(alertId);
+            if (!alertElement) return;
+
+            // Clear countdown interval
+            if (alertElement.dataset.countdownInterval) {
+                clearInterval(alertElement.dataset.countdownInterval);
+            }
+
+            // Close animation
+            alertElement.classList.remove('show');
+            
+            setTimeout(() => {
+                if (alertElement.parentNode) {
+                    alertElement.parentNode.removeChild(alertElement);
+                }
+            }, 400);
+        }
 
         // Fungsi untuk reset button
         function resetButton() {
             payButton.disabled = false;
             payButton.innerHTML = `
-            <i class="fas fa-lock mr-3"></i>
-            Bayar Sekarang
-            <i class="fas fa-arrow-right ml-3"></i>
-        `;
+                <i class="fas fa-lock mr-3"></i>
+                Bayar Sekarang
+                <i class="fas fa-arrow-right ml-3"></i>
+            `;
         }
 
         // Fungsi untuk update status ke server
@@ -253,19 +465,29 @@
                     loadingOverlay.classList.remove('active');
 
                     if (data.success) {
-                        alert("✅ Pembayaran berhasil! Terima kasih telah melakukan pembayaran.");
-                        window.location.href = "{{ route('customer.list-rak.rak') }}";
+                        showAlert(
+                            'Pembayaran berhasil! Terima kasih telah melakukan pembayaran. Anda akan dialihkan ke halaman rak.', 
+                            'success', 
+                            true, 
+                            "{{ route('customer.list-rak.rak') }}"
+                        );
                     } else {
-                        alert("⚠️ Pembayaran berhasil tapi gagal update status. Silakan hubungi admin.");
+                        showAlert(
+                            'Pembayaran berhasil tapi gagal update status. Silakan hubungi admin untuk konfirmasi.', 
+                            'warning'
+                        );
                         console.error('Update status failed:', data.message);
-                        window.location.href = "{{ route('customer.list-rak.rak') }}";
                     }
                 })
                 .catch(error => {
                     loadingOverlay.classList.remove('active');
                     console.error('Error updating status:', error);
-                    alert("✅ Pembayaran berhasil! Redirect ke halaman rak...");
-                    window.location.href = "{{ route('customer.list-rak.rak') }}";
+                    showAlert(
+                        'Pembayaran berhasil! Terima kasih telah melakukan pembayaran.', 
+                        'success', 
+                        true, 
+                        "{{ route('customer.list-rak.rak') }}"
+                    );
                 });
         }
 
@@ -274,9 +496,9 @@
             // Disable button dan tampilkan loading
             payButton.disabled = true;
             payButton.innerHTML = `
-            <i class="fas fa-spinner fa-spin mr-3"></i>
-            Memproses Pembayaran...
-        `;
+                <i class="fas fa-spinner fa-spin mr-3"></i>
+                Memproses Pembayaran...
+            `;
 
             // Buka popup Midtrans
             snap.pay('{{ $snapToken }}', {
@@ -287,22 +509,48 @@
 
                 onPending: function(result) {
                     console.log('Payment Pending:', result);
-                    alert("⏳ Pembayaran pending! Mohon selesaikan pembayaran Anda.");
+                    showAlert(
+                        'Pembayaran Anda dalam proses pending. Mohon selesaikan pembayaran Anda dalam waktu 24 jam.', 
+                        'warning'
+                    );
                     resetButton();
                 },
 
                 onError: function(result) {
                     console.error('Payment Error:', result);
-                    alert("❌ Pembayaran gagal! Silakan coba lagi.");
+                    showAlert(
+                        'Pembayaran gagal! Silakan coba lagi atau hubungi customer service jika masalah berlanjut.', 
+                        'error'
+                    );
                     resetButton();
                 },
 
                 onClose: function() {
                     console.log('Payment popup closed');
-                    alert("ℹ️ Anda menutup popup pembayaran tanpa menyelesaikan transaksi.");
+                    showAlert(
+                        'Anda menutup popup pembayaran tanpa menyelesaikan transaksi. Silakan klik "Bayar Sekarang" lagi untuk melanjutkan.', 
+                        'info'
+                    );
                     resetButton();
                 }
             });
+        });
+
+        // Close modal when clicking outside
+        document.addEventListener('click', function(e) {
+            if (e.target.classList.contains('alert-modal')) {
+                closeAlert(e.target.id);
+            }
+        });
+
+        // Close modal with Escape key
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                const openModal = document.querySelector('.alert-modal.show');
+                if (openModal) {
+                    closeAlert(openModal.id);
+                }
+            }
         });
     </script>
 @endpush
