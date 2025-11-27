@@ -85,7 +85,7 @@
             <p class="text-xs text-gray-500 mb-1">Harga Sewa</p>
             <p class="text-2xl font-bold text-green-600">
                 Rp {{ number_format($rak->harga_sewa_perbulan, 0, ',', '.') }}
-                <span class="text-sm text-gray-500 font-normal">/ bulan</span>
+                <span class="text-sm text-gray-500 font-normal">/30 hari</span>
             </p>
         </div>
 
