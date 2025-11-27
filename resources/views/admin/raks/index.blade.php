@@ -34,7 +34,9 @@
             </div>
             @if($raks->hasPages())
                 <div class="card-footer bg-white border-0">
-                    {{ $raks->links() }}
+                    <div class="d-flex justify-content-center">
+                        {{ $raks->links('pagination::bootstrap-4') }}
+                    </div>
                 </div>
             @endif
         </div>
@@ -51,3 +53,23 @@
     @endpush
 
 @endsection
+
+@push('styles')
+<style>
+    /* Fix pagination button size */
+    .pagination {
+        margin-bottom: 0;
+    }
+    
+    .pagination .page-link {
+        padding: 0.375rem 0.75rem;
+        font-size: 0.875rem;
+        line-height: 1.5;
+    }
+    
+    .pagination .page-item:first-child .page-link,
+    .pagination .page-item:last-child .page-link {
+        border-radius: 0.25rem;
+    }
+</style>
+@endpush
