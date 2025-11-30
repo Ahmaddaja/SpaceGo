@@ -348,45 +348,53 @@ class PaymentController extends Controller
      * Handle Pembayaran Sukses
      */
     private function handleSuccessPayment($transaction)
-    {
-        $rak = Rak::find($transaction->rak_id);
+{
+    $rak = Rak::find($transaction->rak_id);
 
-        if ($rak && $rak->status === 'tersedia') {
-            $rak->update(['status' => 'terisi']);
+    if ($rak && $rak->status === 'tersedia') {
 
-            Log::info('Rak Status Updated to Terisi', [
-                'rak_id' => $rak->id,
-                'rak_name' => $rak->nama_rak,
-                'transaction_id' => $transaction->id
-            ]);
-            
-            // ===========================================
-            // TAMBAHKAN LOG HISTORY SEWA RAK BARU
-            // ===========================================
-            try {
-                HistoryService::logNewRental(
-                    $transaction->user_id,
-                    $rak->kode_rak ?? $rak->nama_rak,
-                    30, // Default 30 hari (1 bulan)
-                    $transaction->amount,
-                    'System'
-                );
-                
-                Log::info('New rental history logged', [
-                    'transaction_id' => $transaction->id,
-                    'customer_id' => $transaction->user_id,
-                    'rak_id' => $rak->id
-                ]);
-            } catch (\Exception $historyError) {
-                Log::error('Failed to log new rental history: ' . $historyError->getMessage());
+        // ============================
+        // SET TANGGAL MULAI & BERAKHIR
+        // ============================
+        $durasi = $rak->durasi_sewa_hari ?? 30; // default 30 hari jika tidak ada
+
+        $transaction->sewa_mulai = now();
+        $transaction->sewa_berakhir = now()->addDays($durasi);
+        $transaction->save();
+
+        Log::info('Durasi sewa dihitung', [
+            'transaction_id' => $transaction->id,
+            'sewa_mulai' => $transaction->sewa_mulai,
+            'sewa_berakhir' => $transaction->sewa_berakhir,
+            'durasi' => $durasi
+        ]);
+
+        // ============================
+        // UBAH STATUS RAK
+        // ============================
+        $rak->update(['status' => 'terisi']);
+
+        Log::info('Rak Status Updated to Terisi', [
+            'rak_id' => $rak->id,
+            'rak_name' => $rak->nama_rak,
+            'transaction_id' => $transaction->id
+        ]);
+
+        // ============================
+        // LOG HISTORY SEWA BARU
+        // ============================
+        try {
+            HistoryService::logNewRental(
+                $transaction->user_id,
+                $rak->kode_rak ?? $rak->nama_rak,
+                $durasi,
+                $transaction->amount,
+                'System'
+            );
+        } catch (\Exception $historyError) {
+            Log::error('Failed to log new rental history: ' . $historyError->getMessage());
             }
         }
-
-        // TODO: Tambahkan logic tambahan seperti:
-        // - Kirim email konfirmasi pembayaran
-        // - Buat record sewa/rental
-        // - Kirim notifikasi ke admin
-        // - Update inventory
-        // - dll
     }
+
 }

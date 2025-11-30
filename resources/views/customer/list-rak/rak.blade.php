@@ -67,6 +67,11 @@
         border-left: 4px solid #10b981;
     }
     
+    .duration-gradient {
+        background: linear-gradient(135deg, #fef3c7, #fde68a);
+        border-left: 4px solid #f59e0b;
+    }
+    
     .code-gradient {
         background: linear-gradient(135deg, #eff6ff, #dbeafe);
         border-left: 4px solid #3b82f6;
@@ -334,15 +339,29 @@
                         </div>
                     </div>
 
+                    <!-- Duration Section -->
+                    <div class="duration-gradient p-4 rounded-xl">
+                        <p class="text-amber-700 text-sm font-medium mb-1 flex items-center">
+                            <i class="fas fa-calendar-alt mr-2"></i>
+                            Durasi Sewa
+                        </p>
+                        <p class="text-amber-600 text-2xl font-bold">
+                            {{ $rak->durasi_sewa_hari }} Hari
+                            <span class="text-sm font-normal text-amber-500">
+                                ({{ round($rak->durasi_sewa_hari / 30, 1) }} bulan)
+                            </span>
+                        </p>
+                    </div>
+
                     <!-- Price Section -->
                     <div class="price-gradient p-4 rounded-xl">
                         <p class="text-green-700 text-sm font-medium mb-1 flex items-center">
                             <i class="fas fa-money-bill-wave mr-2"></i>
-                            Harga Sewa Bulanan
+                            Harga Sewa
                         </p>
                         <p class="text-green-600 text-2xl font-bold">
                             Rp {{ number_format($rak->harga_sewa_perbulan, 0, ',', '.') }}
-                            <span class="text-sm font-normal text-green-500">/30 hari</span>
+                            <span class="text-sm font-normal text-green-500">/{{ $rak->durasi_sewa_hari }} hari</span>
                         </p>
                     </div>
 
@@ -359,7 +378,7 @@
 
         </div>
 
-        <!-- PAGINATION - MODIFIED SECTION -->
+        <!-- PAGINATION -->
         @if($raks->hasPages())
         <div class="pagination-container mt-12 p-6">
             <div class="flex items-center justify-between">

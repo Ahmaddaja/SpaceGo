@@ -148,7 +148,9 @@ class RakController extends Controller
             'harga_sewa_perbulan' => 'required|numeric|min:0',
             'foto' => 'nullable|image|mimes:jpeg,png,jpg|max:2048',
             'spesifikasi_tambahan' => 'nullable|string',
-            'is_active' => 'boolean'
+            'is_active' => 'boolean',
+            'durasi_sewa_hari' => 'required|integer|min:1'
+
         ]);
 
         $validated['status'] = 'tersedia';
@@ -200,7 +202,8 @@ class RakController extends Controller
             'status' => 'required|in:tersedia,terisi,maintenance',
             'foto' => 'nullable|image|mimes:jpeg,png,jpg|max:2048',
             'spesifikasi_tambahan' => 'nullable|string',
-            'is_active' => 'boolean'
+            'is_active' => 'boolean',
+            'durasi_sewa_hari' => 'required|integer|min:1'
         ]);
 
         if ($request->hasFile('foto')) {

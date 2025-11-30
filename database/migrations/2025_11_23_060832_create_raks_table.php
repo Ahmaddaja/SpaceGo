@@ -26,6 +26,7 @@ return new class extends Migration
             $table->string('foto')->nullable();
             $table->text('spesifikasi_tambahan')->nullable();
             $table->boolean('is_active')->default(true);
+            $table->integer('durasi_sewa_hari')->default(30);
             $table->timestamps();
         });
     }
