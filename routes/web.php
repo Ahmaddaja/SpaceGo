@@ -12,6 +12,7 @@ use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\PaymentController;
 use App\Http\Controllers\HistoryController;
 use App\Http\Controllers\TransactionController;
+use App\Http\Controllers\RevenueController;
 
 // ========================
 // HALAMAN AWAL & TEST
@@ -125,6 +126,21 @@ Route::middleware(['auth', 'role:admin'])->group(function () {
                 ->name('admin.transactions.index');
             Route::get('/{id}', [TransactionController::class, 'show'])
                 ->name('admin.transactions.show');
+        });
+
+        // Laporan Routes
+        Route::prefix('admin/laporan')->group(function () {
+            Route::get('/pendapatan', [RevenueController::class, 'index'])
+                ->name('admin.laporan.pendapatan');
+
+            Route::get('/pendapatan/detail', [RevenueController::class, 'detail'])
+                ->name('admin.laporan.detail');
+
+            Route::get('/pendapatan/export-pdf', [RevenueController::class, 'exportPdf'])
+                ->name('admin.laporan.export.pdf');
+
+            Route::get('/pendapatan/sync', [RevenueController::class, 'sync'])
+                ->name('admin.laporan.sync');
         });
     });
 

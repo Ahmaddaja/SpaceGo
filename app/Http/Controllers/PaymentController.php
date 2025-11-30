@@ -11,7 +11,7 @@ use App\Models\Transaction;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Auth;
-// TAMBAHKAN INI - Import HistoryService
+use App\Services\RevenueService;
 use App\Services\HistoryService;
 
 class PaymentController extends Controller
@@ -156,7 +156,7 @@ class PaymentController extends Controller
                 // Jika pembayaran sukses, update status rak
                 if (in_array($transactionStatus, ['capture', 'settlement'])) {
                     $this->handleSuccessPayment($transaction);
-                    
+
                     // ===========================================
                     // TAMBAHKAN LOG HISTORY PEMBAYARAN BERHASIL
                     // ===========================================
@@ -168,7 +168,7 @@ class PaymentController extends Controller
                             $paymentType ?? 'Midtrans',
                             Auth::user()->name
                         );
-                        
+
                         Log::info('Payment history logged successfully', [
                             'transaction_id' => $transaction->id,
                             'customer_id' => Auth::id()
@@ -256,7 +256,7 @@ class PaymentController extends Controller
                 if ($transactionStatus == 'capture') {
                     if ($fraudStatus == 'accept') {
                         $this->handleSuccessPayment($transaction);
-                        
+
                         // ===========================================
                         // TAMBAHKAN LOG HISTORY DARI CALLBACK
                         // ===========================================
@@ -268,7 +268,7 @@ class PaymentController extends Controller
                                 $paymentType ?? 'Midtrans',
                                 'System'
                             );
-                            
+
                             Log::info('Payment history logged from callback', [
                                 'transaction_id' => $transaction->id,
                                 'customer_id' => $transaction->user_id
@@ -279,7 +279,7 @@ class PaymentController extends Controller
                     }
                 } elseif ($transactionStatus == 'settlement') {
                     $this->handleSuccessPayment($transaction);
-                    
+
                     // ===========================================
                     // TAMBAHKAN LOG HISTORY DARI CALLBACK
                     // ===========================================
@@ -291,7 +291,7 @@ class PaymentController extends Controller
                             $paymentType ?? 'Midtrans',
                             'System'
                         );
-                        
+
                         Log::info('Payment history logged from callback settlement', [
                             'transaction_id' => $transaction->id,
                             'customer_id' => $transaction->user_id
@@ -302,7 +302,7 @@ class PaymentController extends Controller
                 } elseif (in_array($transactionStatus, ['deny', 'expire', 'cancel'])) {
                     Log::info('Payment Failed/Cancelled', ['order_id' => $orderId]);
                     // Bisa tambahkan logic untuk handle pembayaran gagal
-                    
+
                     // ===========================================
                     // TAMBAHKAN LOG HISTORY PEMBAYARAN GAGAL
                     // ===========================================
@@ -314,7 +314,7 @@ class PaymentController extends Controller
                             $transactionStatus,
                             'System'
                         );
-                        
+
                         Log::info('Failed payment history logged', [
                             'transaction_id' => $transaction->id,
                             'customer_id' => $transaction->user_id,
@@ -359,19 +359,17 @@ class PaymentController extends Controller
                 'rak_name' => $rak->nama_rak,
                 'transaction_id' => $transaction->id
             ]);
-            
-            // ===========================================
-            // TAMBAHKAN LOG HISTORY SEWA RAK BARU
-            // ===========================================
+
+            // Log History Sewa Rak
             try {
                 HistoryService::logNewRental(
                     $transaction->user_id,
                     $rak->kode_rak ?? $rak->nama_rak,
-                    30, // Default 30 hari (1 bulan)
+                    30,
                     $transaction->amount,
                     'System'
                 );
-                
+
                 Log::info('New rental history logged', [
                     'transaction_id' => $transaction->id,
                     'customer_id' => $transaction->user_id,
@@ -380,13 +378,24 @@ class PaymentController extends Controller
             } catch (\Exception $historyError) {
                 Log::error('Failed to log new rental history: ' . $historyError->getMessage());
             }
-        }
 
-        // TODO: Tambahkan logic tambahan seperti:
-        // - Kirim email konfirmasi pembayaran
-        // - Buat record sewa/rental
-        // - Kirim notifikasi ke admin
-        // - Update inventory
-        // - dll
+            // =====================================================
+            // AUTO GENERATE LAPORAN PENDAPATAN
+            // =====================================================
+            try {
+                $year = $transaction->transaction_time->year;
+                $month = $transaction->transaction_time->month;
+
+                RevenueService::generateMonthlyReport($year, $month);
+
+                Log::info('Revenue report auto-generated', [
+                    'transaction_id' => $transaction->id,
+                    'year' => $year,
+                    'month' => $month
+                ]);
+            } catch (\Exception $revenueError) {
+                Log::error('Failed to generate revenue report: ' . $revenueError->getMessage());
+            }
+        }
     }
 }
