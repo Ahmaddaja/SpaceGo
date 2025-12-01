@@ -156,23 +156,24 @@
                     </div>
                 </div>
                 @foreach($newUsers as $user)
-                    <div class="dropdown-item notification-item">
-                        <div class="d-flex align-items-center">
-                            <i class="fas fa-user-plus text-success mr-2"></i>
-                            <div>
-                                <b>{{ $user->name }}</b> bergabung
-                                <br>
-                                <small class="text-muted">
-                                    {{ $user->created_at->diffForHumans() }}
-                                    <span class="badge badge-info badge-sm ml-1">Baru</span>
-                                </small>
-                            </div>
-                        </div>
-                    </div>
-                    @if(!$loop->last)
-                        <div class="dropdown-divider"></div>
-                    @endif
-                @endforeach
+    <div class="dropdown-item notification-item bg-dark text-white">
+        <div class="d-flex align-items-center">
+            <i class="fas fa-user-plus text-success mr-2"></i>
+            <div>
+                <b>{{ $user->name }}</b> bergabung
+                <br>
+                <small class="text-light">
+                    {{ $user->created_at->diffForHumans() }}
+                    <span class="badge badge-info badge-sm ml-1">Baru</span>
+                </small>
+            </div>
+        </div>
+    </div>
+    @if(!$loop->last)
+        <div class="dropdown-divider"></div>
+    @endif
+@endforeach
+
             </div>
             <div class="dropdown-divider"></div>
         @endif
