@@ -47,6 +47,13 @@
                 <div class="invalid-feedback d-block">{{ $message }}</div>
             @enderror
         </div>
+        <div class="form-group">
+            <label for="durasi_sewa_hari">Durasi Sewa (hari) <span class="text-danger">*</span></label>
+            <input type="number" class="form-control" id="durasi_sewa_hari" name="durasi_sewa_hari"
+                value="{{ old('durasi_sewa_hari', $rak->durasi_sewa_hari ?? 30) }}"
+                min="1">
+        </div>
+
 
         <!-- Hanya tampilkan dropdown status saat EDIT, tidak saat CREATE -->
         @if (isset($rak))

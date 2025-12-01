@@ -149,34 +149,36 @@
 
         <!-- Real-time Notifications: User Baru -->
         @if($newUsers->count() > 0)
-            <div class="category-section">
-                <div class="dropdown-item dropdown-category-header d-flex justify-content-between align-items-center">
-                    <div>
-                        <strong>👤 User Baru ({{ $newUsers->count() }})</strong>
-                    </div>
-                </div>
-                @foreach($newUsers as $user)
-    <div class="dropdown-item notification-item bg-dark text-white">
-        <div class="d-flex align-items-center">
-            <i class="fas fa-user-plus text-success mr-2"></i>
+    <div class="category-section">
+        <div class="dropdown-item dropdown-category-header d-flex justify-content-between align-items-center bg-dark text-white">
             <div>
-                <b>{{ $user->name }}</b> bergabung
-                <br>
-                <small class="text-light">
-                    {{ $user->created_at->diffForHumans() }}
-                    <span class="badge badge-info badge-sm ml-1">Baru</span>
-                </small>
+                <strong>👤 User Baru ({{ $newUsers->count() }})</strong>
             </div>
         </div>
-    </div>
-    @if(!$loop->last)
-        <div class="dropdown-divider"></div>
-    @endif
-@endforeach
 
+        @foreach($newUsers as $user)
+            <div class="dropdown-item notification-item bg-dark text-white">
+                <div class="d-flex align-items-center">
+                    <i class="fas fa-user-plus text-success mr-2"></i>
+                    <div>
+                        <b>{{ $user->name }}</b> bergabung
+                        <br>
+                        <small class="text-muted">
+                            {{ $user->created_at->diffForHumans() }}
+                            <span class="badge badge-info badge-sm ml-1">Baru</span>
+                        </small>
+                    </div>
+                </div>
             </div>
-            <div class="dropdown-divider"></div>
-        @endif
+
+            @if(!$loop->last)
+                <div class="dropdown-divider"></div>
+            @endif
+        @endforeach
+    </div>
+    <div class="dropdown-divider"></div>
+@endif
+
 
         <!-- Real-time Notifications: Transaksi Baru -->
 @if($newTransactions->count() > 0)

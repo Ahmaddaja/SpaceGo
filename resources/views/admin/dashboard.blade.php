@@ -2,22 +2,31 @@
 
 @push('styles')
     <style>
+        /* Override kartu AdminLTE */
         .card {
-            transition: all 0.3s ease;
-            border-radius: 12px;
-            overflow: hidden;
+            border-radius: 12px !important;
+            transition: 0.3s ease !important;
+            overflow: visible !important;
         }
 
         .card:hover {
-            transform: translateY(-5px);
+            transform: translateY(-5px) !important;
             box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1) !important;
         }
 
+        .card-body {
+            padding: 1.25rem !important;
+        }
+
+        /* STAT CARD */
         .stat-card {
-            background: linear-gradient(135deg, var(--gradient-start) 0%, var(--gradient-end) 100%);
-            color: white;
-            border: none;
-            transition: transform .2s ease, box-shadow .2s ease;
+            background: linear-gradient(135deg, var(--gradient-start), var(--gradient-end)) !important;
+            border: none !important;
+            color: #fff !important;
+        }
+
+        .stat-card * {
+            color: #fff !important;
         }
 
         .stat-card .icon-box {
@@ -29,45 +38,32 @@
             justify-content: center;
             background: rgba(255, 255, 255, 0.2);
             backdrop-filter: blur(10px);
-            transition: background 0.3s ease;
         }
 
-        .stat-card h2 {
-            font-size: 2.5rem;
-            font-weight: 700;
-            margin: 0.5rem 0;
+        /* Supaya <a> tidak mengubah warna text */
+        .stat-link {
+            color: inherit !important;
         }
 
-        .stat-card p {
-            opacity: 0.9;
-            margin: 0;
-            font-size: 0.95rem;
+        /* Hover seluruh card */
+        .stat-link .stat-card:hover {
+            transform: translateY(-5px) !important;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2) !important;
         }
 
+        /* Icon Box Hover */
         .stat-card:hover .icon-box {
-            background: rgba(0, 123, 255, 1);
-            /* warna lebih terang */
+            background: rgba(255, 255, 255, 0.35) !important;
+            transform: scale(1.1);
+            transition: 0.25s ease-in-out;
         }
 
-        .chart-card {
-            height: 100%;
-        }
 
-        .chart-card .card-body {
-            padding: 1.5rem;
-        }
-
-        .badge-status {
-            font-size: 0.75rem;
-            padding: 0.35rem 0.75rem;
-            border-radius: 6px;
-            font-weight: 600;
-        }
-
+        /* ITEM TRANSAKSI */
         .transaction-item {
             padding: 1rem;
             border-bottom: 1px solid #f0f0f0;
-            transition: background 0.2s;
+            transition: 0.2s;
         }
 
         .transaction-item:hover {
@@ -77,8 +73,18 @@
         .transaction-item:last-child {
             border-bottom: none;
         }
+
+        /* DARK MODE OVERRIDE */
+        .dark-mode .transaction-item {
+            border-bottom-color: #334155;
+        }
+
+        .dark-mode .transaction-item:hover {
+            background: #334155 !important;
+        }
     </style>
 @endpush
+
 
 @section('title-content')
     <div class="d-flex justify-content-between align-items-center">
@@ -97,15 +103,12 @@
 
 @section('content')
 
-    <!-- ========================= -->
-    <!-- ROW 1 : 4 Statistik Card -->
-    <!-- ========================= -->
-    <div class="row mb-4 gx-3">
-
+    <!-- Statistik Cards -->
+    <div class="row mb-4 dashboard-stats">
         <!-- Total Gedung -->
         <div class="col-lg-3 col-md-6 mb-3">
-            <a href="#" class="text-decoration-none text-dark">
-                <div class="card stat-card shadow-sm h-100" style="--gradient-start: #667eea; --gradient-end: #764ba2;">
+            <a href="{{ route('gudangs.index') }}" class="stat-link text-decoration-none d-block">
+                <div class="card stat-card shadow-sm" style="--gradient-start: #667eea; --gradient-end: #764ba2;">
                     <div class="card-body">
                         <div class="d-flex justify-content-between align-items-center">
                             <div>
@@ -123,7 +126,7 @@
 
         <!-- Total Rak -->
         <div class="col-lg-3 col-md-6 mb-3">
-            <a href="#" class="text-decoration-none text-dark">
+            <a href="{{ route('raks.index') }}" class="stat-link text-decoration-none d-block">
                 <div class="card stat-card shadow-sm h-100" style="--gradient-start: #f093fb; --gradient-end: #f5576c;">
                     <div class="card-body">
                         <div class="d-flex justify-content-between align-items-center">
@@ -142,7 +145,7 @@
 
         <!-- Total Pelanggan -->
         <div class="col-lg-3 col-md-6 mb-3">
-            <a href="#" class="text-decoration-none text-dark">
+            <a href="{{ route('admin.pelanggan.pelanggan') }}" class="stat-link text-decoration-none d-block">
                 <div class="card stat-card shadow-sm h-100" style="--gradient-start: #4facfe; --gradient-end: #00f2fe;">
                     <div class="card-body">
                         <div class="d-flex justify-content-between align-items-center">
@@ -161,7 +164,7 @@
 
         <!-- Total Transaksi -->
         <div class="col-lg-3 col-md-6 mb-3">
-            <a href="#" class="text-decoration-none text-dark">
+            <a href="{{ route('admin.transactions.index') }} class="stat-link text-decoration-none d-block">
                 <div class="card stat-card shadow-sm h-100" style="--gradient-start: #43e97b; --gradient-end: #38f9d7;">
                     <div class="card-body">
                         <div class="d-flex justify-content-between align-items-center">
@@ -451,7 +454,7 @@
         const rakChart = new Chart(rakCtx, {
             type: 'doughnut',
             data: {
-                labels: ['Terisi', 'Tersedia', 'Kosong'],
+                labels: ['Terisi', 'Tersedia'],
                 datasets: [{
                     data: [{{ $rakTerisi }}, {{ $rakTersedia }}, {{ $rakKosong }}],
                     backgroundColor: [

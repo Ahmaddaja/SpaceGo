@@ -26,6 +26,7 @@
     <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:300,400,400i,700&display=fallback">
     <link rel="stylesheet" href="{{ asset('adminlte/plugins/fontawesome-free/css/all.min.css') }}">
     <link rel="stylesheet" href="{{ asset('adminlte/dist/css/adminlte.min.css') }}">
+    
     @stack('styles')
     <style>
     /* ========== GLOBAL SMOOTH ========== */
@@ -118,7 +119,7 @@
     }
 
     /* Card Light */
-    .card {
+    .card:not(.stat-card) {
         background: #ffffff !important;
         border-radius: 12px !important;
         box-shadow: 0 1px 3px rgba(0,0,0,0.08) !important;
@@ -236,7 +237,7 @@
     }
 
     /* Card Dark */
-    .dark-mode .card {
+    .dark-mode .card:not(.stat-card) {
         background: #1e293b !important;
         box-shadow: 0 1px 3px rgba(0,0,0,0.3) !important;
     }
