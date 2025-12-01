@@ -466,7 +466,7 @@
     const rakChart = new Chart(rakCtx, {
         type: 'doughnut',
         data: {
-            labels: ['Terisi', 'Tersedia', 'Kosong'],
+            labels: ['Terisi', 'Tersedia'],
             datasets: [{
                 data: [{{ $rakTerisi }}, {{ $rakTersedia }}, {{ $rakKosong }}],
                 backgroundColor: [
