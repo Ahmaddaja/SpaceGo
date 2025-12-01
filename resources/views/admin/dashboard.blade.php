@@ -427,13 +427,13 @@
         const rakChart = new Chart(rakCtx, {
             type: 'doughnut',
             data: {
-                labels: ['Terisi', 'Tersedia', 'Kosong'],
+                labels: ['Terisi', 'Tersedia', 'Maintenance'],
                 datasets: [{
-                    data: [{{ $rakTerisi }}, {{ $rakTersedia }}, {{ $rakKosong }}],
+                    data: [{{ $rakTerisi }}, {{ $rakTersedia }}, {{ $rakMaintenance }}],
                     backgroundColor: [
                         'rgba(245, 87, 108, 0.8)',
                         'rgba(67, 233, 123, 0.8)',
-                        'rgba(108, 117, 125, 0.8)'
+                        'rgba(231, 255, 10, 0.8)'
                     ],
                     borderWidth: 3,
                     borderColor: '#fff',
