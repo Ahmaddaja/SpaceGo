@@ -2,62 +2,121 @@
 
 @push('styles')
 <style>
-    .card {
-        transition: all 0.3s ease;
-        border-radius: 12px;
-        overflow: hidden;
+    /* Override AdminLTE Card Defaults */
+    .dashboard-stats .card {
+        display: block !important;
+        min-height: 120px !important;
+        height: auto !important;
+        transition: transform 0.3s ease, box-shadow 0.3s ease !important;
+        border-radius: 12px !important;
+        overflow: visible !important;
+        margin-bottom: 1rem !important;
     }
-    .card:hover {
-        transform: translateY(-5px);
+
+    .dashboard-stats .card-body {
+        display: block !important;
+        visibility: visible !important;
+        opacity: 1 !important;
+        height: auto !important;
+        min-height: 80px !important;
+        padding: 1.25rem !important;
+    }
+    
+    .dashboard-stats .card:hover {
+        transform: translateY(-5px) !important;
         box-shadow: 0 10px 25px rgba(0,0,0,0.1) !important;
     }
+    
+    /* Stat Card Gradient Styles */
     .stat-card {
-        background: linear-gradient(135deg, var(--gradient-start) 0%, var(--gradient-end) 100%);
-        color: white;
-        border: none;
+        background: linear-gradient(135deg, var(--gradient-start) 0%, var(--gradient-end) 100%) !important;
+        border: none !important;
     }
+    
+    /* Force all text in stat-card to be white */
+    .stat-card,
+    .stat-card *,
+    .stat-card .card-body,
+    .stat-card .card-body *,
+    .stat-card h2,
+    .stat-card p,
+    .stat-card i {
+        color: white !important;
+    }
+    
+    /* Dark mode override for stat cards */
+    .dark-mode .stat-card,
+    .dark-mode .stat-card *,
+    .dark-mode .stat-card .card-body,
+    .dark-mode .stat-card .card-body * {
+        color: white !important;
+    }
+    
     .stat-card .icon-box {
         width: 60px;
         height: 60px;
         border-radius: 12px;
-        display: flex;
+        display: flex !important;
         align-items: center;
         justify-content: center;
-        background: rgba(255, 255, 255, 0.2);
+        background: rgba(255, 255, 255, 0.2) !important;
         backdrop-filter: blur(10px);
     }
+    
     .stat-card h2 {
-        font-size: 2.5rem;
-        font-weight: 700;
-        margin: 0.5rem 0;
+        font-size: 2.5rem !important;
+        font-weight: 700 !important;
+        margin: 0.5rem 0 !important;
+        line-height: 1.2 !important;
     }
+    
     .stat-card p {
-        opacity: 0.9;
-        margin: 0;
-        font-size: 0.95rem;
+        opacity: 0.9 !important;
+        margin: 0 !important;
+        font-size: 0.95rem !important;
     }
+    
     .chart-card {
         height: 100%;
     }
+    
     .chart-card .card-body {
         padding: 1.5rem;
     }
+    
     .badge-status {
         font-size: 0.75rem;
         padding: 0.35rem 0.75rem;
         border-radius: 6px;
         font-weight: 600;
     }
+    
     .transaction-item {
         padding: 1rem;
         border-bottom: 1px solid #f0f0f0;
         transition: background 0.2s;
     }
+    
     .transaction-item:hover {
         background: #f8f9fa;
     }
+    
     .transaction-item:last-child {
         border-bottom: none;
+    }
+    
+    .dark-mode .transaction-item {
+        border-bottom-color: #334155;
+    }
+    
+    .dark-mode .transaction-item:hover {
+        background: #334155 !important;
+    }
+
+    /* Ensure visibility in both modes */
+    .dashboard-stats .card-body > * {
+        display: block !important;
+        visibility: visible !important;
     }
 </style>
 @endpush
@@ -80,7 +139,7 @@
 @section('content')
 
 <!-- Statistik Cards -->
-<div class="row mb-4">
+<div class="row mb-4 dashboard-stats">
     <!-- Total Gedung -->
     <div class="col-lg-3 col-md-6 mb-3">
         <div class="card stat-card shadow-sm" style="--gradient-start: #667eea; --gradient-end: #764ba2;">
