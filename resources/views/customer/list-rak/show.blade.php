@@ -381,7 +381,6 @@
     <!-- WhatsApp Button -->
     @include('customer.payment.partials.whatsapp-button')
 @endsection
-
 @push('scripts')
 <script>
 document.addEventListener("DOMContentLoaded", function () {
