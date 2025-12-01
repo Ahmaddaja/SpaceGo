@@ -71,12 +71,30 @@
             </div>
         </div>
 
-        <!-- HARGA -->
+        <!-- DURASI SEWA -->
         <div class="mt-5 pt-5 border-t border-gray-100">
+            <div class="flex items-center mb-3">
+                <div class="bg-amber-100 p-2 rounded-lg mr-3">
+                    <i class="fas fa-calendar-alt text-amber-600 text-sm"></i>
+                </div>
+                <div>
+                    <p class="text-xs text-gray-500">Durasi Sewa</p>
+                    <p class="text-lg font-bold text-amber-600">
+                        {{ $rak->durasi_sewa_hari }} Hari
+                        <span class="text-xs text-gray-500 font-normal">
+                            ({{ round($rak->durasi_sewa_hari / 30, 1) }} bulan)
+                        </span>
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <!-- HARGA -->
+        <div class="mt-4 pt-4 border-t border-gray-100">
             <p class="text-xs text-gray-500 mb-1">Harga Sewa</p>
             <p class="text-2xl font-bold text-green-600">
                 Rp {{ number_format($rak->harga_sewa_perbulan, 0, ',', '.') }}
-                <span class="text-sm text-gray-500 font-normal">/30 hari</span>
+                <span class="text-sm text-gray-500 font-normal">/{{ $rak->durasi_sewa_hari }} hari</span>
             </p>
         </div>
 

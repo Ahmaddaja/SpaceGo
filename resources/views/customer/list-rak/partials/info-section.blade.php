@@ -59,12 +59,13 @@
             <i class="fas fa-money-bill-wave mr-2"></i>
             Harga Sewa Per Bulan
         </p>
-        <p class="text-green-600 text-3xl font-bold">
-            Rp {{ number_format($rak->harga_sewa_perbulan, 0, ',', '.') }}
-        </p>
+        <p class="text-green-600 text-2xl font-bold">
+                            Rp {{ number_format($rak->harga_sewa_perbulan, 0, ',', '.') }}
+                            <span class="text-sm font-normal text-green-500">/{{ $rak->durasi_sewa_hari }} hari</span>
+                        </p>
         <p class="text-green-600 text-sm mt-2 flex items-center">
             <i class="fas fa-info-circle mr-1"></i>
             * Harga sudah termasuk perawatan dasar
         </p>
-    </div>
+
 </div>
