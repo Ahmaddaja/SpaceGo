@@ -11,8 +11,9 @@ use App\Models\Transaction;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Auth;
-use App\Services\RevenueService;
+// TAMBAHKAN INI - Import HistoryService
 use App\Services\HistoryService;
+use App\Services\RevenueService;
 
 class PaymentController extends Controller
 {
@@ -156,7 +157,7 @@ class PaymentController extends Controller
                 // Jika pembayaran sukses, update status rak
                 if (in_array($transactionStatus, ['capture', 'settlement'])) {
                     $this->handleSuccessPayment($transaction);
-
+                    
                     // ===========================================
                     // TAMBAHKAN LOG HISTORY PEMBAYARAN BERHASIL
                     // ===========================================
@@ -168,7 +169,7 @@ class PaymentController extends Controller
                             $paymentType ?? 'Midtrans',
                             Auth::user()->name
                         );
-
+                        
                         Log::info('Payment history logged successfully', [
                             'transaction_id' => $transaction->id,
                             'customer_id' => Auth::id()
@@ -256,7 +257,7 @@ class PaymentController extends Controller
                 if ($transactionStatus == 'capture') {
                     if ($fraudStatus == 'accept') {
                         $this->handleSuccessPayment($transaction);
-
+                        
                         // ===========================================
                         // TAMBAHKAN LOG HISTORY DARI CALLBACK
                         // ===========================================
@@ -268,7 +269,7 @@ class PaymentController extends Controller
                                 $paymentType ?? 'Midtrans',
                                 'System'
                             );
-
+                            
                             Log::info('Payment history logged from callback', [
                                 'transaction_id' => $transaction->id,
                                 'customer_id' => $transaction->user_id
@@ -279,7 +280,7 @@ class PaymentController extends Controller
                     }
                 } elseif ($transactionStatus == 'settlement') {
                     $this->handleSuccessPayment($transaction);
-
+                    
                     // ===========================================
                     // TAMBAHKAN LOG HISTORY DARI CALLBACK
                     // ===========================================
@@ -291,7 +292,7 @@ class PaymentController extends Controller
                             $paymentType ?? 'Midtrans',
                             'System'
                         );
-
+                        
                         Log::info('Payment history logged from callback settlement', [
                             'transaction_id' => $transaction->id,
                             'customer_id' => $transaction->user_id
@@ -302,7 +303,7 @@ class PaymentController extends Controller
                 } elseif (in_array($transactionStatus, ['deny', 'expire', 'cancel'])) {
                     Log::info('Payment Failed/Cancelled', ['order_id' => $orderId]);
                     // Bisa tambahkan logic untuk handle pembayaran gagal
-
+                    
                     // ===========================================
                     // TAMBAHKAN LOG HISTORY PEMBAYARAN GAGAL
                     // ===========================================
@@ -314,7 +315,7 @@ class PaymentController extends Controller
                             $transactionStatus,
                             'System'
                         );
-
+                        
                         Log::info('Failed payment history logged', [
                             'transaction_id' => $transaction->id,
                             'customer_id' => $transaction->user_id,
@@ -347,40 +348,36 @@ class PaymentController extends Controller
     /**
      * Handle Pembayaran Sukses
      */
-    /**
- * Handle Pembayaran Sukses
- */
-private function handleSuccessPayment($transaction)
+    private function handleSuccessPayment($transaction)
 {
     $rak = Rak::find($transaction->rak_id);
 
     if ($rak && $rak->status === 'tersedia') {
 
         // ============================
-        // SET DURASI, MULAI, BERAKHIR
+        // SET TANGGAL MULAI & BERAKHIR
         // ============================
-        $durasi = $rak->durasi_sewa_hari ?? 30; // default 30 hari
+        $durasi = $rak->durasi_sewa_hari ?? 30; // default 30 hari jika tidak ada
 
         $transaction->sewa_mulai = now();
         $transaction->sewa_berakhir = now()->addDays($durasi);
-        $transaction->sisa_hari = now()->diffInDays($transaction->sewa_berakhir, false);
         $transaction->save();
 
-        Log::info('Durasi sewa diterapkan', [
+        Log::info('Durasi sewa dihitung', [
             'transaction_id' => $transaction->id,
             'sewa_mulai' => $transaction->sewa_mulai,
             'sewa_berakhir' => $transaction->sewa_berakhir,
-            'sisa_hari' => $transaction->sisa_hari,
             'durasi' => $durasi
         ]);
 
         // ============================
-        // UPDATE STATUS RAK
+        // UBAH STATUS RAK
         // ============================
         $rak->update(['status' => 'terisi']);
 
-        Log::info('Rak status diubah ke terisi', [
+        Log::info('Rak Status Updated to Terisi', [
             'rak_id' => $rak->id,
+            'rak_name' => $rak->nama_rak,
             'transaction_id' => $transaction->id
         ]);
 
@@ -396,12 +393,10 @@ private function handleSuccessPayment($transaction)
                 'System'
             );
         } catch (\Exception $historyError) {
-            Log::error('Gagal menulis history sewa: ' . $historyError->getMessage());
+            Log::error('Failed to log new rental history: ' . $historyError->getMessage());
+            }
         }
 
-        // =====================================================
-        // LAPORAN PENDAPATAN (TETAP DIPERTAHANKAN)
-        // =====================================================
         try {
             $year = $transaction->transaction_time->year;
             $month = $transaction->transaction_time->month;
@@ -418,5 +413,3 @@ private function handleSuccessPayment($transaction)
             }
         }
     }
-
-}
