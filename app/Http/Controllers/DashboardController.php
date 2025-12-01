@@ -51,11 +51,11 @@ class DashboardController extends Controller
 
         // ===== GRAFIK STATUS RAK =====
         $rakTerisi = Rak::where('status', 'terisi')->count();
-        $rakKosong = Rak::where('status', 'kosong')->count();
+        $rakMaintenance = Rak::where('status', 'maintenance')->count();
         $rakTersedia = Rak::where('status', 'tersedia')->count();
 
         // Jika tidak ada data rak, set default untuk menghindari chart kosong
-        if ($rakTerisi == 0 && $rakKosong == 0 && $rakTersedia == 0) {
+        if ($rakTerisi == 0 && $rakMaintenance == 0 && $rakTersedia == 0) {
             $rakTersedia = 1;
         }
 
@@ -97,7 +97,7 @@ class DashboardController extends Controller
             'transaksiLabels',
             'transaksiData',
             'rakTerisi',
-            'rakKosong',
+            'rakMaintenance',
             'rakTersedia',
             'pendapatanLabels',
             'pendapatanData',
