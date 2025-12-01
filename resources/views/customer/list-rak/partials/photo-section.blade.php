@@ -1,21 +1,19 @@
 <div class="relative">
-    <!-- Status Ribbon -->
-    @if($rak->status === 'tersedia')
-    <div class="status-ribbon ribbon-available">
-        <i class="fas fa-check ribbon-icon"></i>
-        <span>Tersedia</span>
+<!-- Status Ribbon -->
+    <div class="status-ribbon ribbon-{{ $rak->status }}">
+            <i class="fas 
+            @if($rak->status == 'tersedia') fa-check
+            @elseif($rak->status == 'terisi') fa-box
+            @else fa-tools
+            @endif
+            "></i>
+        <span>
+            @if($rak->status == 'tersedia') Tersedia
+            @elseif($rak->status == 'terisi') Terisi
+            @else Maintenance
+            @endif
+        </span>
     </div>
-    @elseif($rak->status === 'terisi')
-    <div class="status-ribbon ribbon-occupied">
-        <i class="fas fa-box ribbon-icon"></i>
-        <span>Terisi</span>
-    </div>
-    @else
-    <div class="status-ribbon ribbon-maintenance">
-        <i class="fas fa-tools ribbon-icon"></i>
-        <span>Maintenance</span>
-    </div>
-    @endif
 
     <div class="rounded-2xl overflow-hidden shadow-lg h-96 bg-gradient-to-br from-gray-100 to-gray-200">
         @if ($rak->foto)
@@ -45,43 +43,38 @@
         overflow: hidden;
     }
 
-    /* Ribbon Styles */
+    /* RIBBON CLEAN BIG STYLE */
     .status-ribbon {
         position: absolute;
-        top: 20px;
-        right: -30px;
-        padding: 10px 40px;
-        font-size: 0.75rem;
-        font-weight: 700;
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
+        top: 18px;
+        right: -60px; /* tarik ke kanan biar full */
         transform: rotate(45deg);
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-        z-index: 10;
+        padding: 14px 75px; /* ukuran lebih besar */
+        font-size: 0.85rem;
+        font-weight: 700;
+        letter-spacing: 0.5px;
         display: flex;
         align-items: center;
-        gap: 6px;
-        min-width: 130px;
-        justify-content: center;
-        border: 2px solid rgba(255, 255, 255, 0.3);
+        gap: 8px;
+        color: white;
+        box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+        z-index: 30;
     }
-    
-    .ribbon-available {
+
+    /* Warna status */
+    .ribbon-tersedia {
         background: linear-gradient(135deg, #10b981, #059669);
-        color: white;
-        text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
     }
-    
-    .ribbon-occupied {
+    .ribbon-terisi {
         background: linear-gradient(135deg, #ef4444, #dc2626);
-        color: white;
-        text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
     }
-    
     .ribbon-maintenance {
         background: linear-gradient(135deg, #f59e0b, #d97706);
-        color: white;
-        text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+    }
+
+    /* Icon biar stabil */
+    .status-ribbon i {
+        font-size: 1rem;
     }
 
     /* Type Badge */
