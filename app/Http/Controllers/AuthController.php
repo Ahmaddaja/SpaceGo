@@ -68,6 +68,7 @@ class AuthController extends Controller
             'username' => ['required', 'string', 'max:50', 'unique:users'],
             'phone' => ['required', 'string', 'max:20', 'unique:users'],
             'email' => ['required', 'string', 'email', 'max:255', 'unique:users'],
+            'alamat' => ['required', 'string', 'max:500'], // Tambahkan validasi untuk alamat
             'password' => ['required', 'confirmed', Password::min(8)],
         ]);
 
@@ -76,6 +77,7 @@ class AuthController extends Controller
             'username' => $validated['username'],
             'phone' => $validated['phone'],
             'email' => $validated['email'],
+            'alamat' => $validated['alamat'], // Tambahkan field alamat
             'password' => Hash::make($validated['password']),
             'role' => 'customer', 
         ]);

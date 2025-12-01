@@ -37,7 +37,8 @@ class CustomerController extends Controller
             $query->where('jenis_rak', $request->jenis);
         }
 
-        $raks = $query->get();
+        // GANTI get() MENJADI paginate()
+        $raks = $query->paginate(12); // 12 item per halaman
 
         return view('customer.list-rak.list-rak', compact('raks', 'jenisList'));
     }

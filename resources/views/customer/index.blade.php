@@ -15,7 +15,10 @@
             <div class="flex items-center justify-between">
                 <div class="flex items-center space-x-4">
                     <div class="bg-gradient-to-r from-blue-600 to-purple-600 p-3 rounded-2xl shadow-lg">
-                        <i class="fas fa-warehouse text-white text-xl"></i>
+                        <!-- Logo yang telah diganti -->
+                        <svg class="w-6 h-6 text-white" fill="currentColor" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+                            <path d="M3 10L12 3L21 10V21H3V10ZM5 12V19H19V12L12 7L5 12Z"/>
+                        </svg>
                     </div>
                     <div>
                         <span class="text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">SPACEGO</span>
@@ -37,29 +40,23 @@
                         </div>
                         <span class="text-xs mt-2 font-medium">Rak</span>
                     </a>
-                     <a href="{{ route('customer.list-rak.rak') }}" class="flex flex-col items-center text-gray-600 hover:text-blue-600 group transition-all duration-300">
-                        <div class="bg-gray-100 p-3 rounded-xl shadow-sm group-hover:bg-blue-100">
-                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                    d="M5 13l4 4L19 7" />
-                            </svg>
-                        </div>
-                        <span class="text-xs mt-2 font-medium">Rak Dibeli</span>
-                    </a>
+                     <!-- Rak Anda -->
+<a href="{{ route('customer.list-rak.rak') }}" class="flex flex-col items-center group transition-all duration-300 {{ request()->routeIs('customer.list-rak.rak') ? 'text-blue-600' : 'text-gray-600 hover:text-blue-600' }}">
+    <div class="p-3 rounded-xl shadow-sm transition-all duration-300 transform {{ request()->routeIs('customer.list-rak.rak') ? 'bg-blue-100 shadow-md scale-110' : 'bg-gray-100 group-hover:bg-blue-100 group-hover:shadow-md group-hover:scale-110' }}">
+        <i class="fas fa-th-large w-5 h-5"></i>
+    </div>
+    <span class="text-xs mt-2 font-medium">Rak Anda</span>
+    @if(request()->routeIs('customer.list-rak.rak'))
+    <div class="absolute -top-1 -right-1 w-3 h-3 bg-blue-500 rounded-full animate-pulse"></div>
+    @endif
+</a>
                     
-                    <a href="{{ route('customer.profile.index') }}" class="flex flex-col items-center text-gray-600 hover:text-blue-600 group transition-all duration-300">
-                        <div class="bg-gray-100 p-3 rounded-xl shadow-sm group-hover:bg-blue-100">
-                            <i class="fas fa-user"></i>
-                        </div>
-                        <span class="text-xs mt-2 font-medium">Profile</span>
-                    </a>
-                    
-                    <a href="#" class="flex flex-col items-center text-gray-600 hover:text-blue-600 group transition-all duration-300">
-                        <div class="bg-gray-100 p-3 rounded-xl shadow-sm group-hover:bg-blue-100">
-                            <i class="fas fa-history"></i>
-                        </div>
-                        <span class="text-xs mt-2 font-medium">History</span>
-                    </a>
+                    <a href="{{ route('customer.history') }}" class="flex flex-col items-center text-gray-600 hover:text-blue-600 group transition-all duration-300">
+    <div class="bg-gray-100 p-3 rounded-xl shadow-sm group-hover:bg-blue-100">
+        <i class="fas fa-history"></i>
+    </div>
+    <span class="text-xs mt-2 font-medium">History</span>
+</a>
                     
                     <!-- Dropdown Profile -->
                     <div class="relative group">
@@ -72,15 +69,15 @@
                         </button>
                         
                         <!-- Dropdown Menu -->
-                        <div class="absolute right-0 top-full mt-2 w-48 bg-white rounded-xl shadow-xl border border-gray-200 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 transform translate-y-2 group-hover:translate-y-0 z-50">
+                        <div class="absolute right-0 top-full mt-2 w-56 bg-white rounded-xl shadow-xl border border-gray-200 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 transform translate-y-2 group-hover:translate-y-0 z-50">
                             <div class="p-4 border-b border-gray-100">
                                 <div class="flex items-center space-x-3">
                                     <img src="{{ Auth::user()->foto ? asset('storage/' . Auth::user()->foto) : 'https://ui-avatars.com/api/?name=' . urlencode(Auth::user()->name) . '&size=40&background=4A90E2&color=fff' }}" 
                                          alt="Profile" 
                                          class="w-10 h-10 rounded-lg object-cover border-2 border-blue-500 shadow-sm">
-                                    <div>
-                                        <p class="text-sm font-semibold text-gray-800">{{ Auth::user()->name }}</p>
-                                        <p class="text-xs text-gray-500">{{ Auth::user()->email }}</p>
+                                    <div class="min-w-0 flex-1">
+                                        <p class="text-sm font-semibold text-gray-800 truncate">{{ Auth::user()->name }}</p>
+                                        <p class="text-xs text-gray-500 truncate">{{ Auth::user()->email }}</p>
                                     </div>
                                 </div>
                             </div>
@@ -283,7 +280,10 @@
         <div class="max-w-7xl mx-auto px-6 text-center">
             <div class="flex items-center justify-center space-x-3 mb-6">
                 <div class="bg-gradient-to-r from-blue-600 to-purple-600 p-2 rounded-lg">
-                    <i class="fas fa-warehouse"></i>
+                    <!-- Logo di footer juga diganti -->
+                    <svg class="w-5 h-5 text-white" fill="currentColor" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+                        <path d="M3 10L12 3L21 10V21H3V10ZM5 12V19H19V12L12 7L5 12Z"/>
+                    </svg>
                 </div>
                 <span class="text-xl font-bold">SPACEGO</span>
             </div>

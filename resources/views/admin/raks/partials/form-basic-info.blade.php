@@ -43,7 +43,7 @@
                 <option value="Heavy Duty" {{ old('jenis_rak', $rak->jenis_rak ?? '') == 'Heavy Duty' ? 'selected' : '' }}>Heavy Duty</option>
                 <option value="Medium Duty" {{ old('jenis_rak', $rak->jenis_rak ?? '') == 'Medium Duty' ? 'selected' : '' }}>Medium Duty</option>
                 <option value="Light Duty" {{ old('jenis_rak', $rak->jenis_rak ?? '') == 'Light Duty' ? 'selected' : '' }}>Light Duty</option>
-                <option value="Pallet Rack" {{ old('jenis_rak', $rak->jenis_rak ?? '') == 'Pallet Rack' ? 'selected' : '' }}>Pallet Rack</option>
+                {{-- <option value="Pallet Rack" {{ old('jenis_rak', $rak->jenis_rak ?? '') == 'Pallet Rack' ? 'selected' : '' }}>Pallet Rack</option> --}}
                 <option value="Cantilever" {{ old('jenis_rak', $rak->jenis_rak ?? '') == 'Cantilever' ? 'selected' : '' }}>Cantilever</option>
             </select>
             @error('jenis_rak')

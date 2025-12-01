@@ -4,6 +4,7 @@ namespace App\Providers;
 
 use Illuminate\Support\ServiceProvider;
 use Midtrans\Config;
+use Illuminate\Pagination\Paginator;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -20,5 +21,7 @@ class AppServiceProvider extends ServiceProvider
         Config::$isProduction = env('MIDTRANS_IS_PRODUCTION') === 'true';
         Config::$isSanitized = true;
         Config::$is3ds = true;
+
+        Paginator::useBootstrap();
     }
 }

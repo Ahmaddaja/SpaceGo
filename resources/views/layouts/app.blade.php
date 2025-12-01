@@ -6,17 +6,26 @@
         <meta name="csrf-token" content="{{ csrf_token() }}">
         <link rel="stylesheet" href="{{ asset('resource/css/app.css') }}">
 
-        <title>{{ config('app.name', 'Laravel') }}</title>
+        <title>{{ config('app.name', 'Laravel') }} - @yield('title', 'Dashboard')</title>
 
         <!-- Fonts -->
         <link rel="preconnect" href="https://fonts.bunny.net">
         <link href="https://fonts.bunny.net/css?family=figtree:400,500,600&display=swap" rel="stylesheet" />
+        
+        <!-- Additional Styles -->
+        <script src="https://cdn.tailwindcss.com"></script>
+        <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
 
         <!-- Scripts -->
         @stack('styles')
     </head>
     <body class="font-sans antialiased">
         <div class="min-h-screen bg-gray-100">
+
+            <!-- Customer Navigation -->
+            @if(Auth::check() && Auth::user()->role === 'customer')
+                @include('layouts.navigation')
+            @endif
 
             <!-- Page Heading -->
             @isset($header)
@@ -29,8 +38,10 @@
 
             <!-- Page Content -->
             <main>
-    @yield('content')
+                @yield('content')
             </main>
         </div>
+
+        @stack('scripts')
     </body>
 </html>

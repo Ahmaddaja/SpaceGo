@@ -37,6 +37,12 @@ class User extends Authenticatable //implements MustVerifyEmail
     //         'password' => 'hashed',
     //     ];
     // }
+    public function rakDibeli()
+    {
+        return $this->belongsToMany(Rak::class, 'transaksis', 'user_id', 'rak_id')
+            ->withPivot(['tanggal_mulai', 'tanggal_berakhir', 'status', 'total_harga'])
+            ->withTimestamps();
+    }
 
     public function isAdmin()
     {
@@ -46,5 +52,13 @@ class User extends Authenticatable //implements MustVerifyEmail
     public function isCustomer()
     {
         return $this->role === 'customer';
+    }
+
+    /**
+     * Relasi ke Transactions
+     */
+    public function transactions()
+    {
+        return $this->hasMany(Transaction::class);
     }
 }

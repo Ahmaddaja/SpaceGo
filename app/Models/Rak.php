@@ -24,7 +24,8 @@ class Rak extends Model
         'status',
         'foto',
         'spesifikasi_tambahan',
-        'is_active'
+        'is_active',
+        'durasi_sewa_hari'
     ];
 
     protected $casts = [
@@ -33,7 +34,7 @@ class Rak extends Model
         'lebar' => 'decimal:2',
         'tinggi' => 'decimal:2',
         'jumlah_tingkat' => 'integer',
-        'harga_sewa_perbulan' => 'decimal:2',
+        'harga_sewa_perbulan' => 'integer',
         'is_active' => 'boolean',
     ];
 
@@ -66,5 +67,13 @@ class Rak extends Model
     public function gudang()
     {
         return $this->belongsTo(Gudang::class, 'lokasi_gudang', 'nama_gudang');
+    }
+
+    /**
+     * Relasi ke Transactions
+     */
+    public function transactions()
+    {
+        return $this->hasMany(Transaction::class);
     }
 }

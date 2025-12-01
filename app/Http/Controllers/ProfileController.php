@@ -8,6 +8,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Redirect;
 use Illuminate\View\View;
+use Illuminate\Support\Facades\Storage;
 
 class ProfileController extends Controller
 {
@@ -29,7 +30,7 @@ class ProfileController extends Controller
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'string', 'email', 'max:255', 'unique:users,email,' . $request->user()->id],
-            'telepon' => ['nullable', 'string', 'max:20'],
+            'phone' => ['nullable', 'string', 'max:20'],
             'perusahaan' => ['nullable', 'string', 'max:255'],
             'alamat' => ['nullable', 'string'],
             'password_lama' => ['nullable', 'required_with:password'],
@@ -43,8 +44,8 @@ class ProfileController extends Controller
         $user->email = $validated['email'];
         
         // Only update these fields if columns exist in database
-        if (\Schema::hasColumn('users', 'telepon')) {
-            $user->telepon = $validated['telepon'] ?? null;
+        if (\Schema::hasColumn('users', 'phone')) {
+            $user->phone = $validated['phone'] ?? null;
         }
         if (\Schema::hasColumn('users', 'perusahaan')) {
             $user->perusahaan = $validated['perusahaan'] ?? null;
@@ -78,8 +79,8 @@ class ProfileController extends Controller
         $user = $request->user();
 
         // Delete old photo if exists
-        if ($user->foto && \Storage::disk('public')->exists($user->foto)) {
-            \Storage::disk('public')->delete($user->foto);
+        if ($user->foto && Storage::disk('public')->exists($user->foto)) {
+            Storage::disk('public')->delete($user->foto);
         }
 
         // Store new photo with unique name
@@ -91,6 +92,25 @@ class ProfileController extends Controller
         $user->save();
 
         return redirect()->route('customer.profile.index')->with('success', 'Foto profile berhasil diperbarui!');
+    }
+
+    /**
+     * Delete profile photo.
+     */
+    public function hapusFoto(Request $request): RedirectResponse
+    {
+        $user = $request->user();
+
+        // Hapus file dari storage
+        if ($user->foto && Storage::disk('public')->exists($user->foto)) {
+            Storage::disk('public')->delete($user->foto);
+        }
+
+        // Update database
+        $user->foto = null;
+        $user->save();
+
+        return redirect()->route('customer.profile.index')->with('success', 'Foto profile berhasil dihapus.');
     }
 
     /**
