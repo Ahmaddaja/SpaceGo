@@ -7,13 +7,36 @@
     </td>
     <td class="align-middle">
         <div class="d-flex align-items-center">
-            <div class="bg-primary rounded-circle d-flex align-items-center justify-content-center text-white font-weight-bold mr-2" 
-                 style="width: 32px; height: 32px; font-size: 12px;">
-                {{ strtoupper(substr($transaction->user->name ?? 'U', 0, 2)) }}
-            </div>
+            @php
+                // Cek relasi customer/user
+                $customer = $transaction->customer ?? $transaction->user ?? null;
+                
+                if ($customer) {
+                    // Cek field foto dengan berbagai kemungkinan nama
+                    $fotoField = $customer->foto ?? $customer->profile_photo ?? $customer->photo ?? $customer->profile_photo_path ?? null;
+                    $hasFoto = $fotoField && !empty($fotoField);
+                } else {
+                    $hasFoto = false;
+                    $fotoField = null;
+                }
+            @endphp
+            
+            @if($customer && $hasFoto)
+                <!-- Tampilkan foto profil -->
+                <img src="{{ asset('storage/' . $fotoField) }}" 
+                     alt="Profile {{ $customer->name }}" 
+                     class="rounded-circle mr-2"
+                     style="width: 32px; height: 32px; object-fit: cover; border: 2px solid #fff; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+            @else
+                <!-- Tampilkan inisial jika tidak ada foto atau tidak ada customer -->
+                <div class="bg-primary rounded-circle d-flex align-items-center justify-content-center text-white font-weight-bold mr-2" 
+                     style="width: 32px; height: 32px; font-size: 12px; border: 2px solid #fff; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+                    {{ strtoupper(substr($customer->name ?? 'C', 0, 1)) }}
+                </div>
+            @endif
             <div>
-                <div class="font-weight-bold">{{ $transaction->user->name ?? 'N/A' }}</div>
-                <small class="text-muted">{{ $transaction->user->email ?? '-' }}</small>
+                <div class="font-weight-bold">{{ $customer->name ?? 'N/A' }}</div>
+                <small class="text-muted">{{ $customer->email ?? '-' }}</small>
             </div>
         </div>
     </td>
