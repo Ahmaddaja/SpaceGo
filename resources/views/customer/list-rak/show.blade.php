@@ -175,7 +175,6 @@
           @php
     $now = now()->startOfDay();
     $end = \Carbon\Carbon::parse($activeRental->sewa_berakhir)->startOfDay();
-
     // Selisih hari (+ = masih ada sisa, 0 = hari terakhir, - = sudah lewat)
     $daysDiff = $now->diffInDays($end, false);
 @endphp
