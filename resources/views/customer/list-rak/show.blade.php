@@ -111,8 +111,12 @@
 @endpush
 
 @section('content')
+
     <div class="py-12">
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
+<div class="py-12">
+    <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
+
 
             <!-- TITLE -->
             <div class="mb-8 text-center">
@@ -240,6 +244,34 @@
                 @endif
             </div>
 
+        <!-- SPESIFIKASI SECTION -->
+        @include('customer.list-rak.partials.specifications-section')
+
+        <!-- ACTION BUTTONS -->
+        <div class="mt-8 flex flex-col sm:flex-row gap-4">
+            <a href="{{ route('customer.list-rak.list-rak') }}"
+               class="flex items-center justify-center space-x-3 px-8 py-4 bg-gray-200 text-gray-700 rounded-xl hover:bg-gray-300 transition-all duration-300 font-semibold shadow-md hover:shadow-lg group action-button">
+                <i class="fas fa-arrow-left group-hover:-translate-x-1 transition-transform"></i>
+                <span>Kembali ke Daftar Rak</span>
+            </a>
+
+            @if($activeRental)
+                <button class="flex-1 flex items-center justify-center space-x-3 px-8 py-4 bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-xl cursor-default font-semibold shadow-lg">
+                    <i class="fas fa-check-circle"></i>
+                    <span>Rak Sedang Anda Sewa</span>
+                </button>
+            @elseif ($rak->status === 'tersedia')
+                <a href="{{ route('customer.payment.checkout', $rak->id) }}"
+                   class="flex-1 flex items-center justify-center space-x-3 px-8 py-4 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-xl hover:shadow-xl transition-all duration-300 font-semibold shadow-lg action-button">
+                    <i class="fas fa-shopping-cart"></i>
+                    <span>Sewa Sekarang</span>
+                </a>
+            @else
+                <button class="flex-1 flex items-center justify-center space-x-3 px-8 py-4 bg-gray-300 text-gray-500 rounded-xl cursor-not-allowed font-semibold">
+                    <i class="fas fa-ban"></i>
+                    <span>Tidak Tersedia</span>
+                </button>
+            @endif
         </div>
     </div>
 
