@@ -1,62 +1,70 @@
 <nav class="bg-white/90 backdrop-blur-md shadow-lg sticky top-0 z-50 border-b border-gray-200">
-    <div class="max-w-7xl mx-auto px-6 py-4">
+    <div class="max-w-7xl mx-auto px-6 py-2.5">
         <div class="flex items-center justify-between">
-            <div class="flex items-center space-x-4">
-                <div class="bg-gradient-to-r from-blue-600 to-purple-600 p-3 rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105">
-                    <!-- Logo yang telah diganti -->
-                    <svg class="w-6 h-6 text-white" fill="currentColor" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+            <div class="flex items-center space-x-3">
+                <div class="bg-gradient-to-r from-blue-600 to-purple-600 p-2.5 rounded-xl shadow-md hover:shadow-lg transition-all duration-300 transform hover:scale-105">
+                    <svg class="w-5 h-5 text-white" fill="currentColor" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
                         <path d="M3 10L12 3L21 10V21H3V10ZM5 12V19H19V12L12 7L5 12Z"/>
                     </svg>
                 </div>
                 <div>
-                    <span class="text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">SPACEGO</span>
-                    <p class="text-xs text-gray-500 font-medium">Storage Solution</p>
+                    <span class="text-xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">SPACEGO</span>
+                    <p class="text-[10px] text-gray-500 font-medium">Storage Solution</p>
                 </div>
             </div>
-            
-            <div class="flex items-center space-x-8">
+
+            <div class="flex items-center space-x-6">
                 <!-- Home -->
-                <a href="{{ route('customer.index') }}" class="flex flex-col items-center group transition-all duration-300 {{ request()->routeIs('customer.index') ? 'text-blue-600' : 'text-gray-600 hover:text-blue-600' }}">
-                    <div class="p-3 rounded-xl shadow-sm transition-all duration-300 transform {{ request()->routeIs('customer.index') ? 'bg-blue-100 shadow-md scale-110' : 'bg-gray-100 group-hover:bg-blue-100 group-hover:shadow-md group-hover:scale-110' }}">
-                        <i class="fas fa-home"></i>
+                <a href="{{ route('customer.index') }}" 
+                   class="flex flex-col items-center group transition-all duration-300 
+                   {{ request()->routeIs('customer.index') ? 'text-blue-600' : 'text-gray-600 hover:text-blue-600' }}">
+                    <div class="p-2 rounded-lg shadow-sm transition-all duration-300 transform 
+                        {{ request()->routeIs('customer.index') ? 'bg-blue-100 shadow-md scale-110' : 'bg-gray-100 group-hover:bg-blue-100 group-hover:shadow-md group-hover:scale-110' }}">
+                        <i class="fas fa-home text-sm"></i>
                     </div>
-                    <span class="text-xs mt-2 font-medium">Home</span>
+                    <span class="text-[10px] mt-1 font-medium">Home</span>
                 </a>
-                
+
                 <!-- Rak -->
-                <a href="{{ route('customer.list-rak.list-rak') }}" class="flex flex-col items-center group transition-all duration-300 {{ request()->routeIs('customer.list-rak.list-rak') ? 'text-blue-600' : 'text-gray-600 hover:text-blue-600' }}">
-                    <div class="p-3 rounded-xl shadow-sm transition-all duration-300 transform {{ request()->routeIs('customer.list-rak.list-rak') ? 'bg-blue-100 shadow-md scale-110' : 'bg-gray-100 group-hover:bg-blue-100 group-hover:shadow-md group-hover:scale-110' }}">
-                        <i class="fas fa-pallet"></i>
+                <a href="{{ route('customer.list-rak.list-rak') }}" 
+                   class="flex flex-col items-center group transition-all duration-300 
+                   {{ request()->routeIs('customer.list-rak.list-rak') ? 'text-blue-600' : 'text-gray-600 hover:text-blue-600' }}">
+                    <div class="p-2 rounded-lg shadow-sm transition-all duration-300 transform 
+                        {{ request()->routeIs('customer.list-rak.list-rak') ? 'bg-blue-100 shadow-md scale-110' : 'bg-gray-100 group-hover:bg-blue-100 group-hover:shadow-md group-hover:scale-110' }}">
+                        <i class="fas fa-pallet text-sm"></i>
                     </div>
-                    <span class="text-xs mt-2 font-medium">Rak</span>
+                    <span class="text-[10px] mt-1 font-medium">Rak</span>
                     @if(request()->routeIs('customer.list-rak.list-rak'))
-                    <div class="absolute -top-1 -right-1 w-3 h-3 bg-blue-500 rounded-full animate-pulse"></div>
+                        <div class="absolute -top-1 -right-1 w-2 h-2 bg-blue-500 rounded-full animate-pulse"></div>
                     @endif
                 </a>
-                 
+
                 <!-- Rak Anda -->
-                <a href="{{ route('customer.list-rak.rak') }}" class="flex flex-col items-center group transition-all duration-300 {{ request()->routeIs('customer.list-rak.rak') ? 'text-blue-600' : 'text-gray-600 hover:text-blue-600' }}">
-                    <div class="p-3 rounded-xl shadow-sm transition-all duration-300 transform {{ request()->routeIs('customer.list-rak.rak') ? 'bg-blue-100 shadow-md scale-110' : 'bg-gray-100 group-hover:bg-blue-100 group-hover:shadow-md group-hover:scale-110' }}">
-                        <i class="fas fa-th-large w-5 h-5"></i>
+                <a href="{{ route('customer.list-rak.rak') }}" 
+                   class="flex flex-col items-center group transition-all duration-300 
+                   {{ request()->routeIs('customer.list-rak.rak') ? 'text-blue-600' : 'text-gray-600 hover:text-blue-600' }}">
+                    <div class="p-2 rounded-lg shadow-sm transition-all duration-300 transform 
+                        {{ request()->routeIs('customer.list-rak.rak') ? 'bg-blue-100 shadow-md scale-110' : 'bg-gray-100 group-hover:bg-blue-100 group-hover:shadow-md group-hover:scale-110' }}">
+                        <i class="fas fa-th-large text-sm"></i>
                     </div>
-                    <span class="text-xs mt-2 font-medium">Rak Anda</span>
+                    <span class="text-[10px] mt-1 font-medium">Rak Anda</span>
                     @if(request()->routeIs('customer.list-rak.rak'))
-                    <div class="absolute -top-1 -right-1 w-3 h-3 bg-blue-500 rounded-full animate-pulse"></div>
+                        <div class="absolute -top-1 -right-1 w-2 h-2 bg-blue-500 rounded-full animate-pulse"></div>
                     @endif
                 </a>
-                
+
                 <!-- History -->
-                <a href="{{ route('customer.history') }}" class="flex flex-col items-center group transition-all duration-300 {{ request()->routeIs('customer.history') ? 'text-blue-600' : 'text-gray-600 hover:text-blue-600' }}">
-                    <div class="p-3 rounded-xl shadow-sm transition-all duration-300 transform {{ request()->routeIs('customer.history') ? 'bg-blue-100 shadow-md scale-110' : 'bg-gray-100 group-hover:bg-blue-100 group-hover:shadow-md group-hover:scale-110' }}">
-                        <i class="fas fa-history"></i>
+                <a href="{{ route('customer.history') }}" 
+                   class="flex flex-col items-center group transition-all duration-300 
+                   {{ request()->routeIs('customer.history') ? 'text-blue-600' : 'text-gray-600 hover:text-blue-600' }}">
+                    <div class="p-2 rounded-lg shadow-sm transition-all duration-300 transform 
+                        {{ request()->routeIs('customer.history') ? 'bg-blue-100 shadow-md scale-110' : 'bg-gray-100 group-hover:bg-blue-100 group-hover:shadow-md group-hover:scale-110' }}">
+                        <i class="fas fa-history text-sm"></i>
                     </div>
-                    <span class="text-xs mt-2 font-medium">History</span>
-                    @if(request()->routeIs('customer.history'))
-                    <div class="absolute -top-1 -right-1 w-3 h-3 bg-blue-500 rounded-full animate-pulse"></div>
-                    @endif
+                    <span class="text-[10px] mt-1 font-medium">History</span>
                 </a>
-                
-                <!-- Dropdown Profile -->
+
+<!-- Dropdown Profile -->
                 <div class="relative group">
                     <button class="flex items-center space-x-3 bg-gray-100 hover:bg-gray-200 rounded-xl px-4 py-2 transition-all duration-300 shadow-sm hover:shadow-md transform hover:scale-105">
                         <img src="{{ Auth::user()->foto ? asset('storage/' . Auth::user()->foto) : 'https://ui-avatars.com/api/?name=' . urlencode(Auth::user()->name) . '&size=32&background=4A90E2&color=fff' }}" 
@@ -104,6 +112,7 @@
         </div>
     </div>
 </nav>
+
 
 <!-- Include AlpineJS if not already included -->
 <script src="//unpkg.com/alpinejs" defer></script>
