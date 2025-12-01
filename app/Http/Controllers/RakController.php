@@ -82,6 +82,11 @@ class RakController extends Controller
         $rak->order_id = $transaction->order_id;
         $rak->payment_type = $transaction->payment_type;
 
+        // Tambahkan status masa sewa
+        $rak->status_sewa = $transaction->status_sewa;
+        $rak->sisa_hari = $transaction->sisa_hari;
+
+
         return view('customer.list-rak.show', compact('rak'));
     }
 
