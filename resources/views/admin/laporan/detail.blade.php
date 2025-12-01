@@ -2,7 +2,8 @@
 
 @section('title-content')
 <div class="d-flex justify-content-between align-items-center">
-    <h1 class="m-0">Detail Transaksi - {{ \Carbon\Carbon::create()->month($month)->translatedFormat('F') }} {{ $year }}</h1>
+    <h1 class="m-0">Detail Transaksi -{{ \Carbon\Carbon::createFromDate($year, $month, 1)->translatedFormat('F') }} {{ $year }}
+</h1>
     <nav aria-label="breadcrumb">
         <ol class="breadcrumb mb-0 bg-transparent">
             <li class="breadcrumb-item"><a href="{{ route('admin.dashboard') }}">Dashboard</a></li>
