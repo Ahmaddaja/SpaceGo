@@ -1,22 +1,19 @@
 <div class="rak-card bg-white rounded-2xl shadow-lg overflow-hidden group border border-gray-100 relative">
 
-    <!-- Status Ribbon -->
-    @if($rak->status === 'tersedia')
-    <div class="status-ribbon ribbon-available">
-        <i class="fas fa-check ribbon-icon"></i>
-        <span>Tersedia</span>
+    <div class="status-ribbon ribbon-{{ $rak->status }}">
+        <i class="fas 
+            @if($rak->status == 'tersedia') fa-check
+            @elseif($rak->status == 'terisi') fa-box
+            @else fa-tools
+            @endif
+        "></i>
+        <span>
+            @if($rak->status == 'tersedia') Tersedia
+            @elseif($rak->status == 'terisi') Terisi
+            @else Maintenance
+            @endif
+        </span>
     </div>
-    @elseif($rak->status === 'terisi')
-    <div class="status-ribbon ribbon-occupied">
-        <i class="fas fa-box ribbon-icon"></i>
-        <span>Terisi</span>
-    </div>
-    @else
-    <div class="status-ribbon ribbon-maintenance">
-        <i class="fas fa-tools ribbon-icon"></i>
-        <span>Maintenance</span>
-    </div>
-    @endif
 
     <!-- FOTO -->
     <div class="relative w-full h-56 overflow-hidden bg-gradient-to-br from-gray-100 to-gray-200">
@@ -41,13 +38,11 @@
 
     <!-- CONTENT -->
     <div class="p-6">
-        <!-- KODE -->
         <div class="mb-4">
             <p class="text-xs text-gray-500 uppercase tracking-wide mb-1">Nama Rak</p>
             <h3 class="text-2xl font-bold text-blue-600">{{ $rak->nama_rak }}</h3>
         </div>
 
-        <!-- INFO -->
         <div class="space-y-4 text-sm mb-4">
 
             <div class="flex items-start">
@@ -71,7 +66,7 @@
             </div>
         </div>
 
-        <!-- DURASI SEWA -->
+        <!-- DURASI -->
         <div class="mt-5 pt-5 border-t border-gray-100">
             <div class="flex items-center mb-3">
                 <div class="bg-amber-100 p-2 rounded-lg mr-3">
@@ -128,40 +123,38 @@
         overflow: hidden;
         transition: all 0.3s ease;
     }
-
-    /* Ribbon Styles */
+    /* RIBBON CLEAN BIG STYLE */
     .status-ribbon {
         position: absolute;
-        top: 20px;
-        right: -30px;
-        padding: 8px 40px;
-        font-size: 0.75rem;
-        font-weight: 700;
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
+        top: 18px;
+        right: -60px; /* tarik ke kanan biar full */
         transform: rotate(45deg);
-        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-        z-index: 10;
+        padding: 14px 75px; /* ukuran lebih besar */
+        font-size: 0.85rem;
+        font-weight: 700;
+        letter-spacing: 0.5px;
         display: flex;
         align-items: center;
-        gap: 6px;
-        min-width: 120px;
-        justify-content: center;
+        gap: 8px;
+        color: white;
+        box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+        z-index: 30;
     }
-    
-    .ribbon-available {
+
+    /* Warna status */
+    .ribbon-tersedia {
         background: linear-gradient(135deg, #10b981, #059669);
-        color: white;
     }
-    
-    .ribbon-occupied {
+    .ribbon-terisi {
         background: linear-gradient(135deg, #ef4444, #dc2626);
-        color: white;
     }
-    
     .ribbon-maintenance {
         background: linear-gradient(135deg, #f59e0b, #d97706);
-        color: white;
+    }
+
+    /* Icon biar stabil */
+    .status-ribbon i {
+        font-size: 1rem;
     }
 
     /* Type Badge */
@@ -177,16 +170,6 @@
         display: flex;
         align-items: center;
         gap: 4px;
-    }
-
-    /* Ribbon icon animation */
-    .ribbon-icon {
-        animation: pulse 2s infinite;
-    }
-    
-    @keyframes pulse {
-        0%, 100% { transform: scale(1); }
-        50% { transform: scale(1.1); }
     }
 
     /* Card hover effects */
