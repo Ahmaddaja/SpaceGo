@@ -141,4 +141,19 @@ public function getSisaHariAttribute()
     return now()->diffInDays($this->sewa_berakhir, false);
 }
 
+public function getStatusSewaAttribute()
+{
+    $now = now()->startOfDay();
+    $end = \Carbon\Carbon::parse($this->sewa_berakhir)->startOfDay();
+
+    if ($now->gt($end)) {
+        return 'masa_tenggang';
+    } elseif ($now->eq($end)) {
+        return 'berakhir_hari_ini';
+    } else {
+        return 'aktif';
+    }
+}
+
+
 }

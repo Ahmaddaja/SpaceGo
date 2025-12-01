@@ -112,12 +112,8 @@
 
 @section('content')
 
-    <div class="py-12">
-        <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
 <div class="py-12">
     <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
-
-
             <!-- TITLE -->
             <div class="mb-8 text-center">
                 <h2 class="text-4xl md:text-5xl font-bold text-gray-800 mb-4">Detail Rak</h2>
@@ -211,6 +207,113 @@
                     @include('customer.list-rak.partials.info-section')
                 </div>
             </div>
+        <!-- RENTAL INFO (Jika user sudah menyewa) -->
+        @php
+            $activeRental = null;
+            if (Auth::check()) {
+                $activeRental = \App\Models\Transaction::where('user_id', Auth::id())
+    ->where('rak_id', $rak->id)
+    ->whereIn('transaction_status', ['settlement', 'capture'])
+    ->orderBy('sewa_berakhir', 'desc')
+    ->first();
+
+            }
+        @endphp
+
+        @if($activeRental)
+        <div class="mb-8 rental-info-card">
+            <div class="flex items-center mb-4">
+                <div class="rental-icon mr-4">
+                    <i class="fas fa-check-circle"></i>
+                </div>
+                <div>
+                    <h3 class="text-xl font-bold">Anda Sedang Menyewa Rak Ini</h3>
+                    <p class="text-sm opacity-90">Order ID: {{ $activeRental->order_id }}</p>
+                </div>
+            </div>
+            
+            <div class="grid md:grid-cols-2 gap-4 mt-6">
+                <div class="rental-date-box">
+                    <div class="flex items-center mb-2">
+                        <i class="fas fa-calendar-check mr-2 text-lg"></i>
+                        <span class="font-semibold">Tanggal Mulai Sewa</span>
+                    </div>
+                    <p class="text-2xl font-bold">
+                        {{ \Carbon\Carbon::parse($activeRental->sewa_mulai)->format('d M Y') }}
+                    </p>
+                    <p class="text-sm opacity-80 mt-1">
+                        {{ \Carbon\Carbon::parse($activeRental->sewa_mulai)->diffForHumans() }}
+                    </p>
+                </div>
+                
+                <div class="rental-date-box">
+                    <div class="flex items-center mb-2">
+                        <i class="fas fa-calendar-times mr-2 text-lg"></i>
+                        <span class="font-semibold">Tanggal Berakhir Sewa</span>
+                    </div>
+                    <p class="text-2xl font-bold">
+                        {{ \Carbon\Carbon::parse($activeRental->sewa_berakhir)->format('d M Y') }}
+                    </p>
+                    <p class="text-sm opacity-80 mt-1">
+                        {{ \Carbon\Carbon::parse($activeRental->sewa_berakhir)->diffForHumans() }}
+                    </p>
+                </div>
+            </div>
+            
+          @php
+    $now = now()->startOfDay();
+    $end = \Carbon\Carbon::parse($activeRental->sewa_berakhir)->startOfDay();
+
+    // Selisih hari (+ = masih ada sisa, 0 = hari terakhir, - = sudah lewat)
+    $daysDiff = $now->diffInDays($end, false);
+@endphp
+
+@php
+    // Tentukan warna status
+    if ($daysDiff > 0) {
+        $statusColor = 'bg-green-600';      // masih dalam periode sewa
+        $statusText = $daysDiff . ' Hari Tersisa';
+    } elseif ($daysDiff === 0) {
+        $statusColor = 'bg-yellow-500';     // habis hari ini
+        $statusText = 'Berakhir Hari Ini';
+    } else {
+        $statusColor = 'bg-red-600';        // masa tenggang
+        $statusText = 'Masa Tenggang - Harus Membayar Denda (Lewat ' . abs($daysDiff) . ' Hari)';
+    }
+@endphp
+
+<div class="mt-4 p-3 rounded-lg text-white {{ $statusColor }}">
+    <div class="flex items-center justify-between">
+        <span class="font-semibold text-white">Sisa Waktu Sewa:</span>
+        <span class="text-xl font-bold text-white">
+            {{ $statusText }}
+        </span>
+    </div>
+</div>
+<div class="mt-4 p-4 rounded-lg 
+    @if($daysDiff >= 0) bg-black bg-opacity-30 @else bg-red-600 bg-opacity-90 @endif 
+    text-white">
+    
+    <div class="flex items-center justify-between">
+        <span class="font-semibold text-white">
+            @if($daysDiff >= 0)
+                Countdown Waktu Sewa:
+            @else
+                Waktu Lewat Dari Batas Sewa:
+            @endif
+        </span>
+
+        <span id="countdownTimer" class="text-xl font-bold">00:00:00</span>
+    </div>
+</div>
+
+<!-- Kirim waktu ke JS -->
+<input type="hidden" id="rentalEndTime" value="{{ \Carbon\Carbon::parse($activeRental->sewa_berakhir)->format('Y-m-d H:i:s') }}">
+<input type="hidden" id="daysDiff" value="{{ $daysDiff }}">
+
+
+        </div>
+        @endif
 
             <!-- SPESIFIKASI SECTION -->
             @include('customer.list-rak.partials.specifications-section')
@@ -278,3 +381,49 @@
     <!-- WhatsApp Button -->
     @include('customer.payment.partials.whatsapp-button')
 @endsection
+
+@push('scripts')
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+
+    let endTime = document.getElementById("rentalEndTime");
+    let daysDiff = parseInt(document.getElementById("daysDiff")?.value ?? 0);
+
+    if (!endTime) return;
+
+    let end = new Date(endTime.value).getTime();
+
+    function updateCountdown() {
+        let now = new Date().getTime();
+
+        let distance = end - now; // positif = masih sewa, negatif = masa tenggang
+
+        let isGrace = distance < 0;
+
+        let absDistance = Math.abs(distance);
+
+        // Hitung jam, menit, detik
+        let hours = Math.floor(absDistance / (1000 * 60 * 60));
+        let minutes = Math.floor((absDistance % (1000 * 60 * 60)) / (1000 * 60));
+        let seconds = Math.floor((absDistance % (1000 * 60)) / 1000);
+
+        let formatted =
+            (hours < 10 ? "0" + hours : hours) + ":" +
+            (minutes < 10 ? "0" + minutes : minutes) + ":" +
+            (seconds < 10 ? "0" + seconds : seconds);
+
+        let display = document.getElementById("countdownTimer");
+
+        if (isGrace) {
+            display.innerHTML = "Lewat " + formatted;
+            display.style.color = "#ffdddd";
+        } else {
+            display.innerHTML = formatted;
+        }
+    }
+
+    updateCountdown();
+    setInterval(updateCountdown, 1000);
+});
+</script>
+@endpush
