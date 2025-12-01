@@ -347,55 +347,76 @@ class PaymentController extends Controller
     /**
      * Handle Pembayaran Sukses
      */
-    private function handleSuccessPayment($transaction)
-    {
-        $rak = Rak::find($transaction->rak_id);
+    /**
+ * Handle Pembayaran Sukses
+ */
+private function handleSuccessPayment($transaction)
+{
+    $rak = Rak::find($transaction->rak_id);
 
-        if ($rak && $rak->status === 'tersedia') {
-            $rak->update(['status' => 'terisi']);
+    if ($rak && $rak->status === 'tersedia') {
 
-            Log::info('Rak Status Updated to Terisi', [
-                'rak_id' => $rak->id,
-                'rak_name' => $rak->nama_rak,
-                'transaction_id' => $transaction->id
+        // ============================
+        // SET DURASI, MULAI, BERAKHIR
+        // ============================
+        $durasi = $rak->durasi_sewa_hari ?? 30; // default 30 hari
+
+        $transaction->sewa_mulai = now();
+        $transaction->sewa_berakhir = now()->addDays($durasi);
+        $transaction->sisa_hari = now()->diffInDays($transaction->sewa_berakhir, false);
+        $transaction->save();
+
+        Log::info('Durasi sewa diterapkan', [
+            'transaction_id' => $transaction->id,
+            'sewa_mulai' => $transaction->sewa_mulai,
+            'sewa_berakhir' => $transaction->sewa_berakhir,
+            'sisa_hari' => $transaction->sisa_hari,
+            'durasi' => $durasi
+        ]);
+
+        // ============================
+        // UPDATE STATUS RAK
+        // ============================
+        $rak->update(['status' => 'terisi']);
+
+        Log::info('Rak status diubah ke terisi', [
+            'rak_id' => $rak->id,
+            'transaction_id' => $transaction->id
+        ]);
+
+        // ============================
+        // LOG HISTORY SEWA BARU
+        // ============================
+        try {
+            HistoryService::logNewRental(
+                $transaction->user_id,
+                $rak->kode_rak ?? $rak->nama_rak,
+                $durasi,
+                $transaction->amount,
+                'System'
+            );
+        } catch (\Exception $historyError) {
+            Log::error('Gagal menulis history sewa: ' . $historyError->getMessage());
+        }
+
+        // =====================================================
+        // LAPORAN PENDAPATAN (TETAP DIPERTAHANKAN)
+        // =====================================================
+        try {
+            $year = $transaction->transaction_time->year;
+            $month = $transaction->transaction_time->month;
+
+            RevenueService::generateMonthlyReport($year, $month);
+
+            Log::info('Revenue report berhasil dibuat otomatis', [
+                'transaction_id' => $transaction->id,
+                'year' => $year,
+                'month' => $month
             ]);
-
-            // Log History Sewa Rak
-            try {
-                HistoryService::logNewRental(
-                    $transaction->user_id,
-                    $rak->kode_rak ?? $rak->nama_rak,
-                    30,
-                    $transaction->amount,
-                    'System'
-                );
-
-                Log::info('New rental history logged', [
-                    'transaction_id' => $transaction->id,
-                    'customer_id' => $transaction->user_id,
-                    'rak_id' => $rak->id
-                ]);
-            } catch (\Exception $historyError) {
-                Log::error('Failed to log new rental history: ' . $historyError->getMessage());
-            }
-
-            // =====================================================
-            // AUTO GENERATE LAPORAN PENDAPATAN
-            // =====================================================
-            try {
-                $year = $transaction->transaction_time->year;
-                $month = $transaction->transaction_time->month;
-
-                RevenueService::generateMonthlyReport($year, $month);
-
-                Log::info('Revenue report auto-generated', [
-                    'transaction_id' => $transaction->id,
-                    'year' => $year,
-                    'month' => $month
-                ]);
-            } catch (\Exception $revenueError) {
-                Log::error('Failed to generate revenue report: ' . $revenueError->getMessage());
+        } catch (\Exception $revenueError) {
+            Log::error('Gagal membuat laporan pendapatan: ' . $revenueError->getMessage());
             }
         }
     }
+
 }

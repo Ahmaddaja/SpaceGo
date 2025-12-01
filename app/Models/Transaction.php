@@ -131,4 +131,14 @@ public function getStatusIcon()
             return 'fas fa-question-circle';
     }
 }
+
+public function getSisaHariAttribute()
+{
+    if (!$this->sewa_berakhir) {
+        return null;
+    }
+
+    return now()->diffInDays($this->sewa_berakhir, false);
+}
+
 }

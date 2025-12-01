@@ -24,7 +24,8 @@ class Rak extends Model
         'status',
         'foto',
         'spesifikasi_tambahan',
-        'is_active'
+        'is_active',
+        'durasi_sewa_hari'
     ];
 
     protected $casts = [
