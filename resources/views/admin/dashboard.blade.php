@@ -9,6 +9,15 @@
             overflow: visible !important;
         }
 
+        .chart-card .card-body {
+            height: 350px !important;
+        }
+
+        .chart-card canvas {
+            max-height: 100% !important;
+        }
+
+
         .card:hover {
             transform: translateY(-5px) !important;
             box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1) !important;
@@ -102,7 +111,6 @@
 @endsection
 
 @section('content')
-
     <!-- Statistik Cards -->
     <div class="row mb-4 dashboard-stats">
         <!-- Total Gedung -->
@@ -352,7 +360,7 @@
                                 </div>
                                 <div class="col-md-2">
                                     <small class="text-muted d-block">Status</small>
-                                    @if(in_array($transaction->transaction_status, ['capture', 'settlement']))
+                                    @if (in_array($transaction->transaction_status, ['capture', 'settlement']))
                                         <span class="badge badge-status bg-success">Sukses</span>
                                     @elseif($transaction->transaction_status == 'pending')
                                         <span class="badge badge-status bg-warning text-dark">Pending</span>
@@ -361,7 +369,8 @@
                                     @endif
                                 </div>
                                 <div class="col-md-1 text-end">
-                                    <small class="text-muted">{{ $transaction->transaction_time->diffForHumans() }}</small>
+                                    <small
+                                        class="text-muted">{{ $transaction->transaction_time->diffForHumans() }}</small>
                                 </div>
                             </div>
                         </div>
@@ -375,7 +384,6 @@
             </div>
         </div>
     </div>
-
 @endsection
 
 @push('scripts')
@@ -415,7 +423,10 @@
                         position: 'top',
                         labels: {
                             padding: 15,
-                            font: { size: 12, weight: '600' }
+                            font: {
+                                size: 12,
+                                weight: '600'
+                            }
                         }
                     },
                     tooltip: {
@@ -431,7 +442,9 @@
                         beginAtZero: true,
                         ticks: {
                             stepSize: 5,
-                            font: { size: 11 }
+                            font: {
+                                size: 11
+                            }
                         },
                         grid: {
                             color: 'rgba(0, 0, 0, 0.05)'
@@ -439,7 +452,9 @@
                     },
                     x: {
                         ticks: {
-                            font: { size: 11 }
+                            font: {
+                                size: 11
+                            }
                         },
                         grid: {
                             display: false
@@ -475,7 +490,10 @@
                         position: 'bottom',
                         labels: {
                             padding: 15,
-                            font: { size: 12, weight: '600' },
+                            font: {
+                                size: 12,
+                                weight: '600'
+                            },
                             usePointStyle: true,
                             pointStyle: 'circle'
                         }
@@ -514,7 +532,10 @@
                         position: 'top',
                         labels: {
                             padding: 15,
-                            font: { size: 12, weight: '600' }
+                            font: {
+                                size: 12,
+                                weight: '600'
+                            }
                         }
                     },
                     tooltip: {
@@ -522,7 +543,7 @@
                         padding: 12,
                         cornerRadius: 8,
                         callbacks: {
-                            label: function (context) {
+                            label: function(context) {
                                 let label = context.dataset.label || '';
                                 if (label) {
                                     label += ': ';
@@ -539,13 +560,15 @@
                     y: {
                         beginAtZero: true,
                         ticks: {
-                            callback: function (value) {
+                            callback: function(value) {
                                 if (value >= 1000000) {
                                     return 'Rp ' + (value / 1000000).toFixed(1) + 'jt';
                                 }
                                 return 'Rp ' + (value / 1000).toFixed(0) + 'k';
                             },
-                            font: { size: 11 }
+                            font: {
+                                size: 11
+                            }
                         },
                         grid: {
                             color: 'rgba(0, 0, 0, 0.05)'
@@ -553,7 +576,9 @@
                     },
                     x: {
                         ticks: {
-                            font: { size: 11 }
+                            font: {
+                                size: 11
+                            }
                         },
                         grid: {
                             display: false
@@ -589,7 +614,10 @@
                         position: 'bottom',
                         labels: {
                             padding: 15,
-                            font: { size: 12, weight: '600' },
+                            font: {
+                                size: 12,
+                                weight: '600'
+                            },
                             usePointStyle: true,
                             pointStyle: 'circle'
                         }
