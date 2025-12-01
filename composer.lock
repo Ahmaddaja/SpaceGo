@@ -4,7 +4,11 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
+<<<<<<< HEAD
+    "content-hash": "c514d8f7b9fc5970bdd94287905ef584",
+=======
     "content-hash": "79a61de528ba88fc99908095d2b0a0f8",
+>>>>>>> f64eca3d0a395b4f2c3d7d83757c577153b9f3c3
     "packages": [
         {
             "name": "barryvdh/laravel-dompdf",
@@ -2249,6 +2253,8 @@
             "time": "2025-11-18T12:17:23+00:00"
         },
         {
+<<<<<<< HEAD
+=======
             "name": "masterminds/html5",
             "version": "2.10.0",
             "source": {
@@ -2377,6 +2383,7 @@
             "time": "2025-03-18T06:30:17+00:00"
         },
         {
+>>>>>>> f64eca3d0a395b4f2c3d7d83757c577153b9f3c3
             "name": "monolog/monolog",
             "version": "3.9.0",
             "source": {

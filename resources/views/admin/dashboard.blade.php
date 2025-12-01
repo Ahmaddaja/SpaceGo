@@ -2,11 +2,10 @@
 
 @push('styles')
     <style>
-        /* Override kartu AdminLTE */
         .card {
-            border-radius: 12px !important;
-            transition: 0.3s ease !important;
-            overflow: visible !important;
+            transition: all 0.3s ease;
+            border-radius: 12px;
+            overflow: hidden;
         }
 
         .chart-card .card-body {
@@ -19,23 +18,14 @@
 
 
         .card:hover {
-            transform: translateY(-5px) !important;
+            transform: translateY(-5px);
             box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1) !important;
         }
 
-        .card-body {
-            padding: 1.25rem !important;
-        }
-
-        /* STAT CARD */
         .stat-card {
-            background: linear-gradient(135deg, var(--gradient-start), var(--gradient-end)) !important;
-            border: none !important;
-            color: #fff !important;
-        }
-
-        .stat-card * {
-            color: #fff !important;
+            background: linear-gradient(135deg, var(--gradient-start) 0%, var(--gradient-end) 100%);
+            color: white;
+            border: none;
         }
 
         .stat-card .icon-box {
@@ -49,30 +39,37 @@
             backdrop-filter: blur(10px);
         }
 
-        /* Supaya <a> tidak mengubah warna text */
-        .stat-link {
-            color: inherit !important;
+        .stat-card h2 {
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin: 0.5rem 0;
         }
 
-        /* Hover seluruh card */
-        .stat-link .stat-card:hover {
-            transform: translateY(-5px) !important;
-            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2) !important;
+        .stat-card p {
+            opacity: 0.9;
+            margin: 0;
+            font-size: 0.95rem;
         }
 
-        /* Icon Box Hover */
-        .stat-card:hover .icon-box {
-            background: rgba(255, 255, 255, 0.35) !important;
-            transform: scale(1.1);
-            transition: 0.25s ease-in-out;
+        .chart-card {
+            height: 100%;
         }
 
+        .chart-card .card-body {
+            padding: 1.5rem;
+        }
 
-        /* ITEM TRANSAKSI */
+        .badge-status {
+            font-size: 0.75rem;
+            padding: 0.35rem 0.75rem;
+            border-radius: 6px;
+            font-weight: 600;
+        }
+
         .transaction-item {
             padding: 1rem;
             border-bottom: 1px solid #f0f0f0;
-            transition: 0.2s;
+            transition: background 0.2s;
         }
 
         .transaction-item:hover {
@@ -82,18 +79,8 @@
         .transaction-item:last-child {
             border-bottom: none;
         }
-
-        /* DARK MODE OVERRIDE */
-        .dark-mode .transaction-item {
-            border-bottom-color: #334155;
-        }
-
-        .dark-mode .transaction-item:hover {
-            background: #334155 !important;
-        }
     </style>
 @endpush
-
 
 @section('title-content')
     <div class="d-flex justify-content-between align-items-center">
@@ -112,96 +99,83 @@
 
 @section('content')
     <!-- Statistik Cards -->
-    <div class="row mb-4 dashboard-stats">
+    <div class="row mb-4">
         <!-- Total Gedung -->
         <div class="col-lg-3 col-md-6 mb-3">
-            <a href="{{ route('gudangs.index') }}" class="stat-link text-decoration-none d-block">
-                <div class="card stat-card shadow-sm" style="--gradient-start: #667eea; --gradient-end: #764ba2;">
-                    <div class="card-body">
-                        <div class="d-flex justify-content-between align-items-center">
-                            <div>
-                                <p class="mb-2">Total Gedung</p>
-                                <h2>{{ $totalGudang }}</h2>
-                            </div>
-                            <div class="icon-box">
-                                <i class="fas fa-building fa-2x"></i>
-                            </div>
+            <div class="card stat-card shadow-sm" style="--gradient-start: #667eea; --gradient-end: #764ba2;">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <p class="mb-2">Total Gedung</p>
+                            <h2>{{ $totalGudang }}</h2>
+                        </div>
+                        <div class="icon-box">
+                            <i class="fas fa-building fa-2x"></i>
                         </div>
                     </div>
                 </div>
-            </a>
+            </div>
         </div>
 
         <!-- Total Rak -->
         <div class="col-lg-3 col-md-6 mb-3">
-            <a href="{{ route('raks.index') }}" class="stat-link text-decoration-none d-block">
-                <div class="card stat-card shadow-sm h-100" style="--gradient-start: #f093fb; --gradient-end: #f5576c;">
-                    <div class="card-body">
-                        <div class="d-flex justify-content-between align-items-center">
-                            <div>
-                                <p class="mb-2">Total Rak</p>
-                                <h2>{{ $totalRak }}</h2>
-                            </div>
-                            <div class="icon-box">
-                                <i class="fas fa-boxes fa-2x"></i>
-                            </div>
+            <div class="card stat-card shadow-sm" style="--gradient-start: #f093fb; --gradient-end: #f5576c;">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <p class="mb-2">Total Rak</p>
+                            <h2>{{ $totalRak }}</h2>
+                        </div>
+                        <div class="icon-box">
+                            <i class="fas fa-boxes fa-2x"></i>
                         </div>
                     </div>
                 </div>
-            </a>
+            </div>
         </div>
 
         <!-- Total Pelanggan -->
         <div class="col-lg-3 col-md-6 mb-3">
-            <a href="{{ route('admin.pelanggan.pelanggan') }}" class="stat-link text-decoration-none d-block">
-                <div class="card stat-card shadow-sm h-100" style="--gradient-start: #4facfe; --gradient-end: #00f2fe;">
-                    <div class="card-body">
-                        <div class="d-flex justify-content-between align-items-center">
-                            <div>
-                                <p class="mb-2">Total Pelanggan</p>
-                                <h2>{{ $totalPelanggan }}</h2>
-                            </div>
-                            <div class="icon-box">
-                                <i class="fas fa-users fa-2x"></i>
-                            </div>
+            <div class="card stat-card shadow-sm" style="--gradient-start: #4facfe; --gradient-end: #00f2fe;">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <p class="mb-2">Total Pelanggan</p>
+                            <h2>{{ $totalPelanggan }}</h2>
+                        </div>
+                        <div class="icon-box">
+                            <i class="fas fa-users fa-2x"></i>
                         </div>
                     </div>
                 </div>
-            </a>
+            </div>
         </div>
 
         <!-- Total Transaksi -->
         <div class="col-lg-3 col-md-6 mb-3">
-            <a href="{{ route('admin.transactions.index') }} class="stat-link text-decoration-none d-block">
-                <div class="card stat-card shadow-sm h-100" style="--gradient-start: #43e97b; --gradient-end: #38f9d7;">
-                    <div class="card-body">
-                        <div class="d-flex justify-content-between align-items-center">
-                            <div>
-                                <p class="mb-2">Total Transaksi</p>
-                                <h2>{{ $totalTransaksi }}</h2>
-                            </div>
-                            <div class="icon-box">
-                                <i class="fas fa-shopping-cart fa-2x"></i>
-                            </div>
+            <div class="card stat-card shadow-sm" style="--gradient-start: #43e97b; --gradient-end: #38f9d7;">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <p class="mb-2">Total Transaksi</p>
+                            <h2>{{ $totalTransaksi }}</h2>
+                        </div>
+                        <div class="icon-box">
+                            <i class="fas fa-shopping-cart fa-2x"></i>
                         </div>
                     </div>
                 </div>
-            </a>
+            </div>
         </div>
+    </div>
 
-    </div> <!-- END ROW 1 -->
-
-
-    <!-- ========================= -->
-    <!-- ROW 2 : 3 Card Tambahan -->
-    <!-- ========================= -->
-    <div class="row mb-4 gx-3">
-
+    <!-- Row 2: Cards Tambahan -->
+    <div class="row mb-4">
         <!-- Transaksi Bulan Ini -->
-        <div class="col-12 col-md-4 mb-3">
-            <a href="#" class="w-100 text-dark text-decoration-none">
-                <div class="card border-0 shadow-sm h-100">
-                    <div class="card-body d-flex justify-content-between align-items-center">
+        <div class="col-lg-4 col-md-6 mb-3">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
                         <div>
                             <p class="text-muted mb-1">Transaksi Bulan Ini</p>
                             <h3 class="mb-0 font-weight-bold text-primary">{{ $transaksiBulanIni }}</h3>
@@ -211,51 +185,45 @@
                         </div>
                     </div>
                 </div>
-            </a>
+            </div>
         </div>
 
         <!-- Pendapatan Bulan Ini -->
-        <div class="col-12 col-md-4 mb-3">
-            <a href="#" class="w-100 text-dark text-decoration-none">
-                <div class="card border-0 shadow-sm h-100">
-                    <div class="card-body d-flex justify-content-between align-items-center">
+        <div class="col-lg-4 col-md-6 mb-3">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
                         <div>
                             <p class="text-muted mb-1">Pendapatan Bulan Ini</p>
-                            <h3 class="mb-0 font-weight-bold text-success">
-                                Rp {{ number_format($pendapatanBulanIni, 0, ',', '.') }}
-                            </h3>
+                            <h3 class="mb-0 font-weight-bold text-success">Rp
+                                {{ number_format($pendapatanBulanIni, 0, ',', '.') }}</h3>
                         </div>
                         <div class="text-success">
                             <i class="fas fa-money-bill-wave fa-2x"></i>
                         </div>
                     </div>
                 </div>
-            </a>
+            </div>
         </div>
 
         <!-- Total Pendapatan -->
-        <div class="col-12 col-md-4 mb-3">
-            <a href="#" class="w-100 text-dark text-decoration-none">
-                <div class="card border-0 shadow-sm h-100">
-                    <div class="card-body d-flex justify-content-between align-items-center">
+        <div class="col-lg-4 col-md-6 mb-3">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
                         <div>
                             <p class="text-muted mb-1">Total Pendapatan</p>
-                            <h3 class="mb-0 font-weight-bold text-warning">
-                                Rp {{ number_format($totalPendapatan, 0, ',', '.') }}
-                            </h3>
+                            <h3 class="mb-0 font-weight-bold text-warning">Rp
+                                {{ number_format($totalPendapatan, 0, ',', '.') }}</h3>
                         </div>
                         <div class="text-warning">
                             <i class="fas fa-chart-line fa-2x"></i>
                         </div>
                     </div>
                 </div>
-            </a>
+            </div>
         </div>
-
-    </div> <!-- END ROW 2 -->
-
-
-
+    </div>
 
     <!-- Grafik Section -->
     <div class="row mb-4">
@@ -332,10 +300,9 @@
                         <i class="fas fa-history text-secondary me-2"></i>
                         Transaksi Terbaru
                     </h5>
-                    <a href="{{ route('admin.transactions.index') }}" class="btn btn-sm btn-light text-dark">
+                    <a href="{{ route('admin.transactions.index') }}" class="btn btn-sm btn-outline-primary">
                         Lihat Semua <i class="fas fa-arrow-right ms-1"></i>
                     </a>
-
                 </div>
                 <div class="card-body p-0">
                     @forelse($recentTransactions as $transaction)
@@ -469,7 +436,7 @@
         const rakChart = new Chart(rakCtx, {
             type: 'doughnut',
             data: {
-                labels: ['Terisi', 'Tersedia'],
+                labels: ['Terisi', 'Tersedia', 'Kosong'],
                 datasets: [{
                     data: [{{ $rakTerisi }}, {{ $rakTersedia }}, {{ $rakKosong }}],
                     backgroundColor: [

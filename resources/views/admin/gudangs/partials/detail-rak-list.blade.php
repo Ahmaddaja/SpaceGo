@@ -1,8 +1,9 @@
 <div class="card border-0 shadow-sm mb-4">
     <div class="card-header bg-white border-0 py-3 d-flex justify-content-between align-items-center">
         <h5 class="mb-0 font-weight-bold">Daftar Rak di Gudang Ini</h5>
-        <span class="badge badge-primary">{{ $gudang->raks_count ?? 0 }} Rak</span>
+        <span class="badge badge-primary">{{ $rak->gudang->raks_count ?? $rak->gudang->raks->count() ?? 0 }} Rak</span>
     </div>
+
     <div class="card-body">
         @if($gudang->raks && $gudang->raks->count() > 0)
         <div class="table-responsive">
@@ -17,27 +18,27 @@
                     </tr>
                 </thead>
                 <tbody>
-                    @foreach($gudang->raks as $rak)
+                    @foreach($rak->gudang->raks as $r)
                     <tr>
                         <td class="align-middle">
-                            <span class="font-weight-bold text-primary">{{ $rak->kode_rak }}</span>
+                            <span class="font-weight-bold text-primary">{{ $r->kode_rak }}</span>
                         </td>
-                        <td class="align-middle">{{ $rak->nama_rak }}</td>
+                        <td class="align-middle">{{ $r->nama_rak }}</td>
                         <td class="align-middle">
-                            <span class="badge badge-info">{{ $rak->jenis_rak }}</span>
+                            <span class="badge badge-info">{{ $r->jenis_rak }}</span>
                         </td>
                         <td class="align-middle">
-                            @if($rak->status == 'tersedia')
+                            @if($r->status == 'tersedia')
                                 <span class="badge badge-success">Tersedia</span>
-                            @elseif($rak->status == 'terisi')
+                            @elseif($r->status == 'terisi')
                                 <span class="badge badge-warning">Terisi</span>
                             @else
                                 <span class="badge badge-danger">Maintenance</span>
                             @endif
                         </td>
                         <td class="align-middle text-center">
-                            <a href="{{ route('raks.show', $rak->id) }}" 
-                               class="btn btn-sm btn-info" 
+                            <a href="{{ route('raks.show', $r->id) }}"
+                               class="btn btn-sm btn-info"
                                title="Detail Rak">
                                 <i class="fas fa-eye"></i>
                             </a>
