@@ -8,6 +8,15 @@
             overflow: hidden;
         }
 
+        .chart-card .card-body {
+            height: 350px !important;
+        }
+
+        .chart-card canvas {
+            max-height: 100% !important;
+        }
+
+
         .card:hover {
             transform: translateY(-5px);
             box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1) !important;
