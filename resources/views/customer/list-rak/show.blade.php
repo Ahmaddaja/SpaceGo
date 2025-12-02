@@ -106,6 +106,31 @@
         justify-content: center;
         font-size: 1.5rem;
     }
+
+    .renewal-card {
+        background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+        border-radius: 1rem;
+        padding: 1.5rem;
+        color: white;
+        box-shadow: 0 10px 25px -5px rgba(245, 158, 11, 0.4);
+        margin-top: 1rem;
+    }
+
+    .penalty-badge {
+        background: rgba(255, 255, 255, 0.25);
+        backdrop-filter: blur(10px);
+        border-radius: 0.5rem;
+        padding: 0.75rem 1rem;
+        border: 1px solid rgba(255, 255, 255, 0.3);
+        display: inline-block;
+    }
+
+    .price-breakdown {
+        background: rgba(0, 0, 0, 0.2);
+        border-radius: 0.75rem;
+        padding: 1rem;
+        margin-top: 1rem;
+    }
 </style>
 @endpush
 
@@ -116,19 +141,42 @@
         <!-- TITLE -->
         <div class="mb-8 text-center">
             <h2 class="text-4xl md:text-5xl font-bold text-gray-800 mb-4">Detail Rak</h2>
-            <p class="text-gray-600 text-lg max-w-2xl mx-auto">Informasi lengkap mengenai rak yang Anda pilih</p>
+            <p class="text-gray-600 text-lg max-w-2xl mx-auto">Informasi lengkap mengenai Rak yang Anda pilih</p>
         </div>
 
         <!-- RENTAL INFO (Jika user sudah menyewa) -->
         @php
             $activeRental = null;
+            $hasPendingRenewal = false;
+            
             if (Auth::check()) {
+                // Ambil transaksi aktif terbaru
                 $activeRental = \App\Models\Transaction::where('user_id', Auth::id())
-    ->where('rak_id', $rak->id)
-    ->whereIn('transaction_status', ['settlement', 'capture'])
-    ->orderBy('sewa_berakhir', 'desc')
-    ->first();
-
+                    ->where('rak_id', $rak->id)
+                    ->whereIn('transaction_status', ['settlement', 'capture'])
+                    ->orderBy('sewa_berakhir', 'desc')
+                    ->first();
+                
+                // Cek apakah ada transaksi perpanjangan yang pending
+                if ($activeRental) {
+                    $hasPendingRenewal = \App\Models\Transaction::where('user_id', Auth::id())
+                        ->where('rak_id', $rak->id)
+                        ->where('parent_transaction_id', $activeRental->id) // Asumsi ada kolom parent_transaction_id
+                        ->whereIn('transaction_status', ['pending', 'settlement', 'capture'])
+                        ->where('created_at', '>', $activeRental->updated_at) // Transaksi renewal lebih baru
+                        ->exists();
+                    
+                    // Alternatif jika tidak ada parent_transaction_id:
+                    // Cek apakah ada transaksi dengan order_id yang mengandung "RENEWAL"
+                    if (!$hasPendingRenewal) {
+                        $hasPendingRenewal = \App\Models\Transaction::where('user_id', Auth::id())
+                            ->where('rak_id', $rak->id)
+                            ->where('order_id', 'LIKE', '%RENEWAL%')
+                            ->whereIn('transaction_status', ['pending', 'settlement', 'capture'])
+                            ->where('created_at', '>', $activeRental->created_at)
+                            ->exists();
+                    }
+                }
             }
         @endphp
 
@@ -172,57 +220,158 @@
                 </div>
             </div>
             
-          @php
+@php
     $now = now()->startOfDay();
     $end = \Carbon\Carbon::parse($activeRental->sewa_berakhir)->startOfDay();
+
     // Selisih hari (+ = masih ada sisa, 0 = hari terakhir, - = sudah lewat)
     $daysDiff = $now->diffInDays($end, false);
-@endphp
 
-@php
-    // Tentukan warna status
+    // Tentukan warna + status text
     if ($daysDiff > 0) {
-        $statusColor = 'bg-green-600';      // masih dalam periode sewa
+        $statusColor = 'bg-green-600';
         $statusText = $daysDiff . ' Hari Tersisa';
     } elseif ($daysDiff === 0) {
-        $statusColor = 'bg-yellow-500';     // habis hari ini
+        $statusColor = 'bg-yellow-500';
         $statusText = 'Berakhir Hari Ini';
     } else {
-        $statusColor = 'bg-red-600';        // masa tenggang
-        $statusText = 'Masa Tenggang - Harus Membayar Denda (Lewat ' . abs($daysDiff) . ' Hari)';
+        $statusColor = 'bg-red-600';
+        $statusText = 'Masa Tenggang - Lewat ' . abs($daysDiff) . ' Hari';
     }
+
+    // Harga & denda
+    $dendaPerHari = 50000;
+    $totalDenda = $daysDiff < 0 ? abs($daysDiff) * $dendaPerHari : 0;
+    $hargaSewa = $rak->harga_sewa_perbulan ?? 0;
+    $totalBayar = $hargaSewa + $totalDenda;
 @endphp
 
-<div class="mt-4 p-3 rounded-lg text-white {{ $statusColor }}">
-    <div class="flex items-center justify-between">
-        <span class="font-semibold text-white">Sisa Waktu Sewa:</span>
-        <span class="text-xl font-bold text-white">
-            {{ $statusText }}
-        </span>
-    </div>
-</div>
-<div class="mt-4 p-4 rounded-lg 
-    @if($daysDiff >= 0) bg-black bg-opacity-30 @else bg-red-600 bg-opacity-90 @endif 
-    text-white">
-    
-    <div class="flex items-center justify-between">
-        <span class="font-semibold text-white">
-            @if($daysDiff >= 0)
-                Countdown Waktu Sewa:
-            @else
-                Waktu Lewat Dari Batas Sewa:
+
+            <div class="mt-4 p-3 rounded-lg text-white {{ $statusColor }}">
+                <div class="flex items-center justify-between">
+                    <span class="font-semibold text-white">Sisa Waktu Sewa:</span>
+                    <span class="text-xl font-bold text-white">
+                        {{ $statusText }}
+                    </span>
+                </div>
+            </div>
+
+            <div class="mt-4 p-4 rounded-lg 
+                @if($daysDiff >= 0) bg-black bg-opacity-30 @else bg-red-600 bg-opacity-90 @endif 
+                text-white">
+                
+                <div class="flex items-center justify-between">
+                    <span class="font-semibold text-white">
+                        @if($daysDiff >= 0)
+                            Countdown Waktu Sewa:
+                        @else
+                            Waktu Lewat Dari Batas Sewa:
+                        @endif
+                    </span>
+
+                    <span id="countdownTimer" class="text-xl font-bold">00:00:00</span>
+                </div>
+            </div>
+
+            <!-- RENEWAL SECTION - Tampil jika masa sewa akan habis atau sudah lewat DAN belum ada pembayaran renewal pending -->
+            @if($daysDiff <= 1 && !$hasPendingRenewal)
+            <div class="renewal-card">
+                <div class="flex items-center mb-4">
+                    <div class="rental-icon mr-4">
+                        <i class="fas fa-redo-alt"></i>
+                    </div>
+                    <div>
+                        <h3 class="text-xl font-bold">
+                            @if($daysDiff < 0)
+                                Perpanjang Sewa & Bayar Denda
+                            @else
+                                Perpanjang Masa Sewa
+                            @endif
+                        </h3>
+                        <p class="text-sm opacity-90">
+                            @if($daysDiff < 0)
+                                Segera perpanjang untuk menghindari denda lebih lanjut
+                            @else
+                                Perpanjang sekarang untuk melanjutkan penyewaan
+                            @endif
+                        </p>
+                    </div>
+                </div>
+
+                <div class="price-breakdown">
+                    <div class="flex justify-between items-center mb-2">
+                        <span class="text-sm">Harga Sewa ({{ $rak->durasi_sewa_hari ?? 30 }} hari)</span>
+                        <span class="font-bold">Rp {{ number_format($hargaSewa, 0, ',', '.') }}</span>
+                    </div>
+
+                    @if($daysDiff < 0)
+                    <div class="flex justify-between items-center mb-2 text-red-200">
+                        <span class="text-sm">
+                            Denda Keterlambatan ({{ abs($daysDiff) }} hari × Rp {{ number_format($dendaPerHari, 0, ',', '.') }})
+                        </span>
+                        <span class="font-bold">Rp {{ number_format($totalDenda, 0, ',', '.') }}</span>
+                    </div>
+                    <div class="border-t border-white border-opacity-30 pt-2 mt-2">
+                        <div class="flex justify-between items-center">
+                            <span class="font-bold text-lg">Total Pembayaran</span>
+                            <span class="font-bold text-2xl">Rp {{ number_format($totalBayar, 0, ',', '.') }}</span>
+                        </div>
+                    </div>
+                    @else
+                    <div class="border-t border-white border-opacity-30 pt-2 mt-2">
+                        <div class="flex justify-between items-center">
+                            <span class="font-bold text-lg">Total Pembayaran</span>
+                            <span class="font-bold text-2xl">Rp {{ number_format($hargaSewa, 0, ',', '.') }}</span>
+                        </div>
+                    </div>
+                    @endif
+                </div>
+
+                @if($daysDiff < 0)
+                <div class="mt-4 p-3 bg-red-700 bg-opacity-50 rounded-lg">
+                    <div class="flex items-start">
+                        <i class="fas fa-exclamation-triangle mr-2 mt-1"></i>
+                        <div class="text-sm">
+                            <p class="font-semibold mb-1">Perhatian!</p>
+                            <p class="opacity-90">
+                                Anda berada dalam masa tenggang. Denda akan bertambah Rp {{ number_format($dendaPerHari, 0, ',', '.') }} per hari. 
+                                Segera perpanjang untuk menghindari biaya tambahan.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+                @endif
+
+                <a href="{{ route('customer.payment.renewal', ['transaction_id' => $activeRental->id]) }}"
+                   class="mt-4 w-full flex items-center justify-center space-x-3 px-6 py-4 bg-white text-orange-600 rounded-xl hover:bg-orange-50 transition-all duration-300 font-bold shadow-lg hover:shadow-xl">
+                    <i class="fas fa-credit-card"></i>
+                    <span>
+                        @if($daysDiff < 0)
+                            Bayar Sekarang (Sewa + Denda)
+                        @else
+                            Perpanjang Sewa Sekarang
+                        @endif
+                    </span>
+                </a>
+            </div>
+            @elseif($hasPendingRenewal)
+            <!-- Tampilkan notifikasi jika sudah ada pembayaran renewal pending -->
+            <div class="mt-4 p-4 bg-blue-500 bg-opacity-90 rounded-lg text-white">
+                <div class="flex items-start">
+                    <i class="fas fa-info-circle mr-3 mt-1 text-xl"></i>
+                    <div>
+                        <p class="font-semibold mb-1">Pembayaran Perpanjangan Berhasil !</p>
+                        <p class="text-sm opacity-90">
+                            Anda sudah melakukan pembayaran perpanjangan. Silakan cek status pembayaran Anda di halaman riwayat transaksi.
+                        </p>
+                    </div>
+                </div>
+            </div>
             @endif
-        </span>
 
-        <span id="countdownTimer" class="text-xl font-bold">00:00:00</span>
-    </div>
-</div>
-
-<!-- Kirim waktu ke JS -->
-<input type="hidden" id="rentalEndTime" value="{{ \Carbon\Carbon::parse($activeRental->sewa_berakhir)->format('Y-m-d H:i:s') }}">
-<input type="hidden" id="daysDiff" value="{{ $daysDiff }}">
-
-
+            <!-- Kirim waktu ke JS -->
+            <input type="hidden" id="rentalEndTime" value="{{ \Carbon\Carbon::parse($activeRental->sewa_berakhir)->format('Y-m-d H:i:s') }}">
+            <input type="hidden" id="daysDiff" value="{{ $daysDiff }}">
         </div>
         @endif
 
@@ -285,13 +434,12 @@ document.addEventListener("DOMContentLoaded", function () {
     function updateCountdown() {
         let now = new Date().getTime();
 
-        let distance = end - now; // positif = masih sewa, negatif = masa tenggang
+        let distance = end - now;
 
         let isGrace = distance < 0;
 
         let absDistance = Math.abs(distance);
 
-        // Hitung jam, menit, detik
         let hours = Math.floor(absDistance / (1000 * 60 * 60));
         let minutes = Math.floor((absDistance % (1000 * 60 * 60)) / (1000 * 60));
         let seconds = Math.floor((absDistance % (1000 * 60)) / 1000);
@@ -316,7 +464,6 @@ document.addEventListener("DOMContentLoaded", function () {
 });
 </script>
 @endpush
-
 
 <!-- WhatsApp Button -->
 @include('customer.payment.partials.whatsapp-button')

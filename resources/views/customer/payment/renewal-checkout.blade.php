@@ -1,0 +1,352 @@
+@extends('layouts.app')
+
+@section('title', 'Perpanjangan Sewa - SPACEGO')
+
+@push('styles')
+<style>
+    .checkout-container {
+        max-width: 900px;
+        margin: 0 auto;
+    }
+    
+    .payment-card {
+        background: white;
+        border-radius: 1.5rem;
+        box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+        overflow: hidden;
+        transition: all 0.3s ease;
+    }
+    
+    .payment-card:hover {
+        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
+    }
+    
+    .header-gradient {
+        background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+        padding: 2rem;
+        color: white;
+        position: relative;
+        overflow: hidden;
+    }
+    
+    .header-gradient::before {
+        content: '';
+        position: absolute;
+        top: -50%;
+        right: -50%;
+        width: 200%;
+        height: 200%;
+        background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%);
+        animation: pulse 3s ease-in-out infinite;
+    }
+    
+    @keyframes pulse {
+        0%, 100% { transform: scale(1); opacity: 1; }
+        50% { transform: scale(1.05); opacity: 0.8; }
+    }
+    
+    .detail-row {
+        display: flex;
+        justify-content: space-between;
+        padding: 1rem 0;
+        border-bottom: 1px solid #e5e7eb;
+        transition: background 0.2s ease;
+    }
+    
+    .detail-row:hover {
+        background: #f9fafb;
+        padding-left: 0.5rem;
+        padding-right: 0.5rem;
+    }
+    
+    .detail-row:last-child {
+        border-bottom: none;
+    }
+    
+    .total-row {
+        background: #fef3c7;
+        border-radius: 0.75rem;
+        padding: 1.5rem !important;
+        margin-top: 1rem;
+        border: 2px solid #fbbf24;
+    }
+    
+    .penalty-badge {
+        background: linear-gradient(135deg, #ef4444, #dc2626);
+        color: white;
+        padding: 0.5rem 1rem;
+        border-radius: 9999px;
+        font-size: 0.875rem;
+        font-weight: 600;
+        display: inline-block;
+    }
+    
+    .info-box {
+        background: #fef3c7;
+        border-left: 4px solid #f59e0b;
+        padding: 1rem 1.5rem;
+        border-radius: 0.5rem;
+        margin: 1.5rem 0;
+    }
+    
+    .pay-button {
+        background: linear-gradient(135deg, #10b981, #059669);
+        color: white;
+        padding: 1rem 2rem;
+        border-radius: 0.75rem;
+        font-weight: 600;
+        font-size: 1.125rem;
+        transition: all 0.3s ease;
+        border: none;
+        cursor: pointer;
+        width: 100%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.75rem;
+    }
+    
+    .pay-button:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 10px 25px rgba(16, 185, 129, 0.4);
+    }
+    
+    .back-button {
+        background: #e5e7eb;
+        color: #374151;
+        padding: 1rem 2rem;
+        border-radius: 0.75rem;
+        font-weight: 600;
+        transition: all 0.3s ease;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.75rem;
+        text-decoration: none;
+    }
+    
+    .back-button:hover {
+        background: #d1d5db;
+        transform: translateY(-2px);
+    }
+</style>
+@endpush
+
+@section('content')
+<div class="py-12">
+    <div class="checkout-container px-4">
+        
+        <!-- Header -->
+        <div class="text-center mb-8">
+            <h1 class="text-4xl font-bold text-gray-800 mb-2">Perpanjangan Sewa</h1>
+            <p class="text-gray-600">Lanjutkan masa sewa rak Anda</p>
+        </div>
+
+        <!-- Payment Card -->
+        <div class="payment-card mb-6">
+            
+            <!-- Header Section -->
+            <div class="header-gradient">
+                <div class="relative z-10">
+                    <h2 class="text-2xl font-bold mb-2">{{ $rak->nama_rak }}</h2>
+                    <p class="opacity-90">{{ $rak->kode_rak }}</p>
+                    
+                    @if($totalDenda > 0)
+                    <div class="mt-4">
+                        <span class="penalty-badge">
+                            <i class="fas fa-exclamation-circle mr-2"></i>
+                            Terdapat Denda Keterlambatan
+                        </span>
+                    </div>
+                    @endif
+                </div>
+            </div>
+
+            <!-- Detail Section -->
+            <div class="p-8">
+                
+                <!-- Informasi Sewa Sebelumnya -->
+                <div class="mb-6">
+                    <h3 class="text-lg font-semibold text-gray-800 mb-4">Informasi Sewa Sebelumnya</h3>
+                    
+                    <div class="detail-row">
+                        <span class="text-gray-600">Tanggal Mulai</span>
+                        <span class="font-semibold text-gray-800">
+                            {{ \Carbon\Carbon::parse($transaction->sewa_mulai)->format('d M Y') }}
+                        </span>
+                    </div>
+                    
+                    <div class="detail-row">
+                        <span class="text-gray-600">Tanggal Berakhir</span>
+                        <span class="font-semibold text-gray-800">
+                            {{ \Carbon\Carbon::parse($transaction->sewa_berakhir)->format('d M Y') }}
+                        </span>
+                    </div>
+                    
+                    @if($daysDiff < 0)
+                    <div class="detail-row">
+                        <span class="text-red-600 font-semibold">Keterlambatan</span>
+                        <span class="font-bold text-red-600">
+                            {{ abs($daysDiff) }} Hari
+                        </span>
+                    </div>
+                    @endif
+                </div>
+
+                <!-- Warning jika ada denda -->
+                @if($totalDenda > 0)
+                <div class="info-box">
+                    <div class="flex items-start">
+                        <i class="fas fa-exclamation-triangle text-orange-600 text-xl mr-3 mt-1"></i>
+                        <div>
+                            <p class="font-semibold text-gray-800 mb-1">Perhatian!</p>
+                            <p class="text-sm text-gray-700">
+                                Anda terlambat mengembalikan/memperpanjang sewa selama <strong>{{ abs($daysDiff) }} hari</strong>. 
+                                Denda keterlambatan sebesar <strong>Rp 50.000/hari</strong> akan ditambahkan ke total pembayaran.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+                @else
+                <div class="info-box" style="background: #d1fae5; border-left-color: #10b981;">
+                    <div class="flex items-start">
+                        <i class="fas fa-check-circle text-green-600 text-xl mr-3 mt-1"></i>
+                        <div>
+                            <p class="font-semibold text-gray-800 mb-1">Masa Tenggang</p>
+                            <p class="text-sm text-gray-700">
+                                Anda masih dalam masa tenggang. Tidak ada denda yang dikenakan untuk perpanjangan saat ini.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+                @endif
+
+                <!-- Rincian Pembayaran -->
+                <div class="mt-6">
+                    <h3 class="text-lg font-semibold text-gray-800 mb-4">Rincian Pembayaran</h3>
+                    
+                    <div class="detail-row">
+                        <span class="text-gray-600">
+                            Harga Sewa ({{ $rak->durasi_sewa_hari ?? 30 }} hari ke depan)
+                        </span>
+                        <span class="font-semibold text-gray-800">
+                            Rp {{ number_format($hargaSewa, 0, ',', '.') }}
+                        </span>
+                    </div>
+                    
+                    @if($totalDenda > 0)
+                    <div class="detail-row">
+                        <span class="text-red-600">
+                            Denda Keterlambatan ({{ abs($daysDiff) }} hari × Rp 50.000)
+                        </span>
+                        <span class="font-semibold text-red-600">
+                            Rp {{ number_format($totalDenda, 0, ',', '.') }}
+                        </span>
+                    </div>
+                    @endif
+                    
+                    <div class="detail-row total-row">
+                        <span class="text-lg font-bold text-gray-800">Total Pembayaran</span>
+                        <span class="text-2xl font-bold text-orange-600">
+                            Rp {{ number_format($totalBayar, 0, ',', '.') }}
+                        </span>
+                    </div>
+                </div>
+
+                <!-- Informasi Periode Baru -->
+                <div class="mt-6 p-4 bg-blue-50 rounded-lg border border-blue-200">
+                    <h4 class="font-semibold text-blue-900 mb-2">
+                        <i class="fas fa-calendar-alt mr-2"></i>Periode Sewa Baru
+                    </h4>
+                    <p class="text-sm text-blue-800">
+                        Setelah pembayaran berhasil, masa sewa Anda akan diperpanjang selama 
+                        <strong>{{ $rak->durasi_sewa_hari ?? 30 }} hari</strong> mulai dari 
+                        <strong>{{ now()->format('d M Y') }}</strong>.
+                    </p>
+                </div>
+
+                <!-- Action Buttons -->
+                <div class="mt-8 grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <a href="{{ route('customer.list-rak.show', $rak->id) }}" class="back-button">
+                        <i class="fas fa-arrow-left"></i>
+                        <span>Kembali</span>
+                    </a>
+                    
+                    <button id="pay-button" class="pay-button">
+                        <i class="fas fa-credit-card"></i>
+                        <span>Bayar Sekarang</span>
+                    </button>
+                </div>
+
+            </div>
+        </div>
+
+        <!-- Security Notice -->
+        <div class="text-center text-sm text-gray-500">
+            <i class="fas fa-lock mr-2"></i>
+            Pembayaran Anda aman dan terenkripsi
+        </div>
+
+    </div>
+</div>
+
+@push('scripts')
+<script src="https://app.sandbox.midtrans.com/snap/snap.js" data-client-key="{{ config('midtrans.client_key') }}"></script>
+<script>
+document.getElementById('pay-button').addEventListener('click', function () {
+    snap.pay('{{ $snapToken }}', {
+        onSuccess: function(result) {
+            console.log('Payment Success:', result);
+            updateTransactionStatus(result.order_id, result.transaction_status, result.payment_type);
+        },
+        onPending: function(result) {
+            console.log('Payment Pending:', result);
+            updateTransactionStatus(result.order_id, 'pending', result.payment_type);
+        },
+        onError: function(result) {
+            console.log('Payment Error:', result);
+            alert('Pembayaran gagal! Silakan coba lagi.');
+        },
+        onClose: function() {
+            console.log('Payment popup closed');
+            alert('Anda menutup halaman pembayaran. Silakan selesaikan pembayaran Anda.');
+        }
+    });
+});
+
+function updateTransactionStatus(orderId, status, paymentType) {
+    fetch('{{ route("payment.update-status") }}', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-TOKEN': '{{ csrf_token() }}'
+        },
+        body: JSON.stringify({
+            order_id: orderId,
+            transaction_status: status,
+            payment_type: paymentType
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        console.log('Status Update Response:', data);
+        if (data.success) {
+            if (status === 'settlement' || status === 'capture') {
+                alert('Pembayaran berhasil! Masa sewa Anda telah diperpanjang.');
+                window.location.href = '{{ route("customer.list-rak.show", $rak->id) }}';
+            } else if (status === 'pending') {
+                alert('Pembayaran sedang diproses. Silakan cek status pembayaran Anda.');
+                window.location.href = '{{ route("customer.list-rak.show", $rak->id) }}';
+            }
+        } else {
+            alert('Gagal memperbarui status: ' + data.message);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Terjadi kesalahan saat memperbarui status pembayaran.');
+    });
+}
+</script>
+@endpush
+@endsection
