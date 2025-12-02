@@ -173,6 +173,31 @@ class TagihanController extends Controller
     }
 }
 
+public function createRenewal(Request $request)
+{
+    $request->validate([
+        'transaction_id' => 'required|exists:transactions,id'
+    ]);
+
+    $transaction = Transaction::find($request->transaction_id);
+
+    // Buat renewal baru
+    $renewal = Transaction::create([
+        'user_id' => auth()->id(),
+        'rak_id' => $transaction->rak_id,
+        'transaction_status' => 'pending',
+        'sewa_dimulai' => now(),
+        'sewa_berakhir' => now()->addMonth(), // contoh perpanjang 1 bulan
+        'jumlah' => $transaction->jumlah, // kalau mau pakai harga sebelumnya
+    ]);
+
+    return response()->json([
+        'success' => true,
+        'message' => 'Permintaan perpanjangan berhasil dibuat!',
+        'data' => $renewal
+    ]);
+}
+
 
     /**
      * Check payment status for pending transactions

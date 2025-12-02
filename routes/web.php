@@ -90,6 +90,8 @@ Route::middleware(['auth', 'role:customer'])->group(function () {
     Route::prefix('customer/tagihan')->group(function () {
         Route::get('/', [TagihanController::class, 'index'])->name('customer.tagihan');
         Route::get('/create-payment/{id}', [TagihanController::class, 'createPayment'])->name('customer.tagihan.create-payment');
+        Route::post('/tagihan/create-renewal', [TagihanController::class, 'createRenewal'])
+        ->name('customer.tagihan.create-renewal');
         Route::get('/check-status/{id}', [TagihanController::class, 'checkStatus'])->name('customer.tagihan.check-status');
         Route::post('/process-expired/{id}', [TagihanController::class, 'processExpired'])->name('customer.tagihan.process-expired');
         Route::get('/payment-details/{id}', [TagihanController::class, 'paymentDetails'])->name('customer.tagihan.payment-details');
