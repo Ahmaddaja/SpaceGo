@@ -67,6 +67,11 @@ Route::middleware(['auth', 'role:customer'])->group(function () {
         ->name('customer.payment.checkout');
     Route::post('/payment/update-status', [PaymentController::class, 'updateStatus'])
         ->name('payment.update-status');
+    Route::get('/payment/renewal/{transaction_id}', [PaymentController::class, 'renewal'])
+    ->name('customer.payment.renewal');
+
+Route::post('/payment/update-status', [PaymentController::class, 'updateStatus'])
+    ->name('payment.update-status');
 
     // History Routes
     Route::prefix('customer/history')->group(function () {

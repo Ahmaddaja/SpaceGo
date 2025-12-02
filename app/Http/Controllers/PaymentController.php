@@ -345,58 +345,203 @@ class PaymentController extends Controller
         }
     }
 
-    /**
-     * Handle Pembayaran Sukses
-     */
-    private function handleSuccessPayment($transaction)
+public function renewal($transaction_id)
+{
+    try {
+        // Ambil transaksi aktif
+        $transaction = Transaction::where('id', $transaction_id)
+            ->where('user_id', Auth::id())
+            ->whereIn('transaction_status', ['settlement', 'capture'])
+            ->firstOrFail();
+
+        $rak = Rak::findOrFail($transaction->rak_id);
+
+        // Hitung keterlambatan
+        $now = now()->startOfDay();
+        $end = \Carbon\Carbon::parse($transaction->sewa_berakhir)->startOfDay();
+        $daysDiff = $now->diffInDays($end, false);
+
+        // Hitung denda (Rp 50.000 per hari)
+        $dendaPerHari = 50000;
+        $totalDenda = $daysDiff < 0 ? abs($daysDiff) * $dendaPerHari : 0;
+        
+        // Total pembayaran
+        $hargaSewa = $rak->harga_sewa_perbulan;
+        $totalBayar = $hargaSewa + $totalDenda;
+
+        // Generate Order ID baru untuk perpanjangan
+        $orderId = 'RENEWAL-' . time() . '-' . $transaction->id;
+
+        // Item details untuk Midtrans
+        $itemDetails = [
+            [
+                'id' => 'rental-' . $rak->id,
+                'price' => (int) $hargaSewa,
+                'quantity' => 1,
+                'name' => 'Perpanjangan Sewa ' . $rak->nama_rak
+            ]
+        ];
+
+        // Tambahkan denda jika ada
+        if ($totalDenda > 0) {
+            $itemDetails[] = [
+                'id' => 'penalty-' . $transaction->id,
+                'price' => (int) $totalDenda,
+                'quantity' => 1,
+                'name' => 'Denda Keterlambatan (' . abs($daysDiff) . ' hari)'
+            ];
+        }
+
+        // Parameter untuk Midtrans
+        $params = [
+            'transaction_details' => [
+                'order_id' => $orderId,
+                'gross_amount' => (int) $totalBayar,
+            ],
+            'item_details' => $itemDetails,
+            'customer_details' => [
+                'first_name' => Auth::user()->name,
+                'email' => Auth::user()->email,
+            ],
+            'custom_field1' => 'renewal', // Penanda bahwa ini perpanjangan
+            'custom_field2' => $transaction->id, // ID transaksi yang diperpanjang
+        ];
+
+        // Generate Snap token
+        $snapToken = Snap::getSnapToken($params);
+
+        // Simpan transaksi perpanjangan
+        $renewalTransaction = Transaction::create([
+            'order_id' => $orderId,
+            'user_id' => Auth::id(),
+            'rak_id' => $rak->id,
+            'amount' => $totalBayar,
+            'transaction_status' => 'pending',
+            'snap_token' => $snapToken,
+            'transaction_time' => now(),
+            'parent_transaction_id' => $transaction->id, // Link ke transaksi sebelumnya
+            'penalty_amount' => $totalDenda,
+            'is_renewal' => true
+        ]);
+
+        Log::info('Renewal Transaction Created', [
+            'renewal_transaction_id' => $renewalTransaction->id,
+            'parent_transaction_id' => $transaction->id,
+            'order_id' => $orderId,
+            'amount' => $totalBayar,
+            'penalty' => $totalDenda,
+            'days_late' => abs($daysDiff)
+        ]);
+
+        // Tampilkan halaman checkout perpanjangan
+        return view('customer.payment.renewal-checkout', compact(
+            'snapToken', 
+            'rak', 
+            'transaction',
+            'renewalTransaction',
+            'totalDenda',
+            'daysDiff',
+            'hargaSewa',
+            'totalBayar'
+        ));
+
+    } catch (\Exception $e) {
+        Log::error('Renewal Error: ' . $e->getMessage());
+        Log::error('Stack Trace: ' . $e->getTraceAsString());
+
+        return redirect()->back()
+            ->with('error', 'Terjadi kesalahan: ' . $e->getMessage());
+    }
+}
+
+
+private function handleSuccessPayment($transaction)
 {
     $rak = Rak::find($transaction->rak_id);
 
-    if ($rak && $rak->status === 'tersedia') {
+    if ($rak) {
+        // Cek apakah ini transaksi perpanjangan
+        if ($transaction->is_renewal && $transaction->parent_transaction_id) {
+            // Ini adalah perpanjangan sewa
+            $durasi = $rak->durasi_sewa_hari ?? 30;
+            
+            // Ambil transaksi parent
+            $parentTransaction = Transaction::find($transaction->parent_transaction_id);
+            
+            if ($parentTransaction) {
+                // Hitung tanggal mulai dari akhir sewa sebelumnya atau sekarang (mana yang lebih besar)
+                $sewaMulai = max(
+                    now(),
+                    \Carbon\Carbon::parse($parentTransaction->sewa_berakhir)
+                );
+                
+                $transaction->sewa_mulai = $sewaMulai;
+                $transaction->sewa_berakhir = $sewaMulai->copy()->addDays($durasi);
+                $transaction->save();
 
-        // ============================
-        // SET TANGGAL MULAI & BERAKHIR
-        // ============================
-        $durasi = $rak->durasi_sewa_hari ?? 30; // default 30 hari jika tidak ada
+                Log::info('Renewal dates calculated', [
+                    'transaction_id' => $transaction->id,
+                    'parent_end' => $parentTransaction->sewa_berakhir,
+                    'new_start' => $transaction->sewa_mulai,
+                    'new_end' => $transaction->sewa_berakhir,
+                    'duration' => $durasi
+                ]);
 
-        $transaction->sewa_mulai = now();
-        $transaction->sewa_berakhir = now()->addDays($durasi);
-        $transaction->save();
+                // Log history perpanjangan
+                try {
+                    HistoryService::logRenewalRental(
+                        $transaction->user_id,
+                        $rak->kode_rak ?? $rak->nama_rak,
+                        $durasi,
+                        $transaction->amount,
+                        $transaction->penalty_amount ?? 0,
+                        'System'
+                    );
+                } catch (\Exception $historyError) {
+                    Log::error('Failed to log renewal history: ' . $historyError->getMessage());
+                }
+            }
+        } else {
+            // Ini adalah sewa baru (kode lama)
+            $durasi = $rak->durasi_sewa_hari ?? 30;
 
-        Log::info('Durasi sewa dihitung', [
-            'transaction_id' => $transaction->id,
-            'sewa_mulai' => $transaction->sewa_mulai,
-            'sewa_berakhir' => $transaction->sewa_berakhir,
-            'durasi' => $durasi
-        ]);
+            $transaction->sewa_mulai = now();
+            $transaction->sewa_berakhir = now()->addDays($durasi);
+            $transaction->save();
 
-        // ============================
-        // UBAH STATUS RAK
-        // ============================
-        $rak->update(['status' => 'terisi']);
+            Log::info('Durasi sewa dihitung', [
+                'transaction_id' => $transaction->id,
+                'sewa_mulai' => $transaction->sewa_mulai,
+                'sewa_berakhir' => $transaction->sewa_berakhir,
+                'durasi' => $durasi
+            ]);
 
-        Log::info('Rak Status Updated to Terisi', [
-            'rak_id' => $rak->id,
-            'rak_name' => $rak->nama_rak,
-            'transaction_id' => $transaction->id
-        ]);
+            // Ubah status rak menjadi terisi (hanya untuk sewa baru)
+            if ($rak->status === 'tersedia') {
+                $rak->update(['status' => 'terisi']);
 
-        // ============================
-        // LOG HISTORY SEWA BARU
-        // ============================
-        try {
-            HistoryService::logNewRental(
-                $transaction->user_id,
-                $rak->kode_rak ?? $rak->nama_rak,
-                $durasi,
-                $transaction->amount,
-                'System'
-            );
-        } catch (\Exception $historyError) {
-            Log::error('Failed to log new rental history: ' . $historyError->getMessage());
+                Log::info('Rak Status Updated to Terisi', [
+                    'rak_id' => $rak->id,
+                    'rak_name' => $rak->nama_rak,
+                    'transaction_id' => $transaction->id
+                ]);
+            }
+
+            // Log history sewa baru
+            try {
+                HistoryService::logNewRental(
+                    $transaction->user_id,
+                    $rak->kode_rak ?? $rak->nama_rak,
+                    $durasi,
+                    $transaction->amount,
+                    'System'
+                );
+            } catch (\Exception $historyError) {
+                Log::error('Failed to log new rental history: ' . $historyError->getMessage());
             }
         }
 
+        // Generate revenue report
         try {
             $year = $transaction->transaction_time->year;
             $month = $transaction->transaction_time->month;
@@ -410,6 +555,6 @@ class PaymentController extends Controller
             ]);
         } catch (\Exception $revenueError) {
             Log::error('Gagal membuat laporan pendapatan: ' . $revenueError->getMessage());
-            }
         }
     }
+}}

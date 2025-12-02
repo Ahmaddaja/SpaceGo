@@ -5,6 +5,7 @@ namespace Database\Seeders;
 use App\Models\User;
 use App\Models\Gudang;
 use App\Models\Rak;
+use App\Models\Transaction;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
 
@@ -15,6 +16,8 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
+        $now = now();
+
         // SEED ADMIN
         User::create([
             'name' => 'Administrator',
@@ -105,5 +108,77 @@ class DatabaseSeeder extends Seeder
             'harga_sewa_perbulan' => 150000,
             'status' => 'tersedia',
         ]);
+
+        Rak::create([
+            'nama_rak' => 'Rak A1',
+            'ukuran' => '2 x 2 m',
+            'lokasi' => 'Gudang 1',
+            'status' => 'tersedia',
+            'harga_sewa_perbulan' => 300000,
+        ]);
+
+        Rak::create([
+            'nama_rak' => 'Rak B2',
+            'ukuran' => '3 x 2 m',
+            'lokasi' => 'Gudang 1',
+            'status' => 'disewa',
+            'harga_sewa_perbulan' => 350000,
+        ]);
+
+        Rak::create([
+            'nama_rak' => 'Rak C3',
+            'ukuran' => '4 x 3 m',
+            'lokasi' => 'Gudang 2',
+            'status' => 'disewa',
+            'harga_sewa_perbulan' => 400000,
+        ]);
+
+        Transaction::create([
+            'order_id' => 'ORDER-TEST-001',
+            'user_id' => 1,
+            'rak_id' => 2,
+            'amount' => 300000,
+            'payment_type' => 'bank_transfer',
+            'transaction_status' => 'settlement',
+            'fraud_status' => 'accept',
+            'transaction_time' => $now->copy()->subDays(29),
+            'snap_token' => 'token1',
+            'midtrans_response' => null,
+            'sewa_mulai' => $now->copy()->subDays(29),
+            'sewa_berakhir' => $now->copy()->addHours(10), // tinggal 10 jam
+        ]);
+
+        // 2️⃣ Sewa tinggal 10 menit lagi berakhir
+        Transaction::create([
+            'order_id' => 'ORDER-TEST-002',
+            'user_id' => 1,
+            'rak_id' => 3,
+            'amount' => 350000,
+            'payment_type' => 'bank_transfer',
+            'transaction_status' => 'settlement',
+            'fraud_status' => 'accept',
+            'transaction_time' => $now->copy()->subDays(29)->subHours(23),
+            'snap_token' => 'token2',
+            'midtrans_response' => null,
+            'sewa_mulai' => $now->copy()->subDays(29),
+            'sewa_berakhir' => $now->copy()->addMinutes(10), // tinggal 10 menit
+        ]);
+
+        // 3️⃣ Sewa yang sudah melewati masa tenggang (expired 5 hari)
+        Transaction::create([
+            'order_id' => 'ORDER-TEST-003',
+            'user_id' => 1,
+            'rak_id' => 3,
+            'amount' => 400000,
+            'payment_type' => 'bank_transfer',
+            'transaction_status' => 'settlement',
+            'fraud_status' => 'accept',
+            'transaction_time' => $now->copy()->subDays(35),
+            'snap_token' => 'token3',
+            'midtrans_response' => null,
+            'sewa_mulai' => $now->copy()->subDays(35),
+            'sewa_berakhir' => $now->copy()->subDays(5), // lewat 5 hari
+        ]);
+
     }
 }
