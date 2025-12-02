@@ -16,7 +16,7 @@
             <div class="flex items-center space-x-6">
                 <!-- Home -->
                 <a href="{{ route('customer.index') }}" 
-                   class="flex flex-col items-center group transition-all duration-300 
+                   class="flex flex-col items-center group transition-all duration-300 relative
                    {{ request()->routeIs('customer.index') ? 'text-blue-600' : 'text-gray-600 hover:text-blue-600' }}">
                     <div class="p-2 rounded-lg shadow-sm transition-all duration-300 transform 
                         {{ request()->routeIs('customer.index') ? 'bg-blue-100 shadow-md scale-110' : 'bg-gray-100 group-hover:bg-blue-100 group-hover:shadow-md group-hover:scale-110' }}">
@@ -27,7 +27,7 @@
 
                 <!-- Rak -->
                 <a href="{{ route('customer.list-rak.list-rak') }}" 
-                   class="flex flex-col items-center group transition-all duration-300 
+                   class="flex flex-col items-center group transition-all duration-300 relative
                    {{ request()->routeIs('customer.list-rak.list-rak') ? 'text-blue-600' : 'text-gray-600 hover:text-blue-600' }}">
                     <div class="p-2 rounded-lg shadow-sm transition-all duration-300 transform 
                         {{ request()->routeIs('customer.list-rak.list-rak') ? 'bg-blue-100 shadow-md scale-110' : 'bg-gray-100 group-hover:bg-blue-100 group-hover:shadow-md group-hover:scale-110' }}">
@@ -41,7 +41,7 @@
 
                 <!-- Rak Anda -->
                 <a href="{{ route('customer.list-rak.rak') }}" 
-                   class="flex flex-col items-center group transition-all duration-300 
+                   class="flex flex-col items-center group transition-all duration-300 relative
                    {{ request()->routeIs('customer.list-rak.rak') ? 'text-blue-600' : 'text-gray-600 hover:text-blue-600' }}">
                     <div class="p-2 rounded-lg shadow-sm transition-all duration-300 transform 
                         {{ request()->routeIs('customer.list-rak.rak') ? 'bg-blue-100 shadow-md scale-110' : 'bg-gray-100 group-hover:bg-blue-100 group-hover:shadow-md group-hover:scale-110' }}">
@@ -49,6 +49,50 @@
                     </div>
                     <span class="text-[10px] mt-1 font-medium">Rak Anda</span>
                     @if(request()->routeIs('customer.list-rak.rak'))
+                        <div class="absolute -top-1 -right-1 w-2 h-2 bg-blue-500 rounded-full animate-pulse"></div>
+                    @endif
+                </a>
+
+                <!-- Tagihan -->
+                <a href="{{ route('customer.tagihan') }}" 
+                class="flex flex-col items-center group transition-all duration-300 relative
+                {{ request()->routeIs('customer.tagihan*') ? 'text-blue-600' : 'text-gray-600 hover:text-blue-600' }}">
+                    <div class="p-2 rounded-lg shadow-sm transition-all duration-300 transform 
+                        {{ request()->routeIs('customer.tagihan*') ? 'bg-blue-100 shadow-md scale-110' : 'bg-gray-100 group-hover:bg-blue-100 group-hover:shadow-md group-hover:scale-110' }}">
+                        <i class="fas fa-file-invoice-dollar text-sm"></i>
+                    </div>
+                    <span class="text-[10px] mt-1 font-medium">Tagihan</span>
+                    
+                    <!-- Notification Badge -->
+                    @php
+                        use App\Models\Transaction;
+                        $userId = Auth::id();
+                        
+                        // Hitung transaksi pending dari database
+                        $unpaidCount = Transaction::where('user_id', $userId)
+                            ->where('transaction_status', 'pending')
+                            ->orWhere(function($query) use ($userId) {
+                                $query->where('user_id', $userId)
+                                    ->where('transaction_status', 'expired');
+                            })
+                            ->count();
+                        
+                        // Tambah 1 jika ada session pending_payment
+                        if (session('pending_payment')) {
+                            $unpaidCount++;
+                        }
+                    @endphp
+                    
+                    @if($unpaidCount > 0)
+                        <div class="absolute -top-1 -right-1 flex items-center justify-center">
+                            <span class="animate-ping absolute inline-flex h-3 w-3 rounded-full bg-red-400 opacity-75"></span>
+                            <span class="relative inline-flex h-2.5 w-2.5 rounded-full bg-red-500 text-[8px] text-white font-bold items-center justify-center">
+                                {{ $unpaidCount > 9 ? '9+' : $unpaidCount }}
+                            </span>
+                        </div>
+                    @endif
+                    
+                    @if(request()->routeIs('customer.tagihan*'))
                         <div class="absolute -top-1 -right-1 w-2 h-2 bg-blue-500 rounded-full animate-pulse"></div>
                     @endif
                 </a>
@@ -64,7 +108,7 @@
                     <span class="text-[10px] mt-1 font-medium">History</span>
                 </a>
 
-<!-- Dropdown Profile -->
+                <!-- Dropdown Profile -->
                 <div class="relative group">
                     <button class="flex items-center space-x-3 bg-gray-100 hover:bg-gray-200 rounded-xl px-4 py-2 transition-all duration-300 shadow-sm hover:shadow-md transform hover:scale-105">
                         <img src="{{ Auth::user()->foto ? asset('storage/' . Auth::user()->foto) : 'https://ui-avatars.com/api/?name=' . urlencode(Auth::user()->name) . '&size=32&background=4A90E2&color=fff' }}" 
@@ -112,7 +156,6 @@
         </div>
     </div>
 </nav>
-
 
 <!-- Include AlpineJS if not already included -->
 <script src="//unpkg.com/alpinejs" defer></script>
