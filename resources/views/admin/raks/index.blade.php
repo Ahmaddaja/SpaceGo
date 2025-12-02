@@ -15,7 +15,7 @@
             <div class="card-header bg-white border-0 d-flex justify-content-between align-items-center py-3">
                 <h5 class="mb-0 font-weight-bold">Daftar Rak Gudang</h5>
                 <a href="{{ route('raks.create') }}" class="btn btn-primary">
-                    <i class="fas fa-plus mr-2"></i>Tambah Rak Baru
+                    <i class="fas fa-plus mr-2"></i>Tambah rak baru
                 </a>
             </div>
             <div class="card-body p-0">
