@@ -60,10 +60,6 @@ Route::middleware(['auth', 'role:customer'])->group(function () {
     Route::get('/customer/bayar/{id}', [PaymentController::class, 'bayar'])->name('customer.bayar');
     Route::get('/payment/checkout/{id}', [PaymentController::class, 'bayar'])->name('customer.payment.checkout');
 
-    // Renewal
-    Route::get('/payment/renewal/{transaction_id}', [PaymentController::class, 'renewal'])
-        ->name('customer.payment.renewal');
-
     // Update status (jangan diduplikasi)
     Route::post('/payment/update-status', [PaymentController::class, 'updateStatus'])
         ->name('payment.update-status');

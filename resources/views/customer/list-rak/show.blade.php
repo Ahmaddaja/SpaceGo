@@ -342,8 +342,8 @@
                 </div>
                 @endif
 
-                <a href="{{ route('customer.payment.renewal', ['transaction_id' => $activeRental->id]) }}"
-                   class="mt-4 w-full flex items-center justify-center space-x-3 px-6 py-4 bg-white text-orange-600 rounded-xl hover:bg-orange-50 transition-all duration-300 font-bold shadow-lg hover:shadow-xl">
+                <a href="{{ route('customer.tagihan.create-payment', ['id' => $activeRental->id]) }}"
+                    class="mt-4 w-full flex items-center justify-center space-x-3 px-6 py-4 bg-white text-orange-600 rounded-xl hover:bg-orange-50 transition-all duration-300 font-bold shadow-lg hover:shadow-xl">
                     <i class="fas fa-credit-card"></i>
                     <span>
                         @if($daysDiff < 0)
