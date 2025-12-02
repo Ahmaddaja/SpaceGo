@@ -49,56 +49,85 @@
 
     <!-- Menunggu Pembayaran -->
     @if($pendingTransactions->count() > 0)
-<div class="mb-10">
-    <h2 class="text-xl font-semibold text-gray-800 mb-4 flex items-center">
-        <i class="fas fa-clock text-yellow-500 mr-2"></i>
-        Menunggu Pembayaran
-    </h2>
-    
-    <div class="bg-white rounded-lg shadow overflow-hidden">
-        <div class="overflow-x-auto">
-            <table class="min-w-full">
-                <thead class="bg-gray-50">
-                    <tr>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Rak</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Jumlah</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Aksi</th>
-                    </tr>
-                </thead>
-                <tbody class="divide-y divide-gray-200">
-                    @foreach($pendingTransactions as $transaction)
-                    <tr>
-                        <td class="px-6 py-4">
-                            <div class="font-medium">{{ $transaction->rak->nama_rak ?? 'Rak' }}</div>
-                            <div class="text-sm text-gray-500">Order: {{ $transaction->order_id }}</div>
-                            <div class="text-xs text-gray-400 mt-1">
-                                Dibuat: {{ $transaction->created_at->format('d M Y H:i') }}
-                            </div>
-                        </td>
-                        <td class="px-6 py-4">
-                            <div class="font-semibold">Rp {{ number_format($transaction->amount, 0, ',', '.') }}</div>
-                        </td>
-                        <td class="px-6 py-4">
-                            <span class="px-3 py-1 text-xs font-semibold rounded-full bg-yellow-100 text-yellow-800">
-                                Menunggu Pembayaran
-                            </span>
-                        </td>
-                        <td class="px-6 py-4">
-                            <!-- Tombol untuk melanjutkan pembayaran ke Midtrans -->
-                            <button onclick="continuePayment('{{ $transaction->snap_token }}', {{ $transaction->id }})" 
-                                    class="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">
-                                <i class="fas fa-credit-card mr-2"></i>
-                                Bayar Sekarang
-                            </button>
-                        </td>
-                    </tr>
-                    @endforeach
-                </tbody>
-            </table>
+    <div class="mb-10">
+        <h2 class="text-xl font-semibold text-gray-800 mb-4 flex items-center">
+            <i class="fas fa-clock text-yellow-500 mr-2"></i>
+            Menunggu Pembayaran
+        </h2>
+        
+        <div class="bg-white rounded-lg shadow overflow-hidden">
+            <div class="overflow-x-auto">
+                <table class="min-w-full">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Rak</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Jumlah</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Aksi</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Batas Waktu</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-gray-200">
+                        @foreach($pendingTransactions as $transaction)
+                        @php
+                            $isRenewal = $transaction->is_renewal ?? false;
+                            $batasWaktu = $transaction->created_at->addHours(24);
+                            $isExpired = now()->gt($batasWaktu);
+                        @endphp
+                        
+                        <tr>
+                            <td class="px-6 py-4">
+                                <div class="font-medium">{{ $transaction->rak->nama_rak ?? 'Rak' }}</div>
+                                <div class="text-sm text-gray-500">Order: {{ $transaction->order_id }}</div>
+                                @if($isRenewal)
+                                <div class="text-xs text-purple-600 font-medium mt-1">
+                                    <i class="fas fa-redo mr-1"></i> Perpanjangan
+                                </div>
+                                @endif
+                            </td>
+                            <td class="px-6 py-4">
+                                <div class="font-semibold">Rp {{ number_format($transaction->amount, 0, ',', '.') }}</div>
+                            </td>
+                            <td class="px-6 py-4">
+                                <span class="px-3 py-1 text-xs font-semibold rounded-full bg-yellow-100 text-yellow-800">
+                                    Menunggu Pembayaran
+                                </span>
+                            </td>
+                            <td class="px-6 py-4">
+                                @if($isExpired)
+                                <span class="text-red-600 text-sm font-medium">
+                                    <i class="fas fa-exclamation-circle mr-1"></i>
+                                    Telah Kadaluarsa
+                                </span>
+                                @else
+                                <!-- Tombol untuk melanjutkan pembayaran ke Midtrans -->
+                                <button onclick="continuePayment('{{ $transaction->snap_token }}', {{ $transaction->id }})" 
+                                        class="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">
+                                    <i class="fas fa-credit-card mr-2"></i>
+                                    Bayar Sekarang
+                                </button>
+                                @endif
+                            </td>
+                            <td class="px-6 py-4">
+                                @if($isExpired)
+                                <span class="text-red-600 text-sm">
+                                    <i class="fas fa-times-circle mr-1"></i>
+                                    Telah lewat
+                                </span>
+                                @else
+                                <div class="text-sm text-gray-600">
+                                    <i class="fas fa-clock mr-1"></i>
+                                    {{ $batasWaktu->format('d M Y H:i') }}
+                                </div>
+                                @endif
+                            </td>
+                        </tr>
+                        @endforeach
+                    </tbody>
+                </table>
+            </div>
         </div>
     </div>
-</div>
     @endif
 
     <!-- Perlu Perpanjangan -->
@@ -113,15 +142,16 @@
             @foreach($overdueTransactions as $transaction)
             @php
                 $daysOverdue = now()->diffInDays($transaction->sewa_berakhir);
+                $isCritical = $daysOverdue > 7;
             @endphp
             
-            <div class="bg-white rounded-lg shadow p-6 border border-orange-200">
+            <div class="bg-white rounded-lg shadow p-6 border {{ $isCritical ? 'border-red-200' : 'border-orange-200' }}">
                 <div class="flex justify-between items-start mb-4">
                     <div>
                         <h3 class="font-bold text-gray-800">{{ $transaction->rak->nama_rak ?? 'Rak' }}</h3>
                         <p class="text-sm text-gray-500">Kode: {{ $transaction->order_id }}</p>
                     </div>
-                    <span class="px-3 py-1 bg-orange-100 text-orange-800 text-xs font-medium rounded-full">
+                    <span class="px-3 py-1 {{ $isCritical ? 'bg-red-100 text-red-800' : 'bg-orange-100 text-orange-800' }} text-xs font-medium rounded-full">
                         {{ $daysOverdue }} hari terlambat
                     </span>
                 </div>
@@ -129,9 +159,7 @@
                 <div class="space-y-3 mb-6">
                     <div class="flex justify-between">
                         <span class="text-gray-600 text-sm">Masa Sewa Berakhir:</span>
-                            <span class="font-medium">
-                                {{ \Carbon\Carbon::parse($transaction->sewa_berakhir)->format('d M Y') }}
-                            </span>
+                        <span class="font-medium">{{ \Carbon\Carbon::parse($transaction->sewa_berakhir)->format('d M Y') }}</span>
                     </div>
                     @if($transaction->rak)
                     <div class="flex justify-between">
@@ -141,20 +169,33 @@
                         </span>
                     </div>
                     @endif
+                    
+                    @if($isCritical)
+                    <div class="p-3 bg-red-50 border border-red-200 rounded-lg">
+                        <div class="flex items-center text-red-700">
+                            <i class="fas fa-exclamation-triangle mr-2"></i>
+                            <span class="text-sm font-medium">Segera perpanjang untuk menghindari sanksi</span>
+                        </div>
+                    </div>
+                    @endif
                 </div>
                 
-                <div class="flex space-x-3">
-                    <a href="{{ route('customer.tagihan.create-payment', $transaction->id) }}" 
-                       class="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-medium py-2.5 rounded-lg transition flex items-center justify-center">
+                <div class="space-y-3">
+                    <!-- Tombol Perpanjang -->
+                    <button onclick="createRenewalPayment({{ $transaction->id }})" 
+                            class="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-2.5 rounded-lg transition flex items-center justify-center">
                         <i class="fas fa-redo mr-2"></i>
-                        Perpanjang
-                    </a>
+                        Buat Permintaan Perpanjangan
+                    </button>
                     
-                    <form action="{{ route('customer.tagihan.process-expired', $transaction->id) }}" method="POST" class="flex-1">
+                    <!-- Tombol Lepas -->
+                    <form action="{{ route('customer.tagihan.process-expired', $transaction->id) }}" method="POST">
                         @csrf
                         <button type="submit" 
+                                onclick="return confirm('Apakah Anda yakin ingin melepas rak ini? Status akan berubah menjadi kadaluarsa.')"
                                 class="w-full border border-gray-300 text-gray-700 hover:bg-gray-50 font-medium py-2.5 rounded-lg transition">
-                            Lepas
+                            <i class="fas fa-times mr-2"></i>
+                            Lepas Rak
                         </button>
                     </form>
                 </div>
@@ -164,45 +205,67 @@
     </div>
     @endif
 
-    <!-- Kadaluarsa -->
+    <!-- Kadaluarsa (Read-only) -->
     @if($expiredTransactions->count() > 0)
     <div class="mb-10">
         <h2 class="text-xl font-semibold text-gray-800 mb-4 flex items-center">
             <i class="fas fa-exclamation-triangle text-red-500 mr-2"></i>
-            Pembayaran Kadaluarsa
+            Riwayat Kadaluarsa
         </h2>
         
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            @foreach($expiredTransactions as $transaction)
-            <div class="bg-white rounded-lg shadow p-6 border border-red-200">
-                <div class="flex justify-between items-start mb-4">
-                    <div>
-                        <h3 class="font-bold text-gray-800">{{ $transaction->rak->nama_rak ?? 'Rak' }}</h3>
-                        <p class="text-sm text-gray-500">{{ $transaction->order_id }}</p>
-                    </div>
-                    <span class="px-3 py-1 bg-red-100 text-red-800 text-xs font-medium rounded-full">
-                        Kadaluarsa
-                    </span>
-                </div>
-                
-                <div class="space-y-3 mb-6">
-                    <div class="flex justify-between">
-                        <span class="text-gray-600 text-sm">Jumlah:</span>
-                        <span class="font-semibold">Rp {{ number_format($transaction->amount, 0, ',', '.') }}</span>
-                    </div>
-                    <div class="flex justify-between">
-                        <span class="text-gray-600 text-sm">Tanggal:</span>
-                        <span class="text-gray-800">{{ $transaction->created_at->format('d M Y') }}</span>
-                    </div>
-                </div>
-                
-                <a href="{{ route('customer.tagihan.create-payment', $transaction->id) }}" 
-                   class="w-full bg-red-600 hover:bg-red-700 text-white font-medium py-2.5 rounded-lg transition flex items-center justify-center">
-                    <i class="fas fa-redo mr-2"></i>
-                    Bayar Ulang
-                </a>
+        <div class="bg-white rounded-lg shadow overflow-hidden">
+            <div class="overflow-x-auto">
+                <table class="min-w-full">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Rak</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Jumlah</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Keterangan</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Tanggal</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-gray-200">
+                        @foreach($expiredTransactions as $transaction)
+                        <tr>
+                            <td class="px-6 py-4">
+                                <div class="font-medium">{{ $transaction->rak->nama_rak ?? 'Rak' }}</div>
+                                <div class="text-sm text-gray-500">{{ $transaction->order_id }}</div>
+                            </td>
+                            <td class="px-6 py-4">
+                                <div class="font-semibold">Rp {{ number_format($transaction->amount, 0, ',', '.') }}</div>
+                            </td>
+                            <td class="px-6 py-4">
+                                <span class="px-3 py-1 text-xs font-semibold rounded-full bg-red-100 text-red-800">
+                                    Kadaluarsa
+                                </span>
+                            </td>
+                            <td class="px-6 py-4">
+                                @if($transaction->is_renewal)
+                                <span class="text-sm text-gray-600">
+                                    <i class="fas fa-redo mr-1"></i> Pembayaran perpanjangan
+                                </span>
+                                @else
+                                <span class="text-sm text-gray-600">
+                                    <i class="fas fa-clock mr-1"></i> Pembayaran awal
+                                </span>
+                                @endif
+                            </td>
+                            <td class="px-6 py-4">
+                                <div class="text-sm text-gray-600">
+                                    {{ $transaction->created_at->format('d M Y') }}
+                                </div>
+                                @if($transaction->sewa_berakhir)
+                                <div class="text-xs text-gray-500">
+                                    Berakhir: {{ \Carbon\Carbon::parse($transaction->sewa_berakhir)->format('d M Y') }}
+                                </div>
+                                @endif
+                            </td>
+                        </tr>
+                        @endforeach
+                    </tbody>
+                </table>
             </div>
-            @endforeach
         </div>
     </div>
     @endif
@@ -281,6 +344,53 @@
             location.reload();
         });
     }
+    
+    // Fungsi untuk membuat pembayaran perpanjangan
+    function createRenewalPayment(transactionId) {
+        if (!confirm('Apakah Anda yakin ingin membuat permintaan perpanjangan?')) {
+            return;
+        }
+        
+        fetch("{{ route('customer.tagihan.create-renewal') }}", {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': '{{ csrf_token() }}'
+            },
+            body: JSON.stringify({
+                transaction_id: transactionId
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert('Permintaan perpanjangan berhasil dibuat! Silakan selesaikan pembayaran di bagian Menunggu Pembayaran.');
+                location.reload();
+            } else {
+                alert('Gagal membuat permintaan perpanjangan: ' + data.message);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Terjadi kesalahan. Silakan coba lagi.');
+        });
+    }
+    
+    // Auto-refresh setiap 30 detik untuk pending transactions
+    @if($pendingTransactions->count() > 0)
+    setInterval(function() {
+        // Cek status transaksi pending
+        @foreach($pendingTransactions as $transaction)
+        fetch("{{ route('customer.tagihan.check-status', $transaction->id) }}")
+            .then(response => response.json())
+            .then(data => {
+                if (data.success && data.transaction.status !== 'pending') {
+                    location.reload();
+                }
+            });
+        @endforeach
+    }, 30000);
+    @endif
 </script>
 @endif
 @endsection
