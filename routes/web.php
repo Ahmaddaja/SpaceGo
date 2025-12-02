@@ -13,6 +13,7 @@ use App\Http\Controllers\PaymentController;
 use App\Http\Controllers\HistoryController;
 use App\Http\Controllers\TransactionController;
 use App\Http\Controllers\RevenueController;
+use App\Http\Controllers\TagihanController;
 
 // ========================
 // HALAMAN AWAL & TEST
@@ -60,13 +61,17 @@ Route::middleware(['auth', 'role:customer'])->group(function () {
     Route::get('/customer/list-rak/rak', [RakController::class, 'rakDibeli'])
         ->name('customer.list-rak.rak');
 
-    // Payment Routes
-    Route::get('/customer/bayar/{id}', [PaymentController::class, 'bayar'])
-        ->name('customer.bayar');
-    Route::get('/payment/checkout/{id}', [PaymentController::class, 'bayar'])
-        ->name('customer.payment.checkout');
-    Route::post('/payment/update-status', [PaymentController::class, 'updateStatus'])
-        ->name('payment.update-status');
+       // Payment Routes
+    Route::get('/customer/bayar/{id}', [PaymentController::class, 'bayar'])->name('customer.bayar');
+    Route::get('/payment/checkout/{id}', [PaymentController::class, 'bayar'])->name('customer.payment.checkout');
+    
+    // New checkout routes
+    Route::post('/payment/process-checkout', [PaymentController::class, 'processPayment'])->name('payment.process-checkout');
+    Route::get('/payment/cancel-checkout', [PaymentController::class, 'cancelCheckout'])->name('payment.cancel-checkout');
+    
+    // Existing payment routes
+    Route::post('/payment/handle-return', [PaymentController::class, 'handlePaymentReturn'])->name('payment.handle-return');
+    Route::post('/payment/update-status', [PaymentController::class, 'updateStatus'])->name('payment.update-status');
 
     // History Routes
     Route::prefix('customer/history')->group(function () {
@@ -76,6 +81,15 @@ Route::middleware(['auth', 'role:customer'])->group(function () {
             ->name('customer.history.payments');
         Route::get('/json', [HistoryController::class, 'getHistoryJson'])
             ->name('customer.history.json');
+    });
+
+   Route::prefix('customer/tagihan')->group(function () {
+        Route::get('/', [TagihanController::class, 'index'])->name('customer.tagihan');
+        Route::get('/create-payment/{id}', [TagihanController::class, 'createPayment'])->name('customer.tagihan.create-payment');
+        Route::get('/check-status/{id}', [TagihanController::class, 'checkStatus'])->name('customer.tagihan.check-status');
+        Route::post('/process-expired/{id}', [TagihanController::class, 'processExpired'])->name('customer.tagihan.process-expired');
+        Route::get('/payment-details/{id}', [TagihanController::class, 'paymentDetails'])->name('customer.tagihan.payment-details');
+        Route::get('/check-overdue', [TagihanController::class, 'checkOverdue'])->name('customer.tagihan.check-overdue');
     });
 });
 
