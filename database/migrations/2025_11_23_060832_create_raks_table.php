@@ -11,6 +11,8 @@ return new class extends Migration
         Schema::create('raks', function (Blueprint $table) {
             $table->id();
             $table->string('kode_rak')->unique();
+            $table->unsignedBigInteger('gudang_id');
+            $table->foreign('gudang_id')->references('id')->on('gudangs')->onDelete('cascade');
             $table->string('nama_rak');
             $table->enum('jenis_rak', ['Heavy Duty', 'Medium Duty', 'Light Duty', 'Cantilever']);
             $table->text('deskripsi')->nullable();
@@ -20,7 +22,6 @@ return new class extends Migration
             $table->decimal('tinggi', 8, 2); // meter
             $table->integer('jumlah_tingkat');
             $table->string('lokasi_gudang');
-            // $table->string('zona_gudang')->nullable();
             $table->decimal('harga_sewa_perbulan', 12, 2);
             $table->enum('status', ['tersedia', 'terisi', 'maintenance'])->default('tersedia');
             $table->string('foto')->nullable();
