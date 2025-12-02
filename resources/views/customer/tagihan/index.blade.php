@@ -139,68 +139,105 @@
         </h2>
         
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            @foreach($overdueTransactions as $transaction)
-            @php
-                $daysOverdue = now()->diffInDays($transaction->sewa_berakhir);
-                $isCritical = $daysOverdue > 7;
-            @endphp
-            
-            <div class="bg-white rounded-lg shadow p-6 border {{ $isCritical ? 'border-red-200' : 'border-orange-200' }}">
-                <div class="flex justify-between items-start mb-4">
-                    <div>
-                        <h3 class="font-bold text-gray-800">{{ $transaction->rak->nama_rak ?? 'Rak' }}</h3>
-                        <p class="text-sm text-gray-500">Kode: {{ $transaction->order_id }}</p>
-                    </div>
-                    <span class="px-3 py-1 {{ $isCritical ? 'bg-red-100 text-red-800' : 'bg-orange-100 text-orange-800' }} text-xs font-medium rounded-full">
-                        {{ $daysOverdue }} hari terlambat
-                    </span>
-                </div>
-                
-                <div class="space-y-3 mb-6">
-                    <div class="flex justify-between">
-                        <span class="text-gray-600 text-sm">Masa Sewa Berakhir:</span>
-                        <span class="font-medium">{{ \Carbon\Carbon::parse($transaction->sewa_berakhir)->format('d M Y') }}</span>
-                    </div>
-                    @if($transaction->rak)
-                    <div class="flex justify-between">
-                        <span class="text-gray-600 text-sm">Biaya Perpanjangan:</span>
-                        <span class="font-bold text-blue-600">
-                            Rp {{ number_format($transaction->rak->harga_sewa_perbulan, 0, ',', '.') }}
-                        </span>
-                    </div>
-                    @endif
-                    
-                    @if($isCritical)
-                    <div class="p-3 bg-red-50 border border-red-200 rounded-lg">
-                        <div class="flex items-center text-red-700">
-                            <i class="fas fa-exclamation-triangle mr-2"></i>
-                            <span class="text-sm font-medium">Segera perpanjang untuk menghindari sanksi</span>
-                        </div>
-                    </div>
-                    @endif
-                </div>
-                
-                <div class="space-y-3">
-                    <!-- Tombol Perpanjang -->
-                    <button onclick="createRenewalPayment({{ $transaction->id }})" 
-                            class="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-2.5 rounded-lg transition flex items-center justify-center">
-                        <i class="fas fa-redo mr-2"></i>
-                        Buat Permintaan Perpanjangan
-                    </button>
-                    
-                    <!-- Tombol Lepas -->
-                    <form action="{{ route('customer.tagihan.process-expired', $transaction->id) }}" method="POST">
-                        @csrf
-                        <button type="submit" 
-                                onclick="return confirm('Apakah Anda yakin ingin melepas rak ini? Status akan berubah menjadi kadaluarsa.')"
-                                class="w-full border border-gray-300 text-gray-700 hover:bg-gray-50 font-medium py-2.5 rounded-lg transition">
-                            <i class="fas fa-times mr-2"></i>
-                            Lepas Rak
-                        </button>
-                    </form>
-                </div>
+          @foreach($overdueTransactions as $transaction)
+@php
+    // Hitung selisih waktu
+    $sewaBerahir = \Carbon\Carbon::parse($transaction->sewa_berakhir);
+    $now = now();
+    
+    // Cek apakah masa sewa sudah berakhir atau belum
+    $isOverdue = $now->gt($sewaBerahir);
+    
+    // Hitung total selisih dalam jam (absolute value untuk menghilangkan tanda minus)
+    $totalHours = abs(floor($now->diffInHours($sewaBerahir)));
+    
+    // Tentukan text yang akan ditampilkan
+    if ($totalHours < 24) {
+        // Kurang dari 24 jam
+        if ($isOverdue) {
+            $overdueText = $totalHours . ' jam terlambat';
+            $isCritical = false;
+            $statusColor = 'orange';
+        } else {
+            $overdueText = $totalHours . ' jam tersisa';
+            $isCritical = false;
+            $statusColor = 'blue';
+        }
+    } else {
+        // 24 jam atau lebih, hitung hari dan sisa jam
+        $totalDays = floor($totalHours / 24);
+        $remainingHours = $totalHours % 24;
+        
+        // Format tampilan
+        if ($remainingHours > 0) {
+            $overdueText = $totalDays . ' hari ' . $remainingHours . ' jam ' . ($isOverdue ? 'terlambat' : 'tersisa');
+        } else {
+            $overdueText = $totalDays . ' hari ' . ($isOverdue ? 'terlambat' : 'tersisa');
+        }
+        
+        // Critical jika sudah terlambat lebih dari 7 hari
+        $isCritical = $isOverdue && $totalDays > 7;
+        $statusColor = $isOverdue ? ($isCritical ? 'red' : 'orange') : 'blue';
+    }
+@endphp
+
+<div class="bg-white rounded-lg shadow p-6 border {{ $isCritical ? 'border-red-200' : 'border-orange-200' }}">
+    <div class="flex justify-between items-start mb-4">
+        <div>
+            <h3 class="font-bold text-gray-800">{{ $transaction->rak->nama_rak ?? 'Rak' }}</h3>
+            <p class="text-sm text-gray-500">Kode: {{ $transaction->order_id }}</p>
+        </div>
+        <span class="px-3 py-1 {{ $isCritical ? 'bg-red-100 text-red-800' : 'bg-orange-100 text-orange-800' }} text-xs font-medium rounded-full">
+            {{ $overdueText }}
+        </span>
+    </div>
+    
+    <div class="space-y-3 mb-6">
+        <div class="flex justify-between">
+            <span class="text-gray-600 text-sm">Masa Sewa Berakhir:</span>
+            <span class="font-medium">{{ $sewaBerahir->format('d M Y') }}</span>
+        </div>
+        @if($transaction->rak)
+        <div class="flex justify-between">
+            <span class="text-gray-600 text-sm">Biaya Perpanjangan:</span>
+            <span class="font-bold text-blue-600">
+                Rp {{ number_format($transaction->rak->harga_sewa_perbulan, 0, ',', '.') }}
+            </span>
+        </div>
+        @endif
+        
+        @if($isCritical)
+        <div class="p-3 bg-red-50 border border-red-200 rounded-lg">
+            <div class="flex items-center text-red-700">
+                <i class="fas fa-exclamation-triangle mr-2"></i>
+                <span class="text-sm font-medium">Segera perpanjang untuk menghindari sanksi</span>
             </div>
-            @endforeach
+        </div>
+        @endif
+    </div>
+    
+    <div class="space-y-3">
+        <!-- Tombol Perpanjang -->
+        <a href="{{ route('customer.payment.renewal-checkout', $transaction->id) }}"
+   class="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-2.5 rounded-lg transition flex items-center justify-center">
+    <i class="fas fa-redo mr-2"></i>
+    Buat Permintaan Perpanjangan
+</a>
+
+        
+        <!-- Tombol Lepas -->
+        <form action="{{ route('customer.tagihan.process-expired', $transaction->id) }}" method="POST">
+            @csrf
+            <button type="submit" 
+                    onclick="return confirm('Apakah Anda yakin ingin melepas rak ini? Status akan berubah menjadi kadaluarsa.')"
+                    class="w-full border border-gray-300 text-gray-700 hover:bg-gray-50 font-medium py-2.5 rounded-lg transition">
+                <i class="fas fa-times mr-2"></i>
+                Lepas Rak
+            </button>
+        </form>
+    </div>
+</div>
+@endforeach
         </div>
     </div>
     @endif
