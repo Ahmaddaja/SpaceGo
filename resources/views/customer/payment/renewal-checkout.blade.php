@@ -172,14 +172,14 @@
                     <div class="detail-row">
                         <span class="text-gray-600">Tanggal Mulai</span>
                         <span class="font-semibold text-gray-800">
-                            {{ \Carbon\Carbon::parse($newTransaction->sewa_mulai)->format('d M Y') }}
+                            {{ \Carbon\Carbon::parse($transaction->sewa_mulai)->format('d M Y') }}
                         </span>
                     </div>
                     
                     <div class="detail-row">
                         <span class="text-gray-600">Tanggal Berakhir</span>
                         <span class="font-semibold text-gray-800">
-                            {{ \Carbon\Carbon::parse($newTransaction->sewa_berakhir)->format('d M Y') }}
+                            {{ \Carbon\Carbon::parse($transaction->sewa_berakhir)->format('d M Y') }}
                         </span>
                     </div>
                     

@@ -75,6 +75,10 @@ Route::middleware(['auth', 'role:customer'])->group(function () {
     Route::post('/payment/handle-return', [PaymentController::class, 'handlePaymentReturn'])
         ->name('payment.handle-return');
 
+    // Payment Renewel
+    Route::get('/payment/renewal/{transaction_id}', [PaymentController::class, 'renewal'])
+        ->name('customer.payment.renewal-checkout');
+
     // ========================
     // HISTORY ROUTES
     // ========================
