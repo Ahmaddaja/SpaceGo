@@ -1,61 +1,113 @@
 <nav class="bg-white/90 backdrop-blur-md shadow-lg sticky top-0 z-50 border-b border-gray-200">
-    <div class="max-w-7xl mx-auto px-6 py-4">
+    <div class="max-w-7xl mx-auto px-6 py-2.5">
         <div class="flex items-center justify-between">
-            <div class="flex items-center space-x-4">
-                <div class="bg-gradient-to-r from-blue-600 to-purple-600 p-3 rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105">
-                    <!-- Logo yang telah diganti -->
-                    <svg class="w-6 h-6 text-white" fill="currentColor" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+            <div class="flex items-center space-x-3">
+                <div class="bg-gradient-to-r from-blue-600 to-purple-600 p-2.5 rounded-xl shadow-md hover:shadow-lg transition-all duration-300 transform hover:scale-105">
+                    <svg class="w-5 h-5 text-white" fill="currentColor" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
                         <path d="M3 10L12 3L21 10V21H3V10ZM5 12V19H19V12L12 7L5 12Z"/>
                     </svg>
                 </div>
                 <div>
-                    <span class="text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">SPACEGO</span>
-                    <p class="text-xs text-gray-500 font-medium">Storage Solution</p>
+                    <span class="text-xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">SPACEGO</span>
+                    <p class="text-[10px] text-gray-500 font-medium">Storage Solution</p>
                 </div>
             </div>
-            
-            <div class="flex items-center space-x-8">
+
+            <div class="flex items-center space-x-6">
                 <!-- Home -->
-                <a href="{{ route('customer.index') }}" class="flex flex-col items-center group transition-all duration-300 {{ request()->routeIs('customer.index') ? 'text-blue-600' : 'text-gray-600 hover:text-blue-600' }}">
-                    <div class="p-3 rounded-xl shadow-sm transition-all duration-300 transform {{ request()->routeIs('customer.index') ? 'bg-blue-100 shadow-md scale-110' : 'bg-gray-100 group-hover:bg-blue-100 group-hover:shadow-md group-hover:scale-110' }}">
-                        <i class="fas fa-home"></i>
+                <a href="{{ route('customer.index') }}" 
+                   class="flex flex-col items-center group transition-all duration-300 relative
+                   {{ request()->routeIs('customer.index') ? 'text-blue-600' : 'text-gray-600 hover:text-blue-600' }}">
+                    <div class="p-2 rounded-lg shadow-sm transition-all duration-300 transform 
+                        {{ request()->routeIs('customer.index') ? 'bg-blue-100 shadow-md scale-110' : 'bg-gray-100 group-hover:bg-blue-100 group-hover:shadow-md group-hover:scale-110' }}">
+                        <i class="fas fa-home text-sm"></i>
                     </div>
-                    <span class="text-xs mt-2 font-medium">Home</span>
+                    <span class="text-[10px] mt-1 font-medium">Home</span>
                 </a>
-                
+
                 <!-- Rak -->
-                <a href="{{ route('customer.list-rak.list-rak') }}" class="flex flex-col items-center group transition-all duration-300 {{ request()->routeIs('customer.list-rak.list-rak') ? 'text-blue-600' : 'text-gray-600 hover:text-blue-600' }}">
-                    <div class="p-3 rounded-xl shadow-sm transition-all duration-300 transform {{ request()->routeIs('customer.list-rak.list-rak') ? 'bg-blue-100 shadow-md scale-110' : 'bg-gray-100 group-hover:bg-blue-100 group-hover:shadow-md group-hover:scale-110' }}">
-                        <i class="fas fa-pallet"></i>
+                <a href="{{ route('customer.list-rak.list-rak') }}" 
+                   class="flex flex-col items-center group transition-all duration-300 relative
+                   {{ request()->routeIs('customer.list-rak.list-rak') ? 'text-blue-600' : 'text-gray-600 hover:text-blue-600' }}">
+                    <div class="p-2 rounded-lg shadow-sm transition-all duration-300 transform 
+                        {{ request()->routeIs('customer.list-rak.list-rak') ? 'bg-blue-100 shadow-md scale-110' : 'bg-gray-100 group-hover:bg-blue-100 group-hover:shadow-md group-hover:scale-110' }}">
+                        <i class="fas fa-pallet text-sm"></i>
                     </div>
-                    <span class="text-xs mt-2 font-medium">Rak</span>
+                    <span class="text-[10px] mt-1 font-medium">Rak</span>
                     @if(request()->routeIs('customer.list-rak.list-rak'))
-                    <div class="absolute -top-1 -right-1 w-3 h-3 bg-blue-500 rounded-full animate-pulse"></div>
+                        <div class="absolute -top-1 -right-1 w-2 h-2 bg-blue-500 rounded-full animate-pulse"></div>
                     @endif
                 </a>
-                 
+
                 <!-- Rak Anda -->
-                <a href="{{ route('customer.list-rak.rak') }}" class="flex flex-col items-center group transition-all duration-300 {{ request()->routeIs('customer.list-rak.rak') ? 'text-blue-600' : 'text-gray-600 hover:text-blue-600' }}">
-                    <div class="p-3 rounded-xl shadow-sm transition-all duration-300 transform {{ request()->routeIs('customer.list-rak.rak') ? 'bg-blue-100 shadow-md scale-110' : 'bg-gray-100 group-hover:bg-blue-100 group-hover:shadow-md group-hover:scale-110' }}">
-                        <i class="fas fa-th-large w-5 h-5"></i>
+                <a href="{{ route('customer.list-rak.rak') }}" 
+                   class="flex flex-col items-center group transition-all duration-300 relative
+                   {{ request()->routeIs('customer.list-rak.rak') ? 'text-blue-600' : 'text-gray-600 hover:text-blue-600' }}">
+                    <div class="p-2 rounded-lg shadow-sm transition-all duration-300 transform 
+                        {{ request()->routeIs('customer.list-rak.rak') ? 'bg-blue-100 shadow-md scale-110' : 'bg-gray-100 group-hover:bg-blue-100 group-hover:shadow-md group-hover:scale-110' }}">
+                        <i class="fas fa-th-large text-sm"></i>
                     </div>
-                    <span class="text-xs mt-2 font-medium">Rak Anda</span>
+                    <span class="text-[10px] mt-1 font-medium">Rak Anda</span>
                     @if(request()->routeIs('customer.list-rak.rak'))
-                    <div class="absolute -top-1 -right-1 w-3 h-3 bg-blue-500 rounded-full animate-pulse"></div>
+                        <div class="absolute -top-1 -right-1 w-2 h-2 bg-blue-500 rounded-full animate-pulse"></div>
                     @endif
                 </a>
-                
-                <!-- History -->
-                <a href="{{ route('customer.history') }}" class="flex flex-col items-center group transition-all duration-300 {{ request()->routeIs('customer.history') ? 'text-blue-600' : 'text-gray-600 hover:text-blue-600' }}">
-                    <div class="p-3 rounded-xl shadow-sm transition-all duration-300 transform {{ request()->routeIs('customer.history') ? 'bg-blue-100 shadow-md scale-110' : 'bg-gray-100 group-hover:bg-blue-100 group-hover:shadow-md group-hover:scale-110' }}">
-                        <i class="fas fa-history"></i>
+
+                <!-- Tagihan -->
+                <a href="{{ route('customer.tagihan') }}" 
+                class="flex flex-col items-center group transition-all duration-300 relative
+                {{ request()->routeIs('customer.tagihan*') ? 'text-blue-600' : 'text-gray-600 hover:text-blue-600' }}">
+                    <div class="p-2 rounded-lg shadow-sm transition-all duration-300 transform 
+                        {{ request()->routeIs('customer.tagihan*') ? 'bg-blue-100 shadow-md scale-110' : 'bg-gray-100 group-hover:bg-blue-100 group-hover:shadow-md group-hover:scale-110' }}">
+                        <i class="fas fa-file-invoice-dollar text-sm"></i>
                     </div>
-                    <span class="text-xs mt-2 font-medium">History</span>
-                    @if(request()->routeIs('customer.history'))
-                    <div class="absolute -top-1 -right-1 w-3 h-3 bg-blue-500 rounded-full animate-pulse"></div>
+                    <span class="text-[10px] mt-1 font-medium">Tagihan</span>
+                    
+                    <!-- Notification Badge -->
+                    @php
+                        use App\Models\Transaction;
+                        $userId = Auth::id();
+                        
+                        // Hitung transaksi pending dari database
+                        $unpaidCount = Transaction::where('user_id', $userId)
+                            ->where('transaction_status', 'pending')
+                            ->orWhere(function($query) use ($userId) {
+                                $query->where('user_id', $userId)
+                                    ->where('transaction_status', 'expired');
+                            })
+                            ->count();
+                        
+                        // Tambah 1 jika ada session pending_payment
+                        if (session('pending_payment')) {
+                            $unpaidCount++;
+                        }
+                    @endphp
+                    
+                    @if($unpaidCount > 0)
+                        <div class="absolute -top-1 -right-1 flex items-center justify-center">
+                            <span class="animate-ping absolute inline-flex h-3 w-3 rounded-full bg-red-400 opacity-75"></span>
+                            <span class="relative inline-flex h-2.5 w-2.5 rounded-full bg-red-500 text-[8px] text-white font-bold items-center justify-center">
+                                {{ $unpaidCount > 9 ? '9+' : $unpaidCount }}
+                            </span>
+                        </div>
+                    @endif
+                    
+                    @if(request()->routeIs('customer.tagihan*'))
+                        <div class="absolute -top-1 -right-1 w-2 h-2 bg-blue-500 rounded-full animate-pulse"></div>
                     @endif
                 </a>
-                
+
+                <!-- History -->
+                <a href="{{ route('customer.history') }}" 
+                   class="flex flex-col items-center group transition-all duration-300 
+                   {{ request()->routeIs('customer.history') ? 'text-blue-600' : 'text-gray-600 hover:text-blue-600' }}">
+                    <div class="p-2 rounded-lg shadow-sm transition-all duration-300 transform 
+                        {{ request()->routeIs('customer.history') ? 'bg-blue-100 shadow-md scale-110' : 'bg-gray-100 group-hover:bg-blue-100 group-hover:shadow-md group-hover:scale-110' }}">
+                        <i class="fas fa-history text-sm"></i>
+                    </div>
+                    <span class="text-[10px] mt-1 font-medium">History</span>
+                </a>
+
                 <!-- Dropdown Profile -->
                 <div class="relative group">
                     <button class="flex items-center space-x-3 bg-gray-100 hover:bg-gray-200 rounded-xl px-4 py-2 transition-all duration-300 shadow-sm hover:shadow-md transform hover:scale-105">

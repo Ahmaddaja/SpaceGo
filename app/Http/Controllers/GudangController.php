@@ -6,12 +6,13 @@ use App\Models\Gudang;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
+use App\Models\Rak;
 
 class GudangController extends Controller
 {
     public function index()
     {
-        $gudangs = Gudang::latest()->paginate(10);
+        $gudangs = Gudang::latest()->withCount('raks')->paginate(10);
 
         // Load count manual untuk setiap gudang
         foreach ($gudangs as $gudang) {
@@ -53,11 +54,13 @@ class GudangController extends Controller
 
     public function show(Gudang $gudang)
     {
-        // Load count manual
-        $gudang->raks_count = \App\Models\Rak::where('lokasi_gudang', $gudang->nama_gudang)->count();
 
-        return view('admin.gudangs.show', compact('gudang'));
+        $raks = $gudang->raks;
+        $gudang->loadCount('raks');
+
+        return view('admin.gudangs.show', compact('gudang', 'raks'));
     }
+    
     public function edit(Gudang $gudang)
     {
         return view('admin.gudangs.edit', compact('gudang'));

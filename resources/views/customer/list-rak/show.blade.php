@@ -220,29 +220,32 @@
                 </div>
             </div>
             
-            @php
-                $now = now()->startOfDay();
-                $end = \Carbon\Carbon::parse($activeRental->sewa_berakhir)->startOfDay();
-                $daysDiff = $now->diffInDays($end, false);
-                
-                // Tentukan warna status
-                if ($daysDiff > 0) {
-                    $statusColor = 'bg-green-600';
-                    $statusText = $daysDiff . ' Hari Tersisa';
-                } elseif ($daysDiff === 0) {
-                    $statusColor = 'bg-yellow-500';
-                    $statusText = 'Berakhir Hari Ini';
-                } else {
-                    $statusColor = 'bg-red-600';
-                    $statusText = 'Masa Tenggang - Harus Membayar Denda (Lewat ' . abs($daysDiff) . ' Hari)';
-                }
+@php
+    $now = now()->startOfDay();
+    $end = \Carbon\Carbon::parse($activeRental->sewa_berakhir)->startOfDay();
 
-                // Hitung denda (50.000 per hari keterlambatan)
-                $dendaPerHari = 50000;
-                $totalDenda = $daysDiff < 0 ? abs($daysDiff) * $dendaPerHari : 0;
-                $hargaSewa = $rak->harga_sewa_perbulan ?? 0;
-                $totalBayar = $hargaSewa + $totalDenda;
-            @endphp
+    // Selisih hari (+ = masih ada sisa, 0 = hari terakhir, - = sudah lewat)
+    $daysDiff = $now->diffInDays($end, false);
+
+    // Tentukan warna + status text
+    if ($daysDiff > 0) {
+        $statusColor = 'bg-green-600';
+        $statusText = $daysDiff . ' Hari Tersisa';
+    } elseif ($daysDiff === 0) {
+        $statusColor = 'bg-yellow-500';
+        $statusText = 'Berakhir Hari Ini';
+    } else {
+        $statusColor = 'bg-red-600';
+        $statusText = 'Masa Tenggang - Lewat ' . abs($daysDiff) . ' Hari';
+    }
+
+    // Harga & denda
+    $dendaPerHari = 50000;
+    $totalDenda = $daysDiff < 0 ? abs($daysDiff) * $dendaPerHari : 0;
+    $hargaSewa = $rak->harga_sewa_perbulan ?? 0;
+    $totalBayar = $hargaSewa + $totalDenda;
+@endphp
+
 
             <div class="mt-4 p-3 rounded-lg text-white {{ $statusColor }}">
                 <div class="flex items-center justify-between">
