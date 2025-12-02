@@ -80,32 +80,29 @@ class TagihanController extends Controller
                 ->where('user_id', Auth::id())
                 ->firstOrFail();
 
-            // Check if transaction is eligible for renewal
+            // Pastikan transaksi boleh diperpanjang
             if (!in_array($originalTransaction->transaction_status, ['settlement', 'expired'])) {
                 return redirect()->route('customer.tagihan')
                     ->with('error', 'Transaksi tidak dapat diperpanjang saat ini.');
             }
 
-            // Check if rak still exists
             $rak = $originalTransaction->rak;
             if (!$rak) {
                 return redirect()->route('customer.tagihan')
                     ->with('error', 'Rak tidak ditemukan.');
             }
 
-            // Generate unique Order ID for renewal
+            // Generate order ID baru
             $orderId = 'RENEW-' . time() . '-' . $rak->id . '-' . $originalTransaction->id;
 
-            // Calculate duration (default 30 days or from rak settings)
+            // Durasi sewa
             $durasi = $rak->durasi_sewa_hari ?? 30;
 
-            // Calculate price
+            // Hitung harga
             $pricePerMonth = $rak->harga_sewa_perbulan;
-            
-            // For simplicity, calculate price based on days
             $priceForDuration = ($pricePerMonth / 30) * $durasi;
 
-            // Parameters for Midtrans
+            // Midtrans params
             $params = [
                 'transaction_details' => [
                     'order_id' => $orderId,
@@ -123,14 +120,13 @@ class TagihanController extends Controller
                     'first_name' => Auth::user()->name,
                     'email' => Auth::user()->email,
                 ],
-                'custom_field1' => $originalTransaction->id, // Store original transaction ID
-                'custom_field2' => 'renewal' // Mark as renewal transaction
+                'custom_field1' => $originalTransaction->id,
+                'custom_field2' => 'renewal'
             ];
 
-            // Generate Snap token
             $snapToken = Snap::getSnapToken($params);
 
-            // Create new transaction for renewal
+            // Buat transaksi renewal
             $newTransaction = Transaction::create([
                 'order_id' => $orderId,
                 'user_id' => Auth::id(),
@@ -139,30 +135,44 @@ class TagihanController extends Controller
                 'transaction_status' => 'pending',
                 'snap_token' => $snapToken,
                 'transaction_time' => now(),
-                'parent_transaction_id' => $originalTransaction->id, // Link to original
+                'parent_transaction_id' => $originalTransaction->id,
                 'is_renewal' => true
             ]);
 
-            // Log for debugging
-            Log::info('Renewal Transaction Created', [
-                'original_transaction_id' => $originalTransaction->id,
-                'new_transaction_id' => $newTransaction->id,
-                'order_id' => $orderId,
-                'user_id' => Auth::id(),
-                'rak_id' => $rak->id,
-                'amount' => $priceForDuration
-            ]);
+            /*
+            |--------------------------------------------------------------------------
+            | HITUNG TERLAMBAT & DENDA
+            |--------------------------------------------------------------------------
+            */
+            $daysDiff = now()->diffInDays(
+                Carbon::parse($originalTransaction->sewa_berakhir),
+                false // false = menghitung selisih negatif
+            );
 
-            // Show checkout page for renewal
-            return view('customer.payment.renewal-checkout', compact('snapToken', 'rak', 'newTransaction'));
+            // contoh denda: Rp 20.000 per hari
+            $dendaPerHari = 20000;
 
-        } catch (\Exception $e) {
-            Log::error('Renewal Payment Error: ' . $e->getMessage());
-            
-            return redirect()->route('customer.tagihan')
-                ->with('error', 'Terjadi kesalahan: ' . $e->getMessage());
-        }
+            $totalDenda = $daysDiff < 0 ? abs($daysDiff) * $dendaPerHari : 0;
+
+        // Kirim data ke blade
+        return view('customer.payment.renewal-checkout', [
+            'snapToken' => $snapToken,
+            'rak' => $rak,
+            'newTransaction' => $newTransaction,
+            'daysDiff' => $daysDiff,
+            'totalDenda' => $totalDenda,
+            'originalTransaction' => $originalTransaction,
+            'hargaSewa' => $hargaSewa,
+        ]);
+
+    } catch (\Exception $e) {
+        Log::error('Renewal Payment Error: ' . $e->getMessage());
+        
+        return redirect()->route('customer.tagihan')
+            ->with('error', 'Terjadi kesalahan: ' . $e->getMessage());
     }
+}
+
 
     /**
      * Check payment status for pending transactions
