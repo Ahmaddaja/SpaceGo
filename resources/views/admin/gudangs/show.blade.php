@@ -5,17 +5,19 @@
 @endsection
 
 @section('content')
-<div class="container-fluid">
-    <div class="row">
-        <div class="col-lg-8">
-            @include('admin.gudangs.partials.detail-info', ['gudang' => $gudang])
-            @include('admin.gudangs.partials.detail-rak-list', ['gudang' => $gudang])
-        </div>
+    <div class="container-fluid">
+        <div class="row">
+            <div class="col-lg-8">
+                @include('admin.gudangs.partials.detail-info', ['gudang' => $gudang])
+                @include('admin.gudangs.partials.detail-rak-list', [
+                    'gudang' => $gudang,
+                    'raks' => $raks,
+                ]) </div>
 
-        <div class="col-lg-4">
-            @include('admin.gudangs.partials.detail-photo', ['gudang' => $gudang])
-            @include('admin.gudangs.partials.detail-actions', ['gudang' => $gudang])
+            <div class="col-lg-4">
+                @include('admin.gudangs.partials.detail-photo', ['gudang' => $gudang])
+                @include('admin.gudangs.partials.detail-actions', ['gudang' => $gudang])
+            </div>
         </div>
     </div>
-</div>
 @endsection
