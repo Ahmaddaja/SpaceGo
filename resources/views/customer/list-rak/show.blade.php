@@ -141,7 +141,7 @@
         <!-- TITLE -->
         <div class="mb-8 text-center">
             <h2 class="text-4xl md:text-5xl font-bold text-gray-800 mb-4">Detail Rak</h2>
-            <p class="text-gray-600 text-lg max-w-2xl mx-auto">Informasi lengkap mengenai rak yang Anda pilih</p>
+            <p class="text-gray-600 text-lg max-w-2xl mx-auto">Informasi lengkap mengenai Rak yang Anda pilih</p>
         </div>
 
         <!-- RENTAL INFO (Jika user sudah menyewa) -->
