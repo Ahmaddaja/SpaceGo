@@ -158,7 +158,7 @@ class DatabaseSeeder extends Seeder
 
         Transaction::create([
             'order_id' => 'ORDER-TEST-001',
-            'user_id' => 1,
+            'user_id' => 2,
             'rak_id' => $rak2->id,
             'amount' => 300000,
             'payment_type' => 'bank_transfer',
@@ -173,7 +173,7 @@ class DatabaseSeeder extends Seeder
 
         Transaction::create([
             'order_id' => 'ORDER-TEST-002',
-            'user_id' => 1,
+            'user_id' => 2,
             'rak_id' => $rak3->id,
             'amount' => 350000,
             'payment_type' => 'bank_transfer',
@@ -188,7 +188,7 @@ class DatabaseSeeder extends Seeder
 
         Transaction::create([
             'order_id' => 'ORDER-TEST-003',
-            'user_id' => 1,
+            'user_id' => 2,
             'rak_id' => $rak4->id,
             'amount' => 400000,
             'payment_type' => 'bank_transfer',
