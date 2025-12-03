@@ -29,6 +29,7 @@ class ProfileController extends Controller
     {
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:255'],
+            'username' => ['required', 'string', 'max:255', 'unique:users,username,' . $request->user()->id],
             'email' => ['required', 'string', 'email', 'max:255', 'unique:users,email,' . $request->user()->id],
             'phone' => ['nullable', 'string', 'max:20'],
             'perusahaan' => ['nullable', 'string', 'max:255'],
@@ -41,6 +42,7 @@ class ProfileController extends Controller
 
         // Update basic info
         $user->name = $validated['name'];
+        $user->username = $validated['username'];
         $user->email = $validated['email'];
         
         // Only update these fields if columns exist in database

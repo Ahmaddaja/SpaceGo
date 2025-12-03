@@ -130,6 +130,21 @@
                                     @enderror
                                 </div>
 
+                                <div class="md:col-span-2">
+                                    <label class="block text-gray-700 font-semibold mb-3 flex items-center">
+                                        <i class="fas fa-id-badge text-indigo-500 mr-2"></i>
+                                        Username <span class="text-red-500 ml-1">*</span>
+                                    </label>
+                                    <input type="text" name="username" 
+                                        class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-300 input-focus @error('username') border-red-500 @enderror" 
+                                        value="{{ old('username', $user->username ?? '') }}" required>
+                                    @error('username')
+                                    <p class="text-red-500 text-sm mt-2 flex items-center">
+                                        <i class="fas fa-exclamation-triangle mr-1"></i>{{ $message }}
+                                    </p>
+                                    @enderror
+                                </div>
+
                                 <div>
                                     <label class="block text-gray-700 font-semibold mb-3 flex items-center">
                                         <i class="fas fa-phone text-green-500 mr-2"></i>
