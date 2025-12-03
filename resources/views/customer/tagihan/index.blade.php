@@ -184,7 +184,7 @@
                 
                 <div class="space-y-3 mb-6">
                     <div class="flex justify-between">
-                        <span class="text-gray-600 text-sm">Masa Sewa Berakhir:</span>
+                        <span class="text-gray-600 text-sm">Masa sewa berakhir:</span>
                         <span class="font-medium">{{ $sewaBerahir->format('d M Y') }}</span>
                     </div>
                     @if($transaction->rak)
@@ -226,7 +226,32 @@
                     </form>
                 </div>
             </div>
-            @endforeach
+        </div>
+        @endif
+    </div>
+    
+    <div class="space-y-3">
+        <!-- Tombol Perpanjang -->
+        <a href="{{ route('customer.payment.renewal-checkout', $transaction->id) }}"
+   class="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-2.5 rounded-lg transition flex items-center justify-center">
+    <i class="fas fa-redo mr-2"></i>
+    Buat Permintaan Perpanjangan
+</a>
+
+        
+        <!-- Tombol Lepas -->
+        <form action="{{ route('customer.tagihan.process-expired', $transaction->id) }}" method="POST">
+            @csrf
+            <button type="submit" 
+                    onclick="return confirm('Apakah Anda yakin ingin membatalkan pembayaran ini? Status akan berubah menjadi kadaluarsa.')"
+                    class="w-full border border-gray-300 text-gray-700 hover:bg-gray-50 font-medium py-2.5 rounded-lg transition">
+                <i class="fas fa-times mr-2"></i>
+                Batal
+            </button>
+        </form>
+    </div>
+</div>
+@endforeach
         </div>
     </div>
     @endif

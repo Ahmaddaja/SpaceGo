@@ -19,7 +19,7 @@
                 <div class="space-y-8">
                     <div class="space-y-6">
                         <h1 class="text-5xl font-bold text-gray-800 leading-tight">
-                            Selamat Datang, <span class="text-blue-600">{{ Auth::user()->name }}</span>!
+                            Selamat Datang!, <span class="text-blue-600">{{ Auth::user()->name }}</span>!
                         </h1>
                         <p class="text-lg text-gray-600 leading-relaxed">
                             Solusi penyimpanan yang aman, fleksibel, dan terjangkau. Kelola inventori Anda dengan mudah bersama SPACEGO.
@@ -27,7 +27,7 @@
                     </div>
                     <div class="flex gap-4">
                         <a href="{{ route('customer.list-rak.list-rak') }}" class="bg-gradient-to-r from-blue-600 to-purple-600 text-white px-8 py-4 rounded-xl text-lg font-semibold hover:shadow-lg transition-all duration-300 shadow-md">
-                            Lihat Rak Tersedia <i class="fas fa-arrow-right ml-2"></i>
+                            Lihat rak tersedia <i class="fas fa-arrow-right ml-2"></i>
                         </a>
                     </div>
                     <div class="flex items-center space-x-6 pt-4">

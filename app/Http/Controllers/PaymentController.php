@@ -18,7 +18,6 @@ class PaymentController extends Controller
 {
     public function __construct()
     {
-        // Konfigurasi Midtrans
         Config::$serverKey = config('midtrans.server_key');
         Config::$clientKey = config('midtrans.client_key');
         Config::$isProduction = config('midtrans.is_production');
@@ -26,16 +25,12 @@ class PaymentController extends Controller
         Config::$is3ds = true;
     }
 
-    /**
-     * Halaman Checkout / Bayar
-     */
     public function bayar($id)
     {
         try {
             $rak = Rak::findOrFail($id);
             $userId = Auth::id();
 
-            // CEK DULU APAKAH SUDAH ADA TRANSAKSI PENDING
             $existingPendingTransaction = Transaction::where('user_id', $userId)
                 ->where('rak_id', $rak->id)
                 ->where('transaction_status', 'pending')
@@ -46,16 +41,13 @@ class PaymentController extends Controller
                     ->with('info', 'Anda sudah memiliki transaksi pending untuk rak ini. Silakan selesaikan pembayaran di halaman Tagihan.');
             }
 
-            // Cek apakah rak masih tersedia
             if ($rak->status !== 'tersedia') {
                 return redirect()->route('customer.list-rak.list-rak')
                     ->with('error', 'Rak tidak tersedia untuk disewa.');
             }
 
-            // Generate Order ID yang unik
             $orderId = 'ORDER-' . time() . '-' . $rak->id;
 
-            // Parameter untuk Midtrans
             $params = [
                 'transaction_details' => [
                     'order_id' => $orderId,
@@ -75,10 +67,8 @@ class PaymentController extends Controller
                 ]
             ];
 
-            // Generate Snap token dari Midtrans
             $snapToken = Snap::getSnapToken($params);
 
-            // Simpan session untuk checkout
             session([
                 'payment_checkout' => [
                     'order_id' => $orderId,
@@ -96,7 +86,6 @@ class PaymentController extends Controller
                 'order_id' => $orderId
             ]);
 
-            // Tampilkan halaman checkout
             return view('customer.payment.checkout', compact('snapToken', 'rak'));
         } catch (\Exception $e) {
             Log::error('Payment Checkout Error: ' . $e->getMessage());
@@ -108,7 +97,6 @@ class PaymentController extends Controller
     public function processPayment(Request $request)
     {
         try {
-            // Get data dari session checkout
             $checkoutData = session('payment_checkout');
 
             if (!$checkoutData) {
@@ -121,7 +109,6 @@ class PaymentController extends Controller
             $userId = Auth::id();
             $rakId = $checkoutData['rak_id'];
 
-            // CEK ADA TRANSAKSI PENDING (DOUBLE CHECK)
             $existingPendingTransaction = Transaction::where('user_id', $userId)
                 ->where('rak_id', $rakId)
                 ->where('transaction_status', 'pending')
@@ -137,7 +124,6 @@ class PaymentController extends Controller
                 ], 400);
             }
 
-            // BUAT TRANSAKSI
             $transaction = Transaction::create([
                 'order_id' => $checkoutData['order_id'],
                 'user_id' => $userId,
@@ -149,7 +135,6 @@ class PaymentController extends Controller
                 'transaction_time' => now()
             ]);
 
-            // Hapus session checkout
             session()->forget('payment_checkout');
 
             Log::info('Transaction created from checkout', [
@@ -159,7 +144,6 @@ class PaymentController extends Controller
                 'order_id' => $checkoutData['order_id']
             ]);
 
-            // Kirim response dengan snap token untuk Midtrans
             return response()->json([
                 'success' => true,
                 'message' => 'Transaksi berhasil dibuat',
@@ -199,9 +183,6 @@ class PaymentController extends Controller
         }
     }
 
-    /**
-     * Update Status Transaksi (Dipanggil dari Frontend setelah pembayaran)
-     */
     public function updateStatus(Request $request)
     {
         try {
@@ -217,7 +198,6 @@ class PaymentController extends Controller
             $paymentType = $request->payment_type ?? null;
             $transactionId = $request->transaction_id;
 
-            // Cari transaksi
             $transaction = null;
             if ($transactionId) {
                 $transaction = Transaction::where('id', $transactionId)
@@ -239,7 +219,6 @@ class PaymentController extends Controller
                 ], 404);
             }
 
-            // Update status transaksi
             $transaction->update([
                 'transaction_status' => $transactionStatus,
                 'payment_type' => $paymentType,
@@ -251,7 +230,6 @@ class PaymentController extends Controller
                 'status' => $transactionStatus
             ]);
 
-            // Jika pembayaran sukses, update status rak
             if (in_array($transactionStatus, ['capture', 'settlement'])) {
                 $this->handleSuccessPayment($transaction);
             }
@@ -269,13 +247,9 @@ class PaymentController extends Controller
         }
     }
 
-    /**
-     * Callback dari Midtrans Server (untuk verifikasi tambahan)
-     */
     public function callback(Request $request)
     {
         try {
-            // Gunakan Midtrans Notification untuk verifikasi signature
             $notification = new Notification();
 
             $orderId = $notification->order_id;
@@ -290,7 +264,6 @@ class PaymentController extends Controller
                 'payment_type' => $paymentType
             ]);
 
-            // Cari transaksi di database
             $transaction = Transaction::where('order_id', $orderId)->first();
 
             if (!$transaction) {
@@ -301,7 +274,6 @@ class PaymentController extends Controller
             DB::beginTransaction();
 
             try {
-                // Update data transaksi dengan response lengkap dari Midtrans
                 $transaction->update([
                     'transaction_status' => $transactionStatus,
                     'fraud_status' => $fraudStatus,
@@ -314,12 +286,10 @@ class PaymentController extends Controller
                     'status' => $transactionStatus
                 ]);
 
-                // Handle berdasarkan status pembayaran
                 if ($transactionStatus == 'capture') {
                     if ($fraudStatus == 'accept') {
                         $this->handleSuccessPayment($transaction);
 
-                        // Log history sukses
                         try {
                             HistoryService::logPaymentSuccess(
                                 $transaction->user_id,
@@ -340,7 +310,6 @@ class PaymentController extends Controller
                 } elseif ($transactionStatus == 'settlement') {
                     $this->handleSuccessPayment($transaction);
 
-                    // Log history settlement
                     try {
                         HistoryService::logPaymentSuccess(
                             $transaction->user_id,
@@ -360,7 +329,6 @@ class PaymentController extends Controller
                 } elseif (in_array($transactionStatus, ['deny', 'expire', 'cancel'])) {
                     Log::info('Payment Failed/Cancelled', ['order_id' => $orderId]);
 
-                    // Log history gagal
                     try {
                         HistoryService::logPaymentFailed(
                             $transaction->user_id,
@@ -402,7 +370,6 @@ class PaymentController extends Controller
     public function handlePaymentReturn(Request $request)
     {
         try {
-            // Get data dari session
             $pendingData = session('pending_payment');
 
             if (!$pendingData) {
@@ -410,12 +377,10 @@ class PaymentController extends Controller
                     ->with('error', 'Sesi pembayaran tidak ditemukan. Silakan ulangi dari awal.');
             }
 
-            // Ambil data dari request Midtrans (jika ada)
             $transactionStatus = $request->transaction_status ?? 'pending';
             $paymentType = $request->payment_type ?? 'midtrans';
             $orderId = $pendingData['order_id'];
 
-            // BUAT TRANSAKSI DI DATABASE
             $transaction = Transaction::create([
                 'order_id' => $orderId,
                 'user_id' => Auth::id(),
@@ -427,7 +392,6 @@ class PaymentController extends Controller
                 'transaction_time' => now()
             ]);
 
-            // Hapus session
             session()->forget('pending_payment');
 
             Log::info('Transaction Created After Midtrans Popup', [
@@ -438,7 +402,6 @@ class PaymentController extends Controller
                 'rak_id' => $pendingData['rak_id']
             ]);
 
-            // Redirect ke halaman tagihan
             return response()->json([
                 'success' => true,
                 'message' => 'Transaksi berhasil dibuat',
@@ -457,7 +420,6 @@ class PaymentController extends Controller
     public function renewal($transaction_id)
     {
         try {
-            // Ambil transaksi aktif
             $transaction = Transaction::where('id', $transaction_id)
                 ->where('user_id', Auth::id())
                 ->whereIn('transaction_status', ['settlement', 'capture'])
@@ -465,23 +427,18 @@ class PaymentController extends Controller
 
             $rak = Rak::findOrFail($transaction->rak_id);
 
-            // Hitung keterlambatan
             $now = now()->startOfDay();
             $end = \Carbon\Carbon::parse($transaction->sewa_berakhir)->startOfDay();
             $daysDiff = $now->diffInDays($end, false);
 
-            // Hitung denda (Rp 50.000 per hari)
             $dendaPerHari = 50000;
             $totalDenda = $daysDiff < 0 ? abs($daysDiff) * $dendaPerHari : 0;
 
-            // Total pembayaran
             $hargaSewa = $rak->harga_sewa_perbulan;
             $totalBayar = $hargaSewa + $totalDenda;
 
-            // Generate Order ID baru untuk perpanjangan
             $orderId = 'RENEWAL-' . time() . '-' . $transaction->id;
 
-            // Item details untuk Midtrans
             $itemDetails = [
                 [
                     'id' => 'rental-' . $rak->id,
@@ -491,7 +448,6 @@ class PaymentController extends Controller
                 ]
             ];
 
-            // Tambahkan denda jika ada
             if ($totalDenda > 0) {
                 $itemDetails[] = [
                     'id' => 'penalty-' . $transaction->id,
@@ -501,7 +457,6 @@ class PaymentController extends Controller
                 ];
             }
 
-            // Parameter untuk Midtrans
             $params = [
                 'transaction_details' => [
                     'order_id' => $orderId,
@@ -516,38 +471,27 @@ class PaymentController extends Controller
                 'custom_field2' => $transaction->id,
             ];
 
-            // Generate Snap token
             $snapToken = Snap::getSnapToken($params);
 
-            // Simpan transaksi perpanjangan
-            $renewalTransaction = Transaction::create([
+            $transaction->update([
                 'order_id' => $orderId,
-                'user_id' => Auth::id(),
-                'rak_id' => $rak->id,
-                'amount' => $totalBayar,
-                'transaction_status' => 'pending',
                 'snap_token' => $snapToken,
-                'transaction_time' => now(),
-                'parent_transaction_id' => $transaction->id,
                 'penalty_amount' => $totalDenda,
                 'is_renewal' => true
             ]);
 
-            Log::info('Renewal Transaction Created', [
-                'renewal_transaction_id' => $renewalTransaction->id,
-                'parent_transaction_id' => $transaction->id,
+            Log::info('Renewal Snap Token Generated', [
+                'transaction_id' => $transaction->id,
                 'order_id' => $orderId,
                 'amount' => $totalBayar,
                 'penalty' => $totalDenda,
                 'days_late' => abs($daysDiff)
             ]);
 
-            // Tampilkan halaman checkout perpanjangan
             return view('customer.payment.renewal-checkout', compact(
                 'snapToken',
                 'rak',
                 'transaction',
-                'renewalTransaction',
                 'totalDenda',
                 'daysDiff',
                 'hargaSewa',
@@ -567,49 +511,38 @@ class PaymentController extends Controller
         $rak = Rak::find($transaction->rak_id);
 
         if ($rak) {
-            // Cek apakah ini transaksi perpanjangan
-            if ($transaction->is_renewal && $transaction->parent_transaction_id) {
-                // Ini adalah perpanjangan sewa
+            if ($transaction->is_renewal) {
                 $durasi = $rak->durasi_sewa_hari ?? 30;
 
-                // Ambil transaksi parent
-                $parentTransaction = Transaction::find($transaction->parent_transaction_id);
+                $sewaMulai = max(
+                    now(),
+                    \Carbon\Carbon::parse($transaction->sewa_berakhir)
+                );
 
-                if ($parentTransaction) {
-                    // Hitung tanggal mulai dari akhir sewa sebelumnya atau sekarang (mana yang lebih besar)
-                    $sewaMulai = max(
-                        now(),
-                        \Carbon\Carbon::parse($parentTransaction->sewa_berakhir)
+                $transaction->sewa_mulai = $sewaMulai;
+                $transaction->sewa_berakhir = $sewaMulai->copy()->addDays($durasi);
+                $transaction->save();
+
+                Log::info('Renewal dates calculated', [
+                    'transaction_id' => $transaction->id,
+                    'new_start' => $transaction->sewa_mulai,
+                    'new_end' => $transaction->sewa_berakhir,
+                    'duration' => $durasi
+                ]);
+
+                try {
+                    HistoryService::logRenewalRental(
+                        $transaction->user_id,
+                        $rak->kode_rak ?? $rak->nama_rak,
+                        $durasi,
+                        $transaction->amount,
+                        $transaction->penalty_amount ?? 0,
+                        'System'
                     );
-
-                    $transaction->sewa_mulai = $sewaMulai;
-                    $transaction->sewa_berakhir = $sewaMulai->copy()->addDays($durasi);
-                    $transaction->save();
-
-                    Log::info('Renewal dates calculated', [
-                        'transaction_id' => $transaction->id,
-                        'parent_end' => $parentTransaction->sewa_berakhir,
-                        'new_start' => $transaction->sewa_mulai,
-                        'new_end' => $transaction->sewa_berakhir,
-                        'duration' => $durasi
-                    ]);
-
-                    // Log history perpanjangan
-                    try {
-                        HistoryService::logRenewalRental(
-                            $transaction->user_id,
-                            $rak->kode_rak ?? $rak->nama_rak,
-                            $durasi,
-                            $transaction->amount,
-                            $transaction->penalty_amount ?? 0,
-                            'System'
-                        );
-                    } catch (\Exception $historyError) {
-                        Log::error('Failed to log renewal history: ' . $historyError->getMessage());
-                    }
+                } catch (\Exception $historyError) {
+                    Log::error('Failed to log renewal history: ' . $historyError->getMessage());
                 }
             } else {
-                // Ini adalah sewa baru
                 $durasi = $rak->durasi_sewa_hari ?? 30;
 
                 $transaction->sewa_mulai = now();
@@ -623,7 +556,6 @@ class PaymentController extends Controller
                     'durasi' => $durasi
                 ]);
 
-                // Ubah status rak menjadi terisi (hanya untuk sewa baru)
                 if ($rak->status === 'tersedia') {
                     $rak->update(['status' => 'terisi']);
 
@@ -634,7 +566,6 @@ class PaymentController extends Controller
                     ]);
                 }
 
-                // Log history sewa baru
                 try {
                     HistoryService::logNewRental(
                         $transaction->user_id,
@@ -648,7 +579,6 @@ class PaymentController extends Controller
                 }
             }
 
-            // Generate revenue report
             try {
                 $year = $transaction->transaction_time->year;
                 $month = $transaction->transaction_time->month;
@@ -666,9 +596,6 @@ class PaymentController extends Controller
         }
     }
 
-    /**
-     * Callback khusus untuk transaksi perpanjangan
-     */
     public function renewalCallback(Request $request)
     {
         try {
@@ -677,7 +604,6 @@ class PaymentController extends Controller
             $orderId = $notification->order_id;
             $transactionStatus = $notification->transaction_status;
 
-            // Cari transaksi renewal
             $transaction = Transaction::where('order_id', $orderId)
                 ->where('is_renewal', true)
                 ->first();
@@ -687,17 +613,14 @@ class PaymentController extends Controller
                 return response()->json(['message' => 'Transaction not found'], 404);
             }
 
-            // Update status dan simpan respons Midtrans jika tersedia
             $transaction->update([
                 'transaction_status' => $transactionStatus,
                 'midtrans_response' => method_exists($notification, 'getResponse') ? $notification->getResponse() : json_encode($notification)
             ]);
 
-            // Jika sukses, handle renewal internal
             if (in_array($transactionStatus, ['capture', 'settlement'])) {
                 $this->handleSuccessPayment($transaction);
 
-                // Log history sukses
                 try {
                     HistoryService::logPaymentSuccess(
                         $transaction->user_id,
@@ -718,9 +641,6 @@ class PaymentController extends Controller
         }
     }
 
-    /**
-     * Update status untuk transaksi renewal (mis. dari frontend)
-     */
     public function updateRenewalStatus(Request $request)
     {
         try {
@@ -732,7 +652,6 @@ class PaymentController extends Controller
             $orderId = $request->order_id;
             $transactionStatus = $request->transaction_status;
 
-            // Cari transaksi renewal
             $transaction = Transaction::where('order_id', $orderId)
                 ->where('is_renewal', true)
                 ->first();
@@ -742,16 +661,13 @@ class PaymentController extends Controller
                 return response()->json(['success' => false, 'message' => 'Transaksi tidak ditemukan'], 404);
             }
 
-            // Update status
             $transaction->update(['transaction_status' => $transactionStatus]);
 
-            // Jika pembayaran sukses
             if (in_array($transactionStatus, ['capture', 'settlement'])) {
                 $this->handleSuccessPayment($transaction);
 
                 Log::info('Renewal payment successful', [
-                    'transaction_id' => $transaction->id,
-                    'original_transaction_id' => $transaction->parent_transaction_id
+                    'transaction_id' => $transaction->id
                 ]);
             }
 

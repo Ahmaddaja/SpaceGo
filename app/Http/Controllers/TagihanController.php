@@ -56,12 +56,13 @@ class TagihanController extends Controller
 
         // 3. PERBAIKAN: Get rak_id yang sudah memiliki renewal dengan status apapun kecuali expired/failed
         // Ini akan mengecek semua transaksi renewal yang masih aktif atau sudah berhasil
-        $rakIdsWithRenewal = Transaction::where('user_id', $userId)
-            ->where('is_renewal', true)
-            ->whereNotIn('transaction_status', ['expired', 'failed', 'cancel', 'deny']) // Exclude hanya yang gagal
-            ->pluck('rak_id')
-            ->unique()
-            ->toArray();
+      $rakIdsWithRenewal = Transaction::where('user_id', $userId)
+    ->where('is_renewal', true)
+    ->whereIn('transaction_status', ['pending', 'settlement','expired','overdue'])
+    ->pluck('rak_id')
+    ->unique()
+    ->toArray();
+
 
         // 4. Get transactions where sewa_berakhir has passed OR within 1 day before expiry
         // EXCLUDE rak yang sudah punya renewal aktif
