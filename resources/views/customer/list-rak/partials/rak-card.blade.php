@@ -61,7 +61,7 @@
                 </div>
                 <div>
                     <p class="text-gray-500 text-xs">Lokasi Gudang</p>
-                    <p class="text-gray-800 font-semibold">{{ $rak->gudang->alamat }}</p>
+                    <p class="text-gray-800 font-semibold"> {{ $rak->gudang->alamat ?? 'Tidak ada data gudang' }}</p>
                 </div>
             </div>
         </div>
