@@ -27,7 +27,7 @@
                     </div>
                     <div class="flex gap-4">
                         <a href="{{ route('customer.list-rak.list-rak') }}" class="bg-gradient-to-r from-blue-600 to-purple-600 text-white px-8 py-4 rounded-xl text-lg font-semibold hover:shadow-lg transition-all duration-300 shadow-md">
-                            Lihat Rak Tersedia <i class="fas fa-arrow-right ml-2"></i>
+                            Lihat rak tersedia <i class="fas fa-arrow-right ml-2"></i>
                         </a>
                     </div>
                     <div class="flex items-center space-x-6 pt-4">
