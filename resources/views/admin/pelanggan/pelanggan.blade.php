@@ -32,6 +32,7 @@
                             <th>Username</th>
                             <th>Email</th>
                             <th>No. Telepon</th>
+                            <th>Perusahaan</th>
                             <th>Dibuat Pada</th>
                         </tr>
                     </thead>
@@ -70,6 +71,7 @@
                                 <td class="align-middle">{{ $customer->username }}</td>
                                 <td class="align-middle">{{ $customer->email }}</td>
                                 <td class="align-middle">{{ $customer->phone ?? '-' }}</td>
+                                <td class="align-middle">{{ $customer->perusahaan ?? '-' }}</td>
                                 <td class="align-middle">{{ $customer->created_at->format('d M Y') }}</td>
                             </tr>
                         @empty

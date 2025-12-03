@@ -24,6 +24,10 @@
             <small class="text-muted">
                 <i class="fas fa-phone mr-1"></i>{{ $transaction->user->phone ?? '-' }}
             </small>
+            <br>
+            <small class="text-muted">
+                <i class="fas fa-building mr-1"></i>{{ $transaction->user->perusahaan ?? '-' }}
+            </small>
         @else
             <p class="text-muted">Data customer tidak tersedia</p>
         @endif
