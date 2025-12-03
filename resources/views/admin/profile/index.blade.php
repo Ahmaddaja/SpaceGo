@@ -9,7 +9,7 @@
     <h1 class="m-0">Profile</h1>
     <nav aria-label="breadcrumb">
         <ol class="breadcrumb bg-transparent p-0 m-0 justify-content-end small">
-            <li class="breadcrumb-item"><a href="/">Home</a></li>
+            <li class="breadcrumb-item"><a href="{{ route('admin.dashboard') }}">Dashboard</a></li>
             <li class="breadcrumb-item active">Profile</li>
         </ol>
     </nav>

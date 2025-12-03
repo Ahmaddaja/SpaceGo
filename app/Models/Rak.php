@@ -11,6 +11,7 @@ class Rak extends Model
 
     protected $fillable = [
         'kode_rak',
+        'gudang_id',
         'nama_rak',
         'jenis_rak',
         'deskripsi',

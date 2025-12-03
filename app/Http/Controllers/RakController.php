@@ -141,6 +141,7 @@ class RakController extends Controller
 
         $validated = $request->validate([
             'kode_rak' => 'required|unique:raks,kode_rak',
+            'lokasi_gudang' => 'required|exists:gudangs,nama_gudang', // ← validasi nama, bukan ID
             'nama_rak' => 'required|string|max:255',
             'jenis_rak' => 'required|in:Heavy Duty,Medium Duty,Light Duty,Pallet Rack,Cantilever',
             'deskripsi' => 'nullable|string',
@@ -149,14 +150,20 @@ class RakController extends Controller
             'lebar' => 'required|numeric|min:0',
             'tinggi' => 'required|numeric|min:0',
             'jumlah_tingkat' => 'required|integer|min:1',
-            'lokasi_gudang' => 'required|string|max:255',
             'harga_sewa_perbulan' => 'required|numeric|min:0',
             'foto' => 'nullable|image|mimes:jpeg,png,jpg|max:2048',
             'spesifikasi_tambahan' => 'nullable|string',
             'is_active' => 'boolean',
             'durasi_sewa_hari' => 'required|integer|min:1'
-
         ]);
+
+        // Cari gudang berdasarkan nama_gudang
+        $gudang = Gudang::where('nama_gudang', $validated['lokasi_gudang'])->firstOrFail();
+        
+        // Isi gudang_id dan pastikan lokasi_gudang tetap tersimpan (opsional)
+        $validated['gudang_id'] = $gudang->id;
+
+        $validated['lokasi_gudang'] = $gudang->nama_gudang; // atau tambah kota: $gudang->nama_gudang . ' - ' . $gudang->kota
 
         $validated['status'] = 'tersedia';
 
@@ -192,8 +199,10 @@ class RakController extends Controller
             'harga_sewa_perbulan' => str_replace('.', '', $request->harga_sewa_perbulan)
         ]);
 
+        // Validasi tanpa 'gudang_id', tapi pake 'lokasi_gudang'
         $validated = $request->validate([
             'kode_rak' => 'required|unique:raks,kode_rak,' . $rak->id,
+            'lokasi_gudang' => 'required|exists:gudangs,nama_gudang', // ← validasi nama
             'nama_rak' => 'required|string|max:255',
             'jenis_rak' => 'required|in:Heavy Duty,Medium Duty,Light Duty,Pallet Rack,Cantilever',
             'deskripsi' => 'nullable|string',
@@ -202,7 +211,6 @@ class RakController extends Controller
             'lebar' => 'required|numeric|min:0',
             'tinggi' => 'required|numeric|min:0',
             'jumlah_tingkat' => 'required|integer|min:1',
-            'lokasi_gudang' => 'required|string|max:255',
             'harga_sewa_perbulan' => 'required|numeric|min:0',
             'status' => 'required|in:tersedia,terisi,maintenance',
             'foto' => 'nullable|image|mimes:jpeg,png,jpg|max:2048',
@@ -211,6 +219,17 @@ class RakController extends Controller
             'durasi_sewa_hari' => 'required|integer|min:1'
         ]);
 
+        // Cari gudang berdasarkan nama_gudang
+        $gudang = Gudang::where('nama_gudang', $validated['lokasi_gudang'])->first();
+        if (!$gudang) {
+            return redirect()->back()->withErrors(['lokasi_gudang' => 'Gudang tidak ditemukan.']);
+        }
+
+        // Set gudang_id & pastikan lokasi_gudang tetap tersimpan
+        $validated['gudang_id'] = $gudang->id;
+        $validated['lokasi_gudang'] = $gudang->nama_gudang; // atau format lain sesuai kebutuhan
+
+        // Handle upload foto
         if ($request->hasFile('foto')) {
             if ($rak->foto && Storage::disk('public')->exists($rak->foto)) {
                 Storage::disk('public')->delete($rak->foto);

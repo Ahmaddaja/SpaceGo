@@ -5,7 +5,7 @@
         <h1 class="m-0">Riwayat Transaksi</h1>
         <nav aria-label="breadcrumb">
             <ol class="breadcrumb bg-transparent p-0 m-0 justify-content-end">
-                <li class="breadcrumb-item"><a href="{{ route('admin.dashboard') }}">Home</a></li>
+                <li class="breadcrumb-item"><a href="{{ route('admin.dashboard') }}">Dashboard</a></li>
                 <li class="breadcrumb-item active">Transaksi</li>
             </ol>
         </nav>

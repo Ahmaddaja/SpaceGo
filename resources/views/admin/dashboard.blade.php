@@ -90,8 +90,7 @@
         </div>
         <nav aria-label="breadcrumb">
             <ol class="breadcrumb bg-transparent p-0 m-0 justify-content-end">
-                <li class="breadcrumb-item"><a href="/">Home</a></li>
-                <li class="breadcrumb-item active">Dashboard</li>
+                <li class="breadcrumb-item"><a href="{{ route('admin.dashboard') }}">Dashboard</a></li>
             </ol>
         </nav>
     </div>
