@@ -37,6 +37,12 @@ class TagihanController extends Controller
             session()->forget('payment_checkout');
         }
         
+        // PERBAIKAN: Otomatis update transaksi pending yang sudah kadaluarsa lebih dari 24 jam
+        Transaction::where('user_id', $userId)
+            ->where('transaction_status', 'pending')
+            ->where('created_at', '<', Carbon::now()->subHours(24))
+            ->update(['transaction_status' => 'expired']);
+        
         // 1. Get pending transactions - Hapus duplikat
         $pendingTransactions = Transaction::with('rak')
             ->where('user_id', $userId)
@@ -47,7 +53,7 @@ class TagihanController extends Controller
                 return $item->rak_id;
             });
 
-        // 2. Get expired transactions
+        // 2. Get expired transactions - PERBAIKAN: Include semua transaksi dengan status expired
         $expiredTransactions = Transaction::with('rak')
             ->where('user_id', $userId)
             ->where('transaction_status', 'expired')
@@ -56,12 +62,12 @@ class TagihanController extends Controller
 
         // 3. PERBAIKAN: Get rak_id yang sudah memiliki renewal dengan status apapun kecuali expired/failed
         // Ini akan mengecek semua transaksi renewal yang masih aktif atau sudah berhasil
-        $rakIdsWithRenewal = Transaction::where('user_id', $userId)
-            ->where('is_renewal', true)
-            ->whereNotIn('transaction_status', ['expired', 'failed', 'cancel', 'deny'])
-            ->pluck('rak_id')
-            ->unique()
-            ->toArray();
+      $rakIdsWithRenewal = Transaction::where('user_id', $userId)
+    ->where('is_renewal', true)
+    ->whereIn('transaction_status', ['pending', 'settlement','expired','overdue'])
+    ->pluck('rak_id')
+    ->unique()
+    ->toArray();
 
 
         // 4. Get transactions where sewa_berakhir has passed OR within 1 day before expiry
@@ -318,45 +324,103 @@ class TagihanController extends Controller
     }
 
     /**
-     * Process expired transaction (manual trigger)
+     * Process expired transaction (manual trigger) - FIXED VERSION
      */
-    public function processExpired($id)
+    public function processExpired(Request $request, $id)
     {
         try {
-            $transaction = Transaction::where('id', $id)
+            $transaction = Transaction::with('rak')
+                ->where('id', $id)
                 ->where('user_id', Auth::id())
                 ->firstOrFail();
 
-            // Only process settlement transactions with passed sewa_berakhir
-            if ($transaction->transaction_status === 'settlement' && 
-                $transaction->sewa_berakhir && 
-                $transaction->sewa_berakhir < now()) {
-                
-                $transaction->update(['transaction_status' => 'expired']);
-                
-                // Update rak status to tersedia
-                $rak = $transaction->rak;
-                if ($rak) {
-                    $rak->update(['status' => 'tersedia']);
-                }
+            DB::beginTransaction();
 
-                Log::info('Transaction marked as expired', [
-                    'transaction_id' => $transaction->id,
-                    'rak_id' => $rak ? $rak->id : null
+            // Update transaksi utama menjadi expired
+            $transaction->update([
+                'transaction_status' => 'expired',
+                'updated_at' => now()
+            ]);
+
+            // Jika ada rak terkait, ubah statusnya menjadi tersedia
+            if ($transaction->rak) {
+                $transaction->rak->update([
+                    'status' => 'tersedia',
+                    'updated_at' => now()
+                ]);
+            }
+
+            // Cari dan update semua transaksi renewal yang masih pending untuk rak ini
+            Transaction::where('rak_id', $transaction->rak_id)
+                ->where('user_id', Auth::id())
+                ->where('is_renewal', true)
+                ->where('transaction_status', 'pending')
+                ->update([
+                    'transaction_status' => 'expired',
+                    'updated_at' => now()
                 ]);
 
-                return redirect()->route('customer.tagihan')
-                    ->with('success', 'Status rak telah diperbarui menjadi tersedia.');
+            DB::commit();
+
+            Log::info('Rak berhasil dilepas secara manual', [
+                'transaction_id' => $transaction->id,
+                'rak_id' => $transaction->rak_id,
+                'user_id' => Auth::id(),
+                'timestamp' => now()
+            ]);
+
+            // Kembalikan response JSON untuk AJAX
+            if ($request->expectsJson() || $request->is('api/*') || $request->ajax()) {
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Rak berhasil dilepas dan status diubah menjadi kadaluarsa.',
+                    'data' => [
+                        'transaction_id' => $transaction->id,
+                        'transaction_status' => $transaction->transaction_status,
+                        'rak_status' => $transaction->rak ? $transaction->rak->status : null,
+                        'timestamp' => now()->format('Y-m-d H:i:s')
+                    ]
+                ]);
+            }
+
+            // Jika bukan request AJAX, redirect seperti biasa
+            return redirect()->route('customer.tagihan')
+                ->with('success', 'Rak berhasil dilepas dan status diubah menjadi kadaluarsa.');
+
+        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+            Log::error('Transaksi tidak ditemukan saat melepas rak: ' . $e->getMessage(), [
+                'transaction_id' => $id,
+                'user_id' => Auth::id()
+            ]);
+
+            if ($request->expectsJson() || $request->is('api/*') || $request->ajax()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Transaksi tidak ditemukan.'
+                ], 404);
             }
 
             return redirect()->route('customer.tagihan')
-                ->with('info', 'Transaksi tidak memerlukan penanganan saat ini.');
+                ->with('error', 'Transaksi tidak ditemukan.');
 
         } catch (\Exception $e) {
-            Log::error('Process Expired Error: ' . $e->getMessage());
+            DB::rollBack();
             
+            Log::error('Gagal melepas rak: ' . $e->getMessage(), [
+                'transaction_id' => $id,
+                'user_id' => Auth::id(),
+                'error_trace' => $e->getTraceAsString()
+            ]);
+
+            if ($request->expectsJson() || $request->is('api/*') || $request->ajax()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Gagal melepas rak: ' . $e->getMessage()
+                ], 500);
+            }
+
             return redirect()->route('customer.tagihan')
-                ->with('error', 'Terjadi kesalahan: ' . $e->getMessage());
+                ->with('error', 'Gagal melepas rak: ' . $e->getMessage());
         }
     }
 
@@ -385,6 +449,12 @@ class TagihanController extends Controller
     {
         try {
             $userId = Auth::id();
+            
+            // PERBAIKAN: Juga update transaksi pending yang sudah kadaluarsa di sini
+            $expiredPendingCount = Transaction::where('user_id', $userId)
+                ->where('transaction_status', 'pending')
+                ->where('created_at', '<', Carbon::now()->subHours(24))
+                ->update(['transaction_status' => 'expired']);
             
             // Get user's transactions that need checking
             $transactions = Transaction::with('rak')
@@ -422,15 +492,19 @@ class TagihanController extends Controller
             
             $message = "Pengecekan selesai. ";
             
+            if ($expiredPendingCount > 0) {
+                $message .= "{$expiredPendingCount} transaksi pending telah kadaluarsa. ";
+            }
+            
             if ($updatedCount > 0) {
-                $message .= "{$updatedCount} transaksi telah kadaluarsa. ";
+                $message .= "{$updatedCount} transaksi sewa telah kadaluarsa. ";
             }
             
             if ($warningCount > 0) {
                 $message .= "{$warningCount} transaksi mendekati kadaluarsa. ";
             }
             
-            if ($updatedCount == 0 && $warningCount == 0) {
+            if ($expiredPendingCount == 0 && $updatedCount == 0 && $warningCount == 0) {
                 $message = "Semua transaksi Anda dalam keadaan baik.";
             }
             

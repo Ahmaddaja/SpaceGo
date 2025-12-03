@@ -299,7 +299,7 @@
                                             @if ($transaction->sewa_berakhir)
                                                 <div class="text-xs text-gray-500">
                                                     Berakhir:
-                                                    {{ \Carbon\Carbon::parse($transaction->sewa_berakhir)->format('d M Y') }}
+                                                {{ \Carbon\Carbon::parse($transaction->sewa_berakhir)->format('d M Y') }}
                                                 </div>
                                             @endif
                                         </td>
@@ -328,7 +328,6 @@
             </div>
         @endif
     </div>
-
     <!-- Loading Overlay -->
     <div id="loading-overlay" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
         <div class="bg-white p-8 rounded-2xl shadow-2xl text-center">
@@ -969,7 +968,6 @@
                     closeAlert(e.target.id);
                 }
             });
-
             document.addEventListener('keydown', function(e) {
                 if (e.key === 'Escape') {
                     const openModal = document.querySelector('.alert-modal.show');
@@ -998,3 +996,4 @@
         </script>
     @endpush
 @endsection
+
