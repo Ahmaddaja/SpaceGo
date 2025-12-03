@@ -229,10 +229,10 @@
         <form action="{{ route('customer.tagihan.process-expired', $transaction->id) }}" method="POST">
             @csrf
             <button type="submit" 
-                    onclick="return confirm('Apakah Anda yakin ingin melepas rak ini? Status akan berubah menjadi kadaluarsa.')"
+                    onclick="return confirm('Apakah Anda yakin ingin membatalkan pembayaran ini? Status akan berubah menjadi kadaluarsa.')"
                     class="w-full border border-gray-300 text-gray-700 hover:bg-gray-50 font-medium py-2.5 rounded-lg transition">
                 <i class="fas fa-times mr-2"></i>
-                Lepas Rak
+                Batal
             </button>
         </form>
     </div>
