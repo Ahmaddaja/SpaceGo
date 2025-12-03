@@ -8,7 +8,7 @@
     </h1>
     <nav aria-label="breadcrumb">
         <ol class="breadcrumb bg-transparent p-0 m-0">
-            <li class="breadcrumb-item"><a href="/">Home</a></li>
+            <li class="breadcrumb-item"><a href="{{ route('admin.dashboard') }}">Dashboard</a></li>
             @if($page != 'Index')
             <li class="breadcrumb-item"><a href="{{ route('gudangs.index') }}">Kelola Gudang</a></li>
             @endif
