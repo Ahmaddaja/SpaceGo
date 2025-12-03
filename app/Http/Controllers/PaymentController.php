@@ -531,11 +531,10 @@ class PaymentController extends Controller
                 ]);
 
                 try {
-                    HistoryService::logRenewalRental(
+                    HistoryService::logRentalExtension(
                         $transaction->user_id,
                         $rak->kode_rak ?? $rak->nama_rak,
                         $durasi,
-                        $transaction->amount,
                         $transaction->penalty_amount ?? 0,
                         'System'
                     );
@@ -654,6 +653,7 @@ class PaymentController extends Controller
 
             $transaction = Transaction::where('order_id', $orderId)
                 ->where('is_renewal', true)
+                ->where('user_id', Auth::id())
                 ->first();
 
             if (!$transaction) {

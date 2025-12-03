@@ -56,12 +56,12 @@ class TagihanController extends Controller
 
         // 3. PERBAIKAN: Get rak_id yang sudah memiliki renewal dengan status apapun kecuali expired/failed
         // Ini akan mengecek semua transaksi renewal yang masih aktif atau sudah berhasil
-      $rakIdsWithRenewal = Transaction::where('user_id', $userId)
-    ->where('is_renewal', true)
-    ->whereIn('transaction_status', ['pending', 'settlement','expired','overdue'])
-    ->pluck('rak_id')
-    ->unique()
-    ->toArray();
+        $rakIdsWithRenewal = Transaction::where('user_id', $userId)
+            ->where('is_renewal', true)
+            ->whereNotIn('transaction_status', ['expired', 'failed', 'cancel', 'deny'])
+            ->pluck('rak_id')
+            ->unique()
+            ->toArray();
 
 
         // 4. Get transactions where sewa_berakhir has passed OR within 1 day before expiry
@@ -163,6 +163,13 @@ class TagihanController extends Controller
 
             $snapToken = Snap::getSnapToken($params);
 
+            // Hitung tanggal mulai dari akhir sewa lama atau sekarang (ambil yang lebih besar)
+            $sewaMulaiBaru = max(
+                now(),
+                Carbon::parse($originalTransaction->sewa_berakhir)
+            );
+            $sewaberakhirBaru = $sewaMulaiBaru->copy()->addDays($durasi);
+
             // Buat transaksi renewal
             $newTransaction = Transaction::create([
                 'order_id' => $orderId,
@@ -172,6 +179,8 @@ class TagihanController extends Controller
                 'transaction_status' => 'pending',
                 'snap_token' => $snapToken,
                 'transaction_time' => now(),
+                'sewa_mulai' => $sewaMulaiBaru,
+                'sewa_berakhir' => $sewaberakhirBaru,
                 'parent_transaction_id' => $originalTransaction->id,
                 'is_renewal' => true
             ]);
@@ -186,19 +195,20 @@ class TagihanController extends Controller
                 false // false = menghitung selisih negatif
             );
 
-            // contoh denda: Rp 20.000 per hari
-            $dendaPerHari = 20000;
+            // Denda: Rp 50.000 per hari (sesuai dengan tampilan di view)
+            $dendaPerHari = 50000;
             $totalDenda = $daysDiff < 0 ? abs($daysDiff) * $dendaPerHari : 0;
+            $totalBayar = $hargaSewa + $totalDenda;
 
             // Kirim data ke blade
             return view('customer.payment.renewal-checkout', [
                 'snapToken' => $snapToken,
                 'rak' => $rak,
-                'newTransaction' => $newTransaction,
+                'transaction' => $originalTransaction,
                 'daysDiff' => $daysDiff,
                 'totalDenda' => $totalDenda,
-                'originalTransaction' => $originalTransaction,
                 'hargaSewa' => $hargaSewa,
+                'totalBayar' => $totalBayar,
             ]);
 
         } catch (\Exception $e) {
@@ -215,11 +225,19 @@ class TagihanController extends Controller
             'transaction_id' => 'required|exists:transactions,id'
         ]);
 
-        $transaction = Transaction::find($request->transaction_id);
+        $originalTransaction = Transaction::find($request->transaction_id);
 
-        // PERBAIKAN: Cek apakah sudah ada renewal aktif
-        $existingRenewal = Transaction::where('rak_id', $transaction->rak_id)
-            ->where('user_id', auth()->id())
+        // Cek ownership
+        if ($originalTransaction->user_id !== Auth::id()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Unauthorized'
+            ], 403);
+        }
+
+        // Cek apakah sudah ada renewal aktif
+        $existingRenewal = Transaction::where('rak_id', $originalTransaction->rak_id)
+            ->where('user_id', Auth::id())
             ->where('is_renewal', true)
             ->whereNotIn('transaction_status', ['expired', 'failed', 'cancel', 'deny'])
             ->exists();
@@ -231,16 +249,33 @@ class TagihanController extends Controller
             ], 400);
         }
 
-        // Buat renewal baru
+        $rak = $originalTransaction->rak;
+        $durasi = $rak->durasi_sewa_hari ?? 30;
+
+        // Hitung tanggal mulai dari akhir sewa lama atau sekarang (ambil yang lebih besar)
+        $sewaMulaiBaru = max(
+            now(),
+            Carbon::parse($originalTransaction->sewa_berakhir)
+        );
+        $sewaberakhirBaru = $sewaMulaiBaru->copy()->addDays($durasi);
+
+        // Ambil harga dari rak
+        $pricePerMonth = $rak->harga_sewa_perbulan;
+        $priceForDuration = ($pricePerMonth / 30) * $durasi;
+        $hargaSewa = ceil($priceForDuration);
+
+        // Buat renewal baru dengan data dari transaksi lama
         $renewal = Transaction::create([
-            'user_id' => auth()->id(),
-            'rak_id' => $transaction->rak_id,
+            'order_id' => 'RENEW-' . time() . '-' . $rak->id,
+            'user_id' => Auth::id(),
+            'rak_id' => $originalTransaction->rak_id,
             'transaction_status' => 'pending',
-            'sewa_dimulai' => now(),
-            'sewa_berakhir' => now()->addMonth(),
-            'amount' => $transaction->amount,
+            'sewa_mulai' => $sewaMulaiBaru,
+            'sewa_berakhir' => $sewaberakhirBaru,
+            'amount' => $hargaSewa,
             'is_renewal' => true,
-            'parent_transaction_id' => $transaction->id
+            'parent_transaction_id' => $originalTransaction->id,
+            'transaction_time' => now()
         ]);
 
         return response()->json([
