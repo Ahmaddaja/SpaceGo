@@ -184,7 +184,7 @@
                 
                 <div class="space-y-3 mb-6">
                     <div class="flex justify-between">
-                        <span class="text-gray-600 text-sm">Masa sewa berakhir:</span>
+                        <span class="text-gray-600 text-sm">Masa Sewa Berakhir:</span>
                         <span class="font-medium">{{ $sewaBerahir->format('d M Y') }}</span>
                     </div>
                     @if($transaction->rak)
