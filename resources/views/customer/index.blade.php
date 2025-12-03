@@ -19,7 +19,7 @@
                 <div class="space-y-8">
                     <div class="space-y-6">
                         <h1 class="text-5xl font-bold text-gray-800 leading-tight">
-                            Selamat Datang, <span class="text-blue-600">{{ Auth::user()->name }}</span>!
+                            Selamat Datang!, <span class="text-blue-600">{{ Auth::user()->name }}</span>!
                         </h1>
                         <p class="text-lg text-gray-600 leading-relaxed">
                             Solusi penyimpanan yang aman, fleksibel, dan terjangkau. Kelola inventori Anda dengan mudah bersama SPACEGO.
