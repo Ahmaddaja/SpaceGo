@@ -260,7 +260,7 @@
                         </div>
                         <div>
                             <h3 class="font-semibold text-gray-800">Bantuan 24/7</h3>
-                            <p class="text-sm text-gray-600">Customer service siap membantu</p>
+                            <p class="text-sm text-gray-600">Customer Service siap membantu</p>
                         </div>
                     </div>
                 </div>
