@@ -112,7 +112,7 @@ class TagihanController extends Controller
         $existingRenewal = Transaction::where('rak_id', $rak->id)
             ->where('user_id', Auth::id())
             ->where('is_renewal', true)
-            ->whereNotIn('transaction_status', ['expired', 'failed', 'cancel', 'deny'])
+            ->whereNotIn('transaction_status', ['expired', 'failed', 'cancel', 'overdue'])
             ->orderBy('created_at', 'desc')
             ->first();
 
