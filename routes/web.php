@@ -75,9 +75,14 @@ Route::middleware(['auth', 'role:customer'])->group(function () {
     Route::post('/payment/handle-return', [PaymentController::class, 'handlePaymentReturn'])
         ->name('payment.handle-return');
 
-    // Payment Renewel
-    Route::get('/payment/renewal/{transaction_id}', [PaymentController::class, 'renewal'])
+    // ========================
+    // PAYMENT RENEWAL ROUTES (DIPINDAHKAN KE LUAR TAGIHAN)
+    // ========================
+    Route::get('/payment/renewal-checkout/{transaction_id}', [PaymentController::class, 'renewal'])
         ->name('customer.payment.renewal-checkout');
+    
+    Route::post('/payment/process-renewal', [PaymentController::class, 'processRenewal'])
+        ->name('customer.payment.process-renewal');
 
     // ========================
     // HISTORY ROUTES
@@ -93,15 +98,12 @@ Route::middleware(['auth', 'role:customer'])->group(function () {
     // ========================
     Route::prefix('customer/tagihan')->group(function () {
         Route::get('/', [TagihanController::class, 'index'])->name('customer.tagihan');
-        Route::get('/create-payment/{id}', [TagihanController::class, 'createPayment'])->name('customer.tagihan.create-payment');
         
-        // PERBAIKAN: Route untuk create renewal (POST method)
-        Route::post('/create-renewal', [TagihanController::class, 'createRenewal'])
-            ->name('customer.tagihan.create-renewal');
+        // DIHAPUS: Route create-payment dan create-renewal sudah tidak digunakan
+        // Diganti dengan renewal-checkout di atas
         
         Route::get('/check-status/{id}', [TagihanController::class, 'checkStatus'])->name('customer.tagihan.check-status');
         
-        // PERBAIKAN: Route untuk melepas rak (mendukung AJAX dan regular request)
         Route::post('/process-expired/{id}', [TagihanController::class, 'processExpired'])
             ->name('customer.tagihan.process-expired');
         

@@ -97,5 +97,21 @@ class DatabaseSeeder extends Seeder
             'status' => 'tersedia',
         ]);
 
+        $rak2 = Rak::create([
+            'gudang_id' => 2,
+            'kode_rak' => 'RAK-007',
+            'nama_rak' => 'Rak D3 (Custom)',
+            'jenis_rak' => 'Light Duty',
+            'kapasitas_berat' => 200,
+            'panjang' => 4.0,
+            'lebar' => 3.0,
+            'tinggi' => 2.2,
+            'jumlah_tingkat' => 3,
+            'lokasi_gudang' => 'Gudang 2 - Area A',
+            'harga_sewa_perbulan' => 250000,
+            'durasi_sewa_hari' => 2,
+            'status' => 'tersedia',
+        ]);
+
     }
 }

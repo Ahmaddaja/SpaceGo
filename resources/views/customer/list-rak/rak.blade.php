@@ -196,14 +196,7 @@
             <div class="flex justify-center items-center space-x-6 mt-6">
                 <div class="flex items-center space-x-2 text-sm text-gray-500">
                     <div class="w-2 h-2 bg-green-500 rounded-full"></div>
-                    <span>Total: <strong class="text-gray-700">
-                        @php
-                            $totalRak = \App\Models\CustomerHistory::where('customer_id', Auth::id())
-                                ->where('activity_type', 'NEW_RENTAL')
-                                ->count();
-                        @endphp
-                        {{ $totalRak }} rak
-                    </strong></span>
+                     <span>Total: <strong class="text-gray-700">{{ $raks->where('status', 'terisi')->count() }} rak</strong></span>
                 </div>
                 <div class="flex items-center space-x-2 text-sm text-gray-500">
                     <div class="w-2 h-2 bg-blue-500 rounded-full"></div>
