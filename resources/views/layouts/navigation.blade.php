@@ -67,17 +67,15 @@
                     @php
                         use App\Models\Transaction;
                         $userId = Auth::id();
+                        $now = now();
                         
-                        // Hitung transaksi pending dari database
+                        // Hanya hitung tagihan yang masih aktif (belum expired)
                         $unpaidCount = Transaction::where('user_id', $userId)
                             ->where('transaction_status', 'pending')
-                            ->orWhere(function($query) use ($userId) {
-                                $query->where('user_id', $userId)
-                                    ->where('transaction_status', 'expired');
-                            })
+                            ->where('created_at', '>=', $now->copy()->subHours(24))
                             ->count();
-                        
-                        // Tambah 1 jika ada session pending_payment
+
+                        // Tambahkan jika ada session pending_payment (misal: checkout baru dibuat tapi belum ke Midtrans)
                         if (session('pending_payment')) {
                             $unpaidCount++;
                         }
