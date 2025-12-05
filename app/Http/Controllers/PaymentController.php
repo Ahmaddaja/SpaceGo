@@ -429,10 +429,19 @@ class PaymentController extends Controller
 
             $now = now()->startOfDay();
             $end = \Carbon\Carbon::parse($transaction->sewa_berakhir)->startOfDay();
+            
+            // PERBAIKAN: daysDiff positif berarti sudah lewat tanggal berakhir
             $daysDiff = $now->diffInDays($end, false);
 
+            $gracePeriodDays = 3;
             $dendaPerHari = 50000;
-            $totalDenda = $daysDiff < 0 ? abs($daysDiff) * $dendaPerHari : 0;
+            $totalDenda = 0;
+            
+            // PERBAIKAN: Denda HANYA dihitung jika sudah melewati masa tenggang (daysDiff > gracePeriodDays)
+            if ($daysDiff > $gracePeriodDays) {
+                $latenessDays = $daysDiff - $gracePeriodDays;
+                $totalDenda = $latenessDays * $dendaPerHari;
+            }
 
             $hargaSewa = $rak->harga_sewa_perbulan;
             $totalBayar = $hargaSewa + $totalDenda;
@@ -448,12 +457,14 @@ class PaymentController extends Controller
                 ]
             ];
 
+            // PERBAIKAN: Item denda hanya ditambahkan jika ada denda
             if ($totalDenda > 0) {
+                $latenessDays = $daysDiff - $gracePeriodDays;
                 $itemDetails[] = [
                     'id' => 'penalty-' . $transaction->id,
                     'price' => (int) $totalDenda,
                     'quantity' => 1,
-                    'name' => 'Denda Keterlambatan (' . abs($daysDiff) . ' hari)'
+                    'name' => 'Denda Keterlambatan (' . $latenessDays . ' hari)'
                 ];
             }
 
@@ -485,7 +496,9 @@ class PaymentController extends Controller
                 'order_id' => $orderId,
                 'amount' => $totalBayar,
                 'penalty' => $totalDenda,
-                'days_late' => abs($daysDiff)
+                'days_late' => $daysDiff,
+                'grace_period' => $gracePeriodDays,
+                'lateness_days' => $totalDenda > 0 ? ($daysDiff - $gracePeriodDays) : 0
             ]);
 
             return view('customer.payment.renewal-checkout', compact(
