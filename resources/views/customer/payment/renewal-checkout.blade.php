@@ -80,6 +80,16 @@
         font-weight: 600;
         display: inline-block;
     }
+
+    .grace-badge {
+        background: linear-gradient(135deg, #10b981, #059669);
+        color: white;
+        padding: 0.5rem 1rem;
+        border-radius: 9999px;
+        font-size: 0.875rem;
+        font-weight: 600;
+        display: inline-block;
+    }
     
     .info-box {
         background: #fef3c7;
@@ -142,6 +152,20 @@
             <p class="text-gray-600">Lanjutkan masa sewa rak Anda</p>
         </div>
 
+        @php
+            // Hitung status masa tenggang
+            $gracePeriodDays = $gracePeriodDays ?? 3;
+            
+            // daysDiff positif = sudah lewat tanggal berakhir
+            // daysDiff negatif = belum sampai tanggal berakhir
+            // daysDiff 0 = hari ini tanggal berakhir
+            
+            $isBeforeExpiry = $daysDiff < 0; // Belum sampai tanggal berakhir
+            $isOnExpiryDay = $daysDiff === 0; // Hari ini tanggal berakhir
+            $isInGracePeriod = $daysDiff > 0 && $daysDiff <= $gracePeriodDays; // Dalam masa tenggang
+            $isOverdue = $daysDiff > $gracePeriodDays; // Sudah lewat masa tenggang
+        @endphp
+
         <!-- Payment Card -->
         <div class="payment-card mb-6">
             
@@ -151,11 +175,18 @@
                     <h2 class="text-2xl font-bold mb-2">{{ $rak->nama_rak }}</h2>
                     <p class="opacity-90">{{ $rak->kode_rak }}</p>
                     
-                    @if($totalDenda > 0)
+                    @if($isOverdue)
                     <div class="mt-4">
                         <span class="penalty-badge">
                             <i class="fas fa-exclamation-circle mr-2"></i>
                             Terdapat Denda Keterlambatan
+                        </span>
+                    </div>
+                    @elseif($isInGracePeriod)
+                    <div class="mt-4">
+                        <span class="grace-badge">
+                            <i class="fas fa-shield-alt mr-2"></i>
+                            Dalam Masa Tenggang (Tanpa Denda)
                         </span>
                     </div>
                     @endif
@@ -183,26 +214,50 @@
                         </span>
                     </div>
                     
-                    @if($daysDiff < 0)
+                    @if($daysDiff > 0)
                     <div class="detail-row">
-                        <span class="text-red-600 font-semibold">Keterlambatan</span>
-                        <span class="font-bold text-red-600">
-                            {{ abs($daysDiff) }} Hari
+                        <span class="@if($isOverdue) text-red-600 @else text-yellow-600 @endif font-semibold">
+                            Status
+                        </span>
+                        <span class="font-bold @if($isOverdue) text-red-600 @else text-yellow-600 @endif">
+                            @if($isInGracePeriod)
+                                Masa Tenggang - {{ $daysDiff }} Hari
+                            @else
+                                Terlambat {{ $daysDiff - $gracePeriodDays }} Hari
+                            @endif
                         </span>
                     </div>
                     @endif
                 </div>
 
-                <!-- Warning jika ada denda -->
-                @if($totalDenda > 0)
-                <div class="info-box">
+                <!-- Warning/Info Box -->
+                @if($isOverdue)
+                <div class="info-box" style="background: #fee2e2; border-left-color: #ef4444;">
                     <div class="flex items-start">
-                        <i class="fas fa-exclamation-triangle text-orange-600 text-xl mr-3 mt-1"></i>
+                        <i class="fas fa-exclamation-triangle text-red-600 text-xl mr-3 mt-1"></i>
                         <div>
                             <p class="font-semibold text-gray-800 mb-1">Perhatian!</p>
                             <p class="text-sm text-gray-700">
-                                Anda terlambat mengembalikan/memperpanjang sewa selama <strong>{{ abs($daysDiff) }} hari</strong>. 
-                                Denda keterlambatan sebesar <strong>Rp 50.000/hari</strong> akan ditambahkan ke total pembayaran.
+                                Anda terlambat lebih dari {{ $gracePeriodDays }} hari masa tenggang. 
+                                Saat ini terlambat <strong>{{ $daysDiff }} hari</strong> dari tanggal berakhir
+                                ({{ $daysDiff - $gracePeriodDays }} hari setelah masa tenggang).
+                                Denda keterlambatan sebesar <strong>Rp 50.000/hari</strong> 
+                                akan ditambahkan ke total pembayaran.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+                @elseif($isInGracePeriod)
+                <div class="info-box" style="background: #fef3c7; border-left-color: #f59e0b;">
+                    <div class="flex items-start">
+                        <i class="fas fa-shield-alt text-orange-600 text-xl mr-3 mt-1"></i>
+                        <div>
+                            <p class="font-semibold text-gray-800 mb-1">Masa Tenggang Aktif</p>
+                            <p class="text-sm text-gray-700">
+                                Anda masih dalam masa tenggang <strong>{{ $gracePeriodDays }} hari</strong>. 
+                                Saat ini hari ke-<strong>{{ $daysDiff }}</strong> setelah masa sewa berakhir.
+                                <strong>Tidak ada denda</strong> yang dikenakan selama masa tenggang ini.
+                                Perpanjang sebelum {{ $gracePeriodDays - $daysDiff }} hari lagi untuk menghindari denda.
                             </p>
                         </div>
                     </div>
@@ -212,9 +267,15 @@
                     <div class="flex items-start">
                         <i class="fas fa-check-circle text-green-600 text-xl mr-3 mt-1"></i>
                         <div>
-                            <p class="font-semibold text-gray-800 mb-1">Masa Tenggang</p>
+                            <p class="font-semibold text-gray-800 mb-1">Perpanjangan Tepat Waktu</p>
                             <p class="text-sm text-gray-700">
-                                Anda masih dalam masa tenggang. Tidak ada denda yang dikenakan untuk perpanjangan saat ini.
+                                Anda melakukan perpanjangan 
+                                @if($isOnExpiryDay)
+                                    pada hari terakhir masa sewa.
+                                @else
+                                    {{ abs($daysDiff) }} hari sebelum masa sewa berakhir.
+                                @endif
+                                Tidak ada denda yang dikenakan.
                             </p>
                         </div>
                     </div>
@@ -234,14 +295,20 @@
                         </span>
                     </div>
                     
-                    @if($totalDenda > 0)
+                    @if($isOverdue && $totalDenda > 0)
+                    @php
+                        $latenessDays = $daysDiff - $gracePeriodDays;
+                    @endphp
                     <div class="detail-row">
                         <span class="text-red-600">
-                            Denda Keterlambatan ({{ abs($daysDiff) }} hari × Rp 50.000)
+                            Denda Keterlambatan ({{ $latenessDays }} hari × Rp 50.000)
                         </span>
                         <span class="font-semibold text-red-600">
                             Rp {{ number_format($totalDenda, 0, ',', '.') }}
                         </span>
+                    </div>
+                    <div class="text-xs text-gray-500 mt-1 ml-auto text-right">
+                        *Denda dihitung setelah {{ $gracePeriodDays }} hari masa tenggang
                     </div>
                     @endif
                     

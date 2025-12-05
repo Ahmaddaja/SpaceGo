@@ -129,7 +129,7 @@
         <div class="max-w-6xl mx-auto">
             <h2 class="text-4xl font-bold text-center mb-4 text-gray-800">Tentang SPACEGO</h2>
             <p class="text-center text-gray-600 mb-12 max-w-2xl mx-auto">
-                Solusi penyimpanan rak terpercaya untuk bisnis modern
+                Solusi Penyimpanan rak terpercaya untuk bisnis modern
             </p>
             
             <div class="grid md:grid-cols-2 gap-12 items-center mb-16">
