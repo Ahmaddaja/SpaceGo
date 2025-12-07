@@ -5,11 +5,13 @@ namespace App\Http\Controllers;
 use App\Models\Rak;
 use App\Models\Gudang;
 use App\Models\Transaction;
+use App\Models\FotoRak;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\DB;
 
 class RakController extends Controller
 {
@@ -24,14 +26,14 @@ class RakController extends Controller
 
             $transactions = Transaction::where('user_id', $user->id)
                 ->whereIn('transaction_status', ['capture', 'settlement'])
-                ->with(['rak.gudang'])
+                ->with(['rak.gudang', 'rak.fotos'])
                 ->orderBy('created_at', 'desc')
                 ->get();
 
             $rakIds = $transactions->pluck('rak_id')->unique();
 
             $raks = Rak::whereIn('id', $rakIds)
-                ->with('gudang')
+                ->with(['gudang', 'fotos'])
                 ->orderBy('created_at', 'desc')
                 ->paginate(9);
 
@@ -68,7 +70,7 @@ class RakController extends Controller
         $transaction = Transaction::where('user_id', $user->id)
             ->where('rak_id', $id)
             ->whereIn('transaction_status', ['capture', 'settlement'])
-            ->with('rak.gudang')
+            ->with('rak.gudang', 'rak.fotos')
             ->first();
 
         if (!$transaction) {
@@ -81,11 +83,8 @@ class RakController extends Controller
         $rak->transaction_date = $transaction->created_at;
         $rak->order_id = $transaction->order_id;
         $rak->payment_type = $transaction->payment_type;
-
-        // Tambahkan status masa sewa
         $rak->status_sewa = $transaction->status_sewa;
         $rak->sisa_hari = $transaction->sisa_hari;
-
 
         return view('customer.list-rak.show', compact('rak'));
     }
@@ -120,7 +119,7 @@ class RakController extends Controller
 
     public function index()
     {
-        $raks = Rak::latest()->paginate(10);
+        $raks = Rak::with(['fotos', 'gudang'])->latest()->paginate(10);
         return view('admin.raks.index', compact('raks'));
     }
 
@@ -141,9 +140,9 @@ class RakController extends Controller
 
         $validated = $request->validate([
             'kode_rak' => 'required|unique:raks,kode_rak',
-            'lokasi_gudang' => 'required|exists:gudangs,nama_gudang', // ← validasi nama, bukan ID
+            'lokasi_gudang' => 'required|exists:gudangs,nama_gudang',
             'nama_rak' => 'required|string|max:255',
-            'jenis_rak' => 'required|in:Heavy Duty,Medium Duty,Light Duty,Pallet Rack,Cantilever',
+            'jenis_rak' => 'required|in:Heavy Duty,Medium Duty,Light Duty,Cantilever',
             'deskripsi' => 'nullable|string',
             'kapasitas_berat' => 'required|integer|min:0',
             'panjang' => 'required|numeric|min:0',
@@ -151,36 +150,46 @@ class RakController extends Controller
             'tinggi' => 'required|numeric|min:0',
             'jumlah_tingkat' => 'required|integer|min:1',
             'harga_sewa_perbulan' => 'required|numeric|min:0',
-            'foto' => 'nullable|image|mimes:jpeg,png,jpg|max:2048',
+            'fotos.*' => 'nullable|image|mimes:jpeg,png,jpg|max:2048',
             'spesifikasi_tambahan' => 'nullable|string',
             'is_active' => 'boolean',
             'durasi_sewa_hari' => 'required|integer|min:1'
         ]);
 
-        // Cari gudang berdasarkan nama_gudang
-        $gudang = Gudang::where('nama_gudang', $validated['lokasi_gudang'])->firstOrFail();
+        DB::beginTransaction();
+        try {
+            $gudang = Gudang::where('nama_gudang', $validated['lokasi_gudang'])->firstOrFail();
+            $validated['gudang_id'] = $gudang->id;
+            $validated['lokasi_gudang'] = $gudang->nama_gudang;
+            $validated['status'] = 'tersedia';
 
-        // Isi gudang_id dan pastikan lokasi_gudang tetap tersimpan (opsional)
-        $validated['gudang_id'] = $gudang->id;
+            // Hapus fotos dari validated karena akan dihandle terpisah
+            unset($validated['fotos']);
 
-        $validated['lokasi_gudang'] = $gudang->nama_gudang; // atau tambah kota: $gudang->nama_gudang . ' - ' . $gudang->kota
+            $rak = Rak::create($validated);
 
-        $validated['status'] = 'tersedia';
+            // Handle multiple photos
+            if ($request->hasFile('fotos')) {
+                $this->handleMultiplePhotos($request->file('fotos'), $rak);
+            }
 
-        if ($request->hasFile('foto')) {
-            $foto = $request->file('foto');
-            $filename = time() . '_' . Str::slug($request->nama_rak) . '.' . $foto->getClientOriginalExtension();
-            $validated['foto'] = $foto->storeAs('raks', $filename, 'public');
+            DB::commit();
+
+            return redirect()->route('raks.index')
+                ->with('success', 'Rak berhasil ditambahkan dengan status Tersedia!');
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error('Error creating rak: ' . $e->getMessage());
+
+            return redirect()->back()
+                ->withInput()
+                ->with('error', 'Gagal menambahkan rak: ' . $e->getMessage());
         }
-
-        Rak::create($validated);
-
-        return redirect()->route('raks.index')
-            ->with('success', 'Rak berhasil ditambahkan dengan status Tersedia!');
     }
 
     public function show(Rak $rak)
     {
+        $rak->load('fotos');
         return view('admin.raks.show', compact('rak'));
     }
 
@@ -189,6 +198,8 @@ class RakController extends Controller
         $gudangs = Gudang::where('is_active', true)
             ->orderBy('nama_gudang')
             ->get();
+
+        $rak->load('fotos');
 
         return view('admin.raks.edit', compact('rak', 'gudangs'));
     }
@@ -199,31 +210,27 @@ class RakController extends Controller
             'harga_sewa_perbulan' => str_replace('.', '', $request->harga_sewa_perbulan)
         ]);
 
-        // Cek apakah rak sedang terisi/disewa
         $hasActiveTransaction = Transaction::where('rak_id', $rak->id)
             ->whereIn('transaction_status', ['capture', 'settlement'])
             ->exists();
 
-        // Validasi: Jika rak terisi, tidak boleh ubah status ke selain 'terisi'
         if ($rak->status === 'terisi' && $request->status !== 'terisi' && $hasActiveTransaction) {
             return redirect()->back()
                 ->withInput()
                 ->with('error', 'Rak sedang terisi/disewa! Status tidak dapat diubah ke ' . $request->status . '. Tunggu hingga masa sewa berakhir.');
         }
 
-        // Validasi: Jika ada transaksi aktif, status harus tetap 'terisi'
         if ($hasActiveTransaction && $request->status !== 'terisi') {
             return redirect()->back()
                 ->withInput()
                 ->with('error', 'Rak memiliki transaksi aktif! Status harus tetap "Terisi".');
         }
 
-        // Validasi form
         $validated = $request->validate([
             'kode_rak' => 'required|unique:raks,kode_rak,' . $rak->id,
             'lokasi_gudang' => 'required|exists:gudangs,nama_gudang',
             'nama_rak' => 'required|string|max:255',
-            'jenis_rak' => 'required|in:Heavy Duty,Medium Duty,Light Duty,Pallet Rack,Cantilever',
+            'jenis_rak' => 'required|in:Heavy Duty,Medium Duty,Light Duty,Cantilever',
             'deskripsi' => 'nullable|string',
             'kapasitas_berat' => 'required|integer|min:0',
             'panjang' => 'required|numeric|min:0',
@@ -232,41 +239,61 @@ class RakController extends Controller
             'jumlah_tingkat' => 'required|integer|min:1',
             'harga_sewa_perbulan' => 'required|numeric|min:0',
             'status' => 'required|in:tersedia,terisi,maintenance',
-            'foto' => 'nullable|image|mimes:jpeg,png,jpg|max:2048',
+            'fotos.*' => 'nullable|image|mimes:jpeg,png,jpg|max:2048',
+            'foto_primary' => 'nullable|integer',
+            'delete_fotos' => 'nullable|array',
+            'delete_fotos.*' => 'integer|exists:foto_rak,id',
             'spesifikasi_tambahan' => 'nullable|string',
             'is_active' => 'boolean',
             'durasi_sewa_hari' => 'required|integer|min:1'
         ]);
 
-        // Cari gudang berdasarkan nama_gudang
-        $gudang = Gudang::where('nama_gudang', $validated['lokasi_gudang'])->first();
-        if (!$gudang) {
-            return redirect()->back()->withErrors(['lokasi_gudang' => 'Gudang tidak ditemukan.']);
-        }
-
-        // Set gudang_id & pastikan lokasi_gudang tetap tersimpan
-        $validated['gudang_id'] = $gudang->id;
-        $validated['lokasi_gudang'] = $gudang->nama_gudang;
-
-        // Handle upload foto
-        if ($request->hasFile('foto')) {
-            if ($rak->foto && Storage::disk('public')->exists($rak->foto)) {
-                Storage::disk('public')->delete($rak->foto);
+        DB::beginTransaction();
+        try {
+            $gudang = Gudang::where('nama_gudang', $validated['lokasi_gudang'])->first();
+            if (!$gudang) {
+                return redirect()->back()->withErrors(['lokasi_gudang' => 'Gudang tidak ditemukan.']);
             }
 
-            $foto = $request->file('foto');
-            $filename = time() . '_' . Str::slug($request->nama_rak) . '.' . $foto->getClientOriginalExtension();
-            $validated['foto'] = $foto->storeAs('raks', $filename, 'public');
+            $validated['gudang_id'] = $gudang->id;
+            $validated['lokasi_gudang'] = $gudang->nama_gudang;
+
+            // Hapus fotos dari validated
+            unset($validated['fotos'], $validated['foto_primary'], $validated['delete_fotos']);
+
+            $rak->update($validated);
+
+            // Handle delete photos
+            if ($request->has('delete_fotos')) {
+                $this->deletePhotos($request->delete_fotos, $rak->id);
+            }
+
+            // Handle new photos
+            if ($request->hasFile('fotos')) {
+                $this->handleMultiplePhotos($request->file('fotos'), $rak);
+            }
+
+            // Update primary photo
+            if ($request->has('foto_primary')) {
+                $this->updatePrimaryPhoto($request->foto_primary, $rak->id);
+            }
+
+            DB::commit();
+
+            return redirect()->route('raks.index')
+                ->with('success', 'Rak berhasil diperbarui!');
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error('Error updating rak: ' . $e->getMessage());
+
+            return redirect()->back()
+                ->withInput()
+                ->with('error', 'Gagal memperbarui rak: ' . $e->getMessage());
         }
-
-        $rak->update($validated);
-
-        return redirect()->route('raks.index')
-            ->with('success', 'Rak berhasil diperbarui!');
     }
+
     public function destroy(Rak $rak)
     {
-        // Cek apakah rak sudah terisi (ada transaksi yang berhasil)
         $hasActiveTransaction = Transaction::where('rak_id', $rak->id)
             ->whereIn('transaction_status', ['capture', 'settlement'])
             ->exists();
@@ -276,20 +303,88 @@ class RakController extends Controller
                 ->with('error', 'Rak tidak dapat dihapus karena sedang terisi/disewa oleh customer!');
         }
 
-        // Cek berdasarkan status rak
         if ($rak->status === 'terisi') {
             return redirect()->route('raks.index')
                 ->with('error', 'Rak tidak dapat dihapus karena statusnya masih terisi!');
         }
 
-        // Hapus foto jika ada
-        if ($rak->foto && Storage::disk('public')->exists($rak->foto)) {
-            Storage::disk('public')->delete($rak->foto);
+        DB::beginTransaction();
+        try {
+            // Hapus semua foto
+            foreach ($rak->fotos as $foto) {
+                $foto->deleteFile();
+                $foto->delete();
+            }
+
+            // Hapus foto lama jika ada
+            if ($rak->foto && Storage::disk('public')->exists($rak->foto)) {
+                Storage::disk('public')->delete($rak->foto);
+            }
+
+            $rak->delete();
+
+            DB::commit();
+
+            return redirect()->route('raks.index')
+                ->with('success', 'Rak berhasil dihapus!');
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error('Error deleting rak: ' . $e->getMessage());
+
+            return redirect()->route('raks.index')
+                ->with('error', 'Gagal menghapus rak: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Handle multiple photo uploads
+     */
+    private function handleMultiplePhotos($files, $rak)
+    {
+        $existingCount = $rak->fotos()->count();
+        $isPrimarySet = $rak->fotos()->where('is_primary', true)->exists();
+
+        foreach ($files as $index => $file) {
+            $filename = time() . '_' . $index . '_' . Str::slug($rak->nama_rak) . '.' . $file->getClientOriginalExtension();
+            $path = $file->storeAs('raks', $filename, 'public');
+
+            FotoRak::create([
+                'rak_id' => $rak->id,
+                'path' => $path,
+                'is_primary' => !$isPrimarySet && $index === 0, // Set first photo as primary if no primary exists
+                'urutan' => $existingCount + $index
+            ]);
+        }
+    }
+
+    /**
+     * Delete selected photos
+     */
+    private function deletePhotos($photoIds, $rakId)
+    {
+        $fotos = FotoRak::where('rak_id', $rakId)->whereIn('id', $photoIds)->get();
+
+        foreach ($fotos as $foto) {
+            $foto->deleteFile();
+            $foto->delete();
         }
 
-        $rak->delete();
+        // Reorder remaining photos
+        $remainingFotos = FotoRak::where('rak_id', $rakId)->orderBy('urutan')->get();
+        foreach ($remainingFotos as $index => $foto) {
+            $foto->update(['urutan' => $index]);
+        }
+    }
 
-        return redirect()->route('raks.index')
-            ->with('success', 'Rak berhasil dihapus!');
+    /**
+     * Update primary photo
+     */
+    private function updatePrimaryPhoto($photoId, $rakId)
+    {
+        // Reset all primary flags
+        FotoRak::where('rak_id', $rakId)->update(['is_primary' => false]);
+
+        // Set new primary
+        FotoRak::where('id', $photoId)->where('rak_id', $rakId)->update(['is_primary' => true]);
     }
 }

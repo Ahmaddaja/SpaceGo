@@ -20,7 +20,7 @@ class Rak extends Model
         'lebar',
         'tinggi',
         'jumlah_tingkat',
-        'lokasi_gudang', //'zona_gudang',
+        'lokasi_gudang',
         'harga_sewa_perbulan',
         'status',
         'foto',
@@ -39,7 +39,6 @@ class Rak extends Model
         'is_active' => 'boolean',
     ];
 
-    // Tambahkan ini untuk set default value
     protected $attributes = [
         'status' => 'tersedia',
         'is_active' => true,
@@ -76,5 +75,80 @@ class Rak extends Model
     public function transactions()
     {
         return $this->hasMany(Transaction::class);
+    }
+
+    /**
+     * Relasi ke FotoRak (Multiple Photos)
+     */
+    public function fotos()
+    {
+        return $this->hasMany(FotoRak::class)->orderBy('urutan');
+    }
+
+    /**
+     * Get foto utama (primary photo)
+     */
+    public function fotoPrimary()
+    {
+        return $this->hasOne(FotoRak::class)->where('is_primary', true);
+    }
+
+    /**
+     * Get foto utama atau foto pertama jika tidak ada primary
+     * Dengan fallback ke kolom foto lama
+     */
+    public function getFotoUtamaAttribute()
+    {
+        // Cek foto primary dari relasi fotos
+        $fotoPrimary = $this->fotoPrimary;
+        if ($fotoPrimary) {
+            return $fotoPrimary->path;
+        }
+        
+        // Jika tidak ada primary, ambil foto pertama
+        $fotoFirst = $this->fotos()->first();
+        if ($fotoFirst) {
+            return $fotoFirst->path;
+        }
+        
+        // Fallback ke kolom foto lama jika ada
+        return $this->foto;
+    }
+
+    /**
+     * Get URL foto utama
+     */
+    public function getFotoUtamaUrlAttribute()
+    {
+        $fotoUtama = $this->foto_utama;
+        
+        if ($fotoUtama) {
+            return asset('storage/' . $fotoUtama);
+        }
+        
+        return asset('images/no-image.png'); // placeholder jika tidak ada foto
+    }
+
+    /**
+     * Check apakah rak memiliki foto
+     */
+    public function hasFotos()
+    {
+        return $this->fotos()->count() > 0 || !empty($this->foto);
+    }
+
+    /**
+     * Get total jumlah foto
+     */
+    public function getTotalFotosAttribute()
+    {
+        $count = $this->fotos()->count();
+        
+        // Jika ada foto lama tapi tidak ada di fotos, tambah 1
+        if ($count === 0 && !empty($this->foto)) {
+            return 1;
+        }
+        
+        return $count;
     }
 }
