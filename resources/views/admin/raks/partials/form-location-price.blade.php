@@ -27,47 +27,57 @@
             </label>
 
             <!-- Input yang user lihat (dengan format rupiah) -->
-            <input 
-                type="text" 
-                class="form-control @error('harga_sewa_perbulan') is-invalid @enderror"
-                id="harga_display" 
-                placeholder="Contoh: 100.000" 
-                autocomplete="off"
-            >
+            <input type="text" class="form-control @error('harga_sewa_perbulan') is-invalid @enderror"
+                id="harga_display" placeholder="Contoh: 100.000" autocomplete="off">
 
             <!-- Input yang dikirim ke server (angka murni, HIDDEN) -->
-            <input 
-                type="hidden"
-                name="harga_sewa_perbulan"
-                id="harga_sewa_perbulan"
-                value="{{ old('harga_sewa_perbulan', $rak->harga_sewa_perbulan ?? '') }}"
-            >
+            <input type="hidden" name="harga_sewa_perbulan" id="harga_sewa_perbulan"
+                value="{{ old('harga_sewa_perbulan', $rak->harga_sewa_perbulan ?? '') }}">
 
             @error('harga_sewa_perbulan')
                 <div class="invalid-feedback d-block">{{ $message }}</div>
             @enderror
         </div>
+
         <div class="form-group">
             <label for="durasi_sewa_hari">Durasi Sewa (hari) <span class="text-danger">*</span></label>
             <input type="number" class="form-control" id="durasi_sewa_hari" name="durasi_sewa_hari"
-                value="{{ old('durasi_sewa_hari', $rak->durasi_sewa_hari ?? 30) }}"
-                min="1">
+                value="{{ old('durasi_sewa_hari', $rak->durasi_sewa_hari ?? 30) }}" min="1">
         </div>
-
 
         <!-- Hanya tampilkan dropdown status saat EDIT, tidak saat CREATE -->
         @if (isset($rak))
+            @php
+                // Cek apakah rak memiliki transaksi aktif
+                $hasActiveTransaction = \App\Models\Transaction::where('rak_id', $rak->id)
+                    ->whereIn('transaction_status', ['capture', 'settlement'])
+                    ->exists();
+
+                $isStatusDisabled = $rak->status === 'terisi' && $hasActiveTransaction;
+            @endphp
+
             <div class="form-group">
                 <label for="status">Status <span class="text-danger">*</span></label>
-                <select class="form-control @error('status') is-invalid @enderror" id="status" name="status">
-                    <option value="tersedia"
-                        {{ old('status', $rak->status ?? '') == 'tersedia' ? 'selected' : '' }}>Tersedia</option>
+                <select class="form-control @error('status') is-invalid @enderror" id="status" name="status"
+                    {{ $isStatusDisabled ? 'disabled' : '' }}>
+                    <option value="tersedia" {{ old('status', $rak->status ?? '') == 'tersedia' ? 'selected' : '' }}>
+                        Tersedia</option>
                     <option value="terisi" {{ old('status', $rak->status ?? '') == 'terisi' ? 'selected' : '' }}>
                         Terisi</option>
                     <option value="maintenance"
                         {{ old('status', $rak->status ?? '') == 'maintenance' ? 'selected' : '' }}>Maintenance
                     </option>
                 </select>
+
+                @if ($isStatusDisabled)
+                    <!-- Hidden input untuk mengirim nilai status saat disabled -->
+                    <input type="hidden" name="status" value="{{ $rak->status }}">
+                    <small class="form-text text-warning mt-2">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        Status tidak dapat diubah karena rak sedang disewa/terisi
+                    </small>
+                @endif
+
                 @error('status')
                     <div class="invalid-feedback">{{ $message }}</div>
                 @enderror
@@ -95,37 +105,37 @@
 </div>
 
 @push('scripts')
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-    const inputDisplay = document.getElementById('harga_display');
-    const inputHidden = document.getElementById('harga_sewa_perbulan');
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const inputDisplay = document.getElementById('harga_display');
+            const inputHidden = document.getElementById('harga_sewa_perbulan');
 
-    // Set initial display value dengan format rupiah
-    if (inputHidden.value) {
-        const cleanValue = inputHidden.value.replace(/\D/g, '');
-        inputDisplay.value = formatRupiah(cleanValue);
-    }
+            // Set initial display value dengan format rupiah
+            if (inputHidden.value) {
+                const cleanValue = inputHidden.value.replace(/\D/g, '');
+                inputDisplay.value = formatRupiah(cleanValue);
+            }
 
-    // Update saat user mengetik
-    inputDisplay.addEventListener('input', function(e) {
-        // Ambil hanya angka
-        let value = this.value.replace(/\D/g, '');
-        
-        // Update hidden input dengan angka murni (ini yang dikirim ke server)
-        inputHidden.value = value;
-        
-        // Update display dengan format rupiah
-        if (value) {
-            this.value = formatRupiah(value);
-        } else {
-            this.value = '';
-        }
-    });
+            // Update saat user mengetik
+            inputDisplay.addEventListener('input', function(e) {
+                // Ambil hanya angka
+                let value = this.value.replace(/\D/g, '');
 
-    // Fungsi untuk format rupiah
-    function formatRupiah(angka) {
-        return angka.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".");
-    }
-});
-</script>
+                // Update hidden input dengan angka murni (ini yang dikirim ke server)
+                inputHidden.value = value;
+
+                // Update display dengan format rupiah
+                if (value) {
+                    this.value = formatRupiah(value);
+                } else {
+                    this.value = '';
+                }
+            });
+
+            // Fungsi untuk format rupiah
+            function formatRupiah(angka) {
+                return angka.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+            }
+        });
+    </script>
 @endpush

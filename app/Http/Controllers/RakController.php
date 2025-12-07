@@ -159,7 +159,7 @@ class RakController extends Controller
 
         // Cari gudang berdasarkan nama_gudang
         $gudang = Gudang::where('nama_gudang', $validated['lokasi_gudang'])->firstOrFail();
-        
+
         // Isi gudang_id dan pastikan lokasi_gudang tetap tersimpan (opsional)
         $validated['gudang_id'] = $gudang->id;
 
@@ -199,10 +199,29 @@ class RakController extends Controller
             'harga_sewa_perbulan' => str_replace('.', '', $request->harga_sewa_perbulan)
         ]);
 
-        // Validasi tanpa 'gudang_id', tapi pake 'lokasi_gudang'
+        // Cek apakah rak sedang terisi/disewa
+        $hasActiveTransaction = Transaction::where('rak_id', $rak->id)
+            ->whereIn('transaction_status', ['capture', 'settlement'])
+            ->exists();
+
+        // Validasi: Jika rak terisi, tidak boleh ubah status ke selain 'terisi'
+        if ($rak->status === 'terisi' && $request->status !== 'terisi' && $hasActiveTransaction) {
+            return redirect()->back()
+                ->withInput()
+                ->with('error', 'Rak sedang terisi/disewa! Status tidak dapat diubah ke ' . $request->status . '. Tunggu hingga masa sewa berakhir.');
+        }
+
+        // Validasi: Jika ada transaksi aktif, status harus tetap 'terisi'
+        if ($hasActiveTransaction && $request->status !== 'terisi') {
+            return redirect()->back()
+                ->withInput()
+                ->with('error', 'Rak memiliki transaksi aktif! Status harus tetap "Terisi".');
+        }
+
+        // Validasi form
         $validated = $request->validate([
             'kode_rak' => 'required|unique:raks,kode_rak,' . $rak->id,
-            'lokasi_gudang' => 'required|exists:gudangs,nama_gudang', // ← validasi nama
+            'lokasi_gudang' => 'required|exists:gudangs,nama_gudang',
             'nama_rak' => 'required|string|max:255',
             'jenis_rak' => 'required|in:Heavy Duty,Medium Duty,Light Duty,Pallet Rack,Cantilever',
             'deskripsi' => 'nullable|string',
@@ -227,7 +246,7 @@ class RakController extends Controller
 
         // Set gudang_id & pastikan lokasi_gudang tetap tersimpan
         $validated['gudang_id'] = $gudang->id;
-        $validated['lokasi_gudang'] = $gudang->nama_gudang; // atau format lain sesuai kebutuhan
+        $validated['lokasi_gudang'] = $gudang->nama_gudang;
 
         // Handle upload foto
         if ($request->hasFile('foto')) {
@@ -245,7 +264,6 @@ class RakController extends Controller
         return redirect()->route('raks.index')
             ->with('success', 'Rak berhasil diperbarui!');
     }
-
     public function destroy(Rak $rak)
     {
         // Cek apakah rak sudah terisi (ada transaksi yang berhasil)

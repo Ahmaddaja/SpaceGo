@@ -169,7 +169,7 @@ public function renewals()
 // Tambahkan method ini untuk menangani pembayaran berhasil renewal
 public function handleRenewalSuccess()
 {
-    DB::beginTransaction();
+    \DB::beginTransaction();
     
     try {
         $originalTransaction = $this->parent;
@@ -199,16 +199,16 @@ public function handleRenewalSuccess()
                 $rak->update(['status' => 'terisi']);
             }
             
-            DB::commit();
+            \DB::commit();
             return true;
         }
         
-        DB::rollBack();
+        \DB::rollBack();
         return false;
         
     } catch (\Exception $e) {
-        DB::rollBack();
-        Log::error('Handle Renewal Error: ' . $e->getMessage());
+        \DB::rollBack();
+        \Log::error('Handle Renewal Error: ' . $e->getMessage());
         return false;
     }
 }
