@@ -16,40 +16,6 @@
         box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
     }
     
-    /* RIBBON CLEAN BIG STYLE */
-    .status-ribbon {
-        position: absolute;
-        top: 18px;
-        right: -60px; /* tarik ke kanan biar full */
-        transform: rotate(45deg);
-        padding: 14px 75px; /* ukuran lebih besar */
-        font-size: 0.85rem;
-        font-weight: 700;
-        letter-spacing: 0.5px;
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        color: white;
-        box-shadow: 0 4px 10px rgba(0,0,0,0.2);
-        z-index: 30;
-    }
-
-    /* Warna status */
-    .ribbon-tersedia {
-        background: linear-gradient(135deg, #10b981, #059669);
-    }
-    .ribbon-terisi {
-        background: linear-gradient(135deg, #ef4444, #dc2626);
-    }
-    .ribbon-maintenance {
-        background: linear-gradient(135deg, #f59e0b, #d97706);
-    }
-
-    /* Icon biar stabil */
-    .status-ribbon i {
-        font-size: 1rem;
-    }
-    
     .type-badge {
         background: rgba(255, 255, 255, 0.95);
         color: #374151;
@@ -173,6 +139,116 @@
         -webkit-text-fill-color: transparent;
         background-clip: text;
     }
+
+    /* CAROUSEL STYLES */
+    .photo-carousel-container {
+        position: relative;
+    }
+
+    .carousel-slide {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        opacity: 0;
+        transition: opacity 0.5s ease-in-out;
+        pointer-events: none;
+    }
+
+    .carousel-slide.active {
+        opacity: 1;
+        pointer-events: auto;
+    }
+
+    .carousel-btn {
+        position: absolute;
+        top: 50%;
+        transform: translateY(-50%);
+        background: rgba(0, 0, 0, 0.5);
+        color: white;
+        border: none;
+        width: 36px;
+        height: 36px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        z-index: 20;
+        transition: all 0.3s ease;
+        opacity: 0;
+    }
+
+    .photo-carousel-container:hover .carousel-btn {
+        opacity: 1;
+    }
+
+    .carousel-btn:hover {
+        background: rgba(0, 0, 0, 0.8);
+        transform: translateY(-50%) scale(1.1);
+    }
+
+    .carousel-prev {
+        left: 12px;
+    }
+
+    .carousel-next {
+        right: 12px;
+    }
+
+    /* INDICATORS */
+    .carousel-indicators {
+        position: absolute;
+        bottom: 12px;
+        left: 50%;
+        transform: translateX(-50%);
+        display: flex;
+        gap: 6px;
+        z-index: 20;
+    }
+
+    .indicator {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: rgba(255, 255, 255, 0.5);
+        border: none;
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+
+    .indicator.active {
+        background: white;
+        width: 24px;
+        border-radius: 4px;
+    }
+
+    /* PHOTO COUNTER BADGE */
+    .photo-counter-badge {
+        position: absolute;
+        top: 12px;
+        right: 12px;
+        background: rgba(0, 0, 0, 0.7);
+        backdrop-filter: blur(10px);
+        color: white;
+        padding: 6px 12px;
+        border-radius: 20px;
+        font-size: 0.75rem;
+        font-weight: 600;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        z-index: 20;
+    }
+
+    .image-hover {
+        transition: transform 0.5s ease;
+    }
+
+    .rak-card:hover .image-hover {
+        transform: scale(1.05);
+    }
 </style>
 @endpush
 
@@ -231,39 +307,69 @@
             @foreach($raks as $rak)
             <div class="rak-card bg-white rounded-2xl shadow-lg overflow-hidden">
                 
-                <!-- Status Ribbon -->
-                    <div class="status-ribbon ribbon-{{ $rak->status }}">
-                        <i class="fas 
-                            @if($rak->status == 'tersedia') fa-check
-                            @elseif($rak->status == 'terisi') fa-box
-                            @else fa-tools
-                            @endif
-                        "></i>
-                        <span>
-                            @if($rak->status == 'tersedia') Tersedia
-                            @elseif($rak->status == 'terisi') Terisi
-                            @else Maintenance
-                            @endif
-                        </span>
-                    </div>
-                
-                <!-- Image Section -->
+                <!-- Image Section with Carousel -->
                 <div class="relative">
-                    <img src="{{ $rak->foto ? asset('storage/' . $rak->foto) : asset('images/default-rak.jpg') }}"
-                         class="w-full h-48 object-cover"
-                         alt="{{ $rak->nama_rak }}"
-                         onerror="this.src='https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1000&q=80'">
+                    @php
+                        $hasMultiplePhotos = $rak->fotos && $rak->fotos->count() > 0;
+                        $photos = [];
 
-                    <!-- Type Badge -->
-                    <div class="absolute top-4 left-4">
-                        <span class="type-badge flex items-center space-x-1">
-                            <i class="fas fa-layer-group text-blue-500"></i>
-                            <span>{{ $rak->jenis_rak }}</span>
-                        </span>
+                        if ($hasMultiplePhotos) {
+                            $photos = $rak->fotos->pluck('path')->toArray();
+                        } elseif ($rak->foto) {
+                            $photos = [$rak->foto];
+                        }
+                    @endphp
+
+                    <div class="relative w-full h-48 overflow-hidden bg-gradient-to-br from-gray-100 to-gray-200 photo-carousel-container">
+                        @if (count($photos) > 0)
+                            @foreach ($photos as $index => $photo)
+                                <div class="carousel-slide {{ $index === 0 ? 'active' : '' }}" data-slide-index="{{ $index }}">
+                                    <img src="{{ asset('storage/' . $photo) }}" 
+                                         class="w-full h-full object-cover image-hover"
+                                         alt="Foto Rak {{ $index + 1 }}">
+                                </div>
+                            @endforeach
+
+                            @if (count($photos) > 1)
+                                <!-- Navigation Arrows -->
+                                <button class="carousel-btn carousel-prev" onclick="changeSlide(this, -1, '{{ $rak->id }}')">
+                                    <i class="fas fa-chevron-left"></i>
+                                </button>
+                                <button class="carousel-btn carousel-next" onclick="changeSlide(this, 1, '{{ $rak->id }}')">
+                                    <i class="fas fa-chevron-right"></i>
+                                </button>
+
+                                <!-- Indicators -->
+                                <div class="carousel-indicators">
+                                    @foreach ($photos as $idx => $photo)
+                                        <button class="indicator {{ $idx === 0 ? 'active' : '' }}"
+                                            onclick="goToSlide(this, {{ $idx }}, '{{ $rak->id }}')"></button>
+                                    @endforeach
+                                </div>
+
+                                <!-- Photo Counter Badge -->
+                                <div class="photo-counter-badge">
+                                    <i class="fas fa-images"></i>
+                                    <span class="current-photo">1</span>/<span class="total-photos">{{ count($photos) }}</span>
+                                </div>
+                            @endif
+                        @else
+                            <div class="w-full h-full flex items-center justify-center bg-gradient-to-br from-blue-100 to-purple-100">
+                                <i class="fas fa-pallet text-4xl text-blue-500 opacity-50"></i>
+                            </div>
+                        @endif
+
+                        <!-- Type Badge -->
+                        <div class="absolute top-4 left-4 z-20">
+                            <span class="type-badge flex items-center space-x-1">
+                                <i class="fas fa-layer-group text-blue-500"></i>
+                                <span>{{ $rak->jenis_rak }}</span>
+                            </span>
+                        </div>
+
+                        <!-- Overlay Gradient -->
+                        <div class="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent"></div>
                     </div>
-
-                    <!-- Overlay Gradient -->
-                    <div class="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent"></div>
                 </div>
 
                 <!-- Content Section -->
@@ -316,6 +422,30 @@
                                 Kapasitas
                             </span>
                             <span class="text-gray-900 font-semibold text-sm">{{ number_format($rak->kapasitas_berat, 0, ',', '.') }} kg</span>
+                        </div>
+
+                        <!-- Status Info -->
+                        <div class="info-item flex items-center justify-between">
+                            <span class="text-gray-600 text-sm flex items-center">
+                                <i class="fas fa-info-circle text-purple-500 mr-3 w-5 text-center"></i>
+                                Status
+                            </span>
+                            @if ($rak->status === 'tersedia')
+                                <span class="inline-flex items-center px-2 py-1 bg-green-100 text-green-700 rounded-lg text-xs font-semibold">
+                                    <i class="fas fa-check mr-1"></i>
+                                    Tersedia
+                                </span>
+                            @elseif($rak->status === 'terisi')
+                                <span class="inline-flex items-center px-2 py-1 bg-red-100 text-red-700 rounded-lg text-xs font-semibold">
+                                    <i class="fas fa-box mr-1"></i>
+                                    Terisi
+                                </span>
+                            @else
+                                <span class="inline-flex items-center px-2 py-1 bg-yellow-100 text-yellow-700 rounded-lg text-xs font-semibold">
+                                    <i class="fas fa-tools mr-1"></i>
+                                    Maintenance
+                                </span>
+                            @endif
                         </div>
                     </div>
 
@@ -436,6 +566,57 @@
 
 @push('scripts')
 <script>
+    function changeSlide(button, direction, rakId) {
+        const container = button.closest('.photo-carousel-container');
+        const slides = container.querySelectorAll('.carousel-slide');
+        const indicators = container.querySelectorAll('.indicator');
+        const counterCurrent = container.querySelector('.current-photo');
+
+        let currentIndex = 0;
+        slides.forEach((slide, index) => {
+            if (slide.classList.contains('active')) {
+                currentIndex = index;
+            }
+        });
+
+        let newIndex = currentIndex + direction;
+        if (newIndex >= slides.length) newIndex = 0;
+        if (newIndex < 0) newIndex = slides.length - 1;
+
+        // Update slides
+        slides[currentIndex].classList.remove('active');
+        slides[newIndex].classList.add('active');
+
+        // Update indicators
+        indicators[currentIndex].classList.remove('active');
+        indicators[newIndex].classList.add('active');
+
+        // Update counter
+        if (counterCurrent) {
+            counterCurrent.textContent = newIndex + 1;
+        }
+    }
+
+    function goToSlide(button, index, rakId) {
+        const container = button.closest('.photo-carousel-container');
+        const slides = container.querySelectorAll('.carousel-slide');
+        const indicators = container.querySelectorAll('.indicator');
+        const counterCurrent = container.querySelector('.current-photo');
+
+        // Remove active from all
+        slides.forEach(slide => slide.classList.remove('active'));
+        indicators.forEach(ind => ind.classList.remove('active'));
+
+        // Add active to target
+        slides[index].classList.add('active');
+        indicators[index].classList.add('active');
+
+        // Update counter
+        if (counterCurrent) {
+            counterCurrent.textContent = index + 1;
+        }
+    }
+
     document.addEventListener('DOMContentLoaded', function() {
         // Add loading animation to cards
         const cards = document.querySelectorAll('.rak-card');
@@ -450,28 +631,30 @@
             }, index * 100);
         });
 
-        // Add hover effect to action buttons
-        const actionBtns = document.querySelectorAll('.action-btn');
-        actionBtns.forEach(btn => {
-            btn.addEventListener('mouseenter', function() {
-                this.style.transform = 'translateY(-2px)';
-            });
-            
-            btn.addEventListener('mouseleave', function() {
-                this.style.transform = 'translateY(0)';
-            });
-        });
+        // Auto-play carousel
+        const carousels = document.querySelectorAll('.photo-carousel-container');
+        carousels.forEach(carousel => {
+            const slides = carousel.querySelectorAll('.carousel-slide');
+            if (slides.length > 1) {
+                let autoPlayInterval;
 
-        // Ribbon hover effect
-        const ribbons = document.querySelectorAll('.status-ribbon');
-        ribbons.forEach(ribbon => {
-            ribbon.addEventListener('mouseenter', function() {
-                this.style.transform = 'rotate(45deg) scale(1.05)';
-            });
-            
-            ribbon.addEventListener('mouseleave', function() {
-                this.style.transform = 'rotate(45deg)';
-            });
+                const startAutoPlay = () => {
+                    autoPlayInterval = setInterval(() => {
+                        const nextBtn = carousel.querySelector('.carousel-next');
+                        if (nextBtn) {
+                            nextBtn.click();
+                        }
+                    }, 5000);
+                };
+
+                const stopAutoPlay = () => {
+                    clearInterval(autoPlayInterval);
+                };
+
+                startAutoPlay();
+                carousel.addEventListener('mouseenter', stopAutoPlay);
+                carousel.addEventListener('mouseleave', startAutoPlay);
+            }
         });
     });
 </script>
