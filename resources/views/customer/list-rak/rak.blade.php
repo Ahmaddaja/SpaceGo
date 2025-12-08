@@ -274,10 +274,10 @@
                     <div class="w-2 h-2 bg-green-500 rounded-full"></div>
                      <span>Total: <strong class="text-gray-700">{{ $raks->where('status', 'terisi')->count() }} rak</strong></span>
                 </div>
-                <div class="flex items-center space-x-2 text-sm text-gray-500">
+                {{-- <div class="flex items-center space-x-2 text-sm text-gray-500">
                     <div class="w-2 h-2 bg-blue-500 rounded-full"></div>
                     <span>Aktif: <strong class="text-gray-700">{{ $raks->where('status', 'terisi')->count() }} rak</strong></span>
-                </div>
+                </div> --}}
             </div>
         </div>
 

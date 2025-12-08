@@ -85,11 +85,11 @@ Route::middleware(['auth', 'role:customer'])->group(function () {
         ->name('customer.payment.process-renewal');
 
     // ========================
-    // HISTORY ROUTES
+    // HISTORY ROUTES (DIUBAH: payments menjadi payment)
     // ========================
     Route::prefix('customer/history')->group(function () {
         Route::get('/', [HistoryController::class, 'index'])->name('customer.history');
-        Route::get('/payments', [HistoryController::class, 'paymentHistory'])->name('customer.history.payments');
+        Route::get('/payment', [HistoryController::class, 'paymentHistory'])->name('customer.history.payment'); // DIUBAH: /payments menjadi /payment
         Route::get('/json', [HistoryController::class, 'getHistoryJson'])->name('customer.history.json');
     });
 
