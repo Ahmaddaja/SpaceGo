@@ -40,7 +40,9 @@ class Transaction extends Model
         'penalty_amount' => 'decimal:2',
     ];
 
+    // ================
     // Relationships
+    // ================
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
@@ -51,7 +53,9 @@ class Transaction extends Model
         return $this->belongsTo(Rak::class);
     }
 
+    // ================
     // Scopes
+    // ================
     public function scopeSuccess($query)
     {
         return $query->whereIn('transaction_status', ['capture', 'settlement']);
@@ -67,7 +71,35 @@ class Transaction extends Model
         return $query->whereIn('transaction_status', ['deny', 'expire', 'cancel']);
     }
 
+    // ================
+    // Badge Color
+    // ================
+    public function getStatusBadgeColor()
+    {
+        return match ($this->transaction_status) {
+            'capture', 'settlement' => 'success',
+            'pending' => 'warning',
+            'deny', 'expire', 'cancel' => 'danger',
+            default => 'secondary',
+        };
+    }
+
+    // ================
+    // Icon
+    // ================
+    public function getStatusIcon()
+    {
+        return match ($this->transaction_status) {
+            'capture', 'settlement' => 'fas fa-check-circle',
+            'pending' => 'fas fa-clock',
+            'deny', 'expire', 'cancel' => 'fas fa-times-circle',
+            default => 'fas fa-question-circle',
+        };
+    }
+
+    // =================
     // Attributes
+    // =================
     public function getStatusSewaAttribute()
     {
         if (!$this->sewa_berakhir || !in_array($this->transaction_status, ['capture', 'settlement'])) {
@@ -93,7 +125,6 @@ class Transaction extends Model
             }
         }
 
-        // Logika status sewa normal
         if ($daysDiff > 0) {
             return "Aktif ({$daysDiff} hari tersisa)";
         } elseif ($daysDiff === 0) {
@@ -115,14 +146,12 @@ class Transaction extends Model
             return 0;
         }
 
-        // Jika dalam masa pengosongan
         if ($this->is_pengosongan && $this->pengosongan_berakhir) {
             $now = Carbon::now()->startOfDay();
             $pengosonganEnd = Carbon::parse($this->pengosongan_berakhir)->startOfDay();
             return max(0, $now->diffInDays($pengosonganEnd, false));
         }
 
-        // Sisa hari normal
         $now = Carbon::now()->startOfDay();
         $end = Carbon::parse($this->sewa_berakhir)->startOfDay();
         return max(0, $now->diffInDays($end, false));
@@ -140,7 +169,6 @@ class Transaction extends Model
             ->where('is_renewal', true);
     }
 
-    // Tambahkan method ini untuk menangani pembayaran berhasil renewal
     public function handleRenewalSuccess()
     {
         \DB::beginTransaction();
@@ -150,10 +178,8 @@ class Transaction extends Model
             $rak = $this->rak;
 
             if ($originalTransaction && $rak) {
-                // Calculate new sewa_berakhir date
                 $durasi = $rak->durasi_sewa_hari ?? 30;
 
-                // Start from the original sewa_berakhir or today
                 $startDate = $originalTransaction->sewa_berakhir > now()
                     ? $originalTransaction->sewa_berakhir
                     : now();
@@ -162,13 +188,11 @@ class Transaction extends Model
                 $this->sewa_berakhir = $startDate->copy()->addDays($durasi);
                 $this->save();
 
-                // Update original transaction
                 if ($originalTransaction->sewa_berakhir < now()) {
                     $originalTransaction->sewa_berakhir = $this->sewa_berakhir;
                     $originalTransaction->save();
                 }
 
-                // Update rak status
                 if ($rak->status !== 'terisi') {
                     $rak->update(['status' => 'terisi']);
                 }
