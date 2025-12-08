@@ -399,59 +399,6 @@
     // =========================================
     // ======= DETAILS PENDING FUNCTIONS =======
     // =========================================
-    function continuePayment(snapToken, transactionId) {
-        if (!snapToken || snapToken === '' || snapToken === 'null') {
-            Swal.fire({
-                icon: 'error',
-                title: 'Token Tidak Tersedia',
-                text: 'Token pembayaran tidak ditemukan. Silakan refresh halaman atau hubungi admin.',
-                confirmButtonColor: '#3085d6'
-            });
-            return;
-        }
-
-        if (!transactionId || transactionId === 0) {
-            Swal.fire({
-                icon: 'error',
-                title: 'Transaksi Tidak Valid',
-                text: 'ID transaksi tidak ditemukan. Silakan refresh halaman.',
-                confirmButtonColor: '#3085d6'
-            });
-            return;
-        }
-
-        // Buka Midtrans Snap
-        snap.pay(snapToken, {
-            onSuccess: function(result) {
-                console.log('Payment success:', result);
-                updateTransactionStatus(transactionId, result.transaction_status, result.payment_type);
-            },
-            onPending: function(result) {
-                console.log('Payment pending:', result);
-                Swal.fire({
-                    icon: 'info',
-                    title: 'Pembayaran Pending',
-                    text: 'Pembayaran Anda sedang diproses.',
-                    confirmButtonColor: '#3085d6'
-                }).then(() => {
-                    window.location.reload();
-                });
-            },
-            onError: function(result) {
-                console.error('Payment error:', result);
-                Swal.fire({
-                    icon: 'error',
-                    title: 'Pembayaran Gagal',
-                    text: 'Terjadi kesalahan saat memproses pembayaran.',
-                    confirmButtonColor: '#3085d6'
-                });
-            },
-            onClose: function() {
-                console.log('Payment popup closed');
-            }
-        });
-    }
-
     function updateTransactionStatus(transactionId, status, paymentType) {
         fetch('/customer/payment/update-status', {
             method: 'POST',
@@ -484,7 +431,7 @@
     }
 
     // FUNGSI BARU: Lihat Detail Tagihan
-    function viewDetail(tagihanId) {
+        function viewDetail(tagihanId) {
         // Show loading animation
         Swal.fire({
             title: '<div class="flex flex-col items-center">' +
@@ -659,20 +606,20 @@
                                 </div>
                             </div>
                             
-                            <!-- Action Buttons (Optional) -->
-                            <div class="grid grid-cols-2 gap-3 mt-2">
+                            <!-- Action Button (Tengah) -->
+                            <div class="flex justify-center mt-6 pt-4 border-t border-gray-100">
                                 <button onclick="Swal.close()" 
-                                        class="py-3 bg-gray-100 hover:bg-gray-200 text-gray-800 font-medium rounded-xl transition-all duration-300 flex items-center justify-center gap-2 hover:shadow-md">
-                                    <i class="fas fa-times"></i>
-                                    Tutup
+                                        class="group relative px-8 py-3.5 bg-gradient-to-r from-blue-600 to-blue-700 text-white font-medium rounded-xl transition-all duration-300 flex items-center justify-center gap-3 hover:shadow-xl hover:-translate-y-0.5 min-w-[180px]">
+                                    <!-- Rotating X Icon -->
+                                    <i class="fas fa-times group-hover:rotate-90 transition-transform duration-300 text-lg"></i>
+                                    <span class="text-base font-semibold">Tutup</span>
+                                    
+                                    <!-- Glow effect on hover -->
+                                    <div class="absolute inset-0 rounded-xl bg-gradient-to-r from-blue-500 to-blue-600 opacity-0 group-hover:opacity-20 blur-md transition-opacity duration-300 -z-10"></div>
+                                    
+                                    <!-- Border animation -->
+                                    <div class="absolute inset-0 rounded-xl border-2 border-transparent group-hover:border-white/30 transition-border duration-300"></div>
                                 </button>
-                                ${tagihan.status === 'pending' ? `
-                                <button onclick="continuePaymentFromDetail('${tagihan.snap_token || ''}', ${tagihan.transaction_id || 0})" 
-                                        class="py-3 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white font-medium rounded-xl transition-all duration-300 flex items-center justify-center gap-2 hover:shadow-lg transform hover:-translate-y-0.5">
-                                    <i class="fas fa-credit-card"></i>
-                                    Bayar Sekarang
-                                </button>
-                                ` : ''}
                             </div>
                         </div>
                     `,
@@ -682,7 +629,7 @@
                     showCloseButton: true,
                     customClass: {
                         popup: 'rounded-2xl shadow-2xl',
-                        closeButton: 'w-10 h-10 rounded-lg hover:bg-gray-100 flex items-center justify-center text-xl transition-colors'
+                        closeButton: 'w-10 h-10 rounded-lg hover:bg-gray-100 flex items-center justify-center text-xl transition-colors hover:rotate-90 hover:scale-110 transform duration-300'
                     }
                 });
             } else {
@@ -711,12 +658,16 @@
                                     '</div>',
                     confirmButtonColor: '#3b82f6',
                     showCancelButton: true,
-                    cancelButtonText: '<div class="flex items-center justify-center gap-2">' +
-                                    '<i class="fas fa-times"></i>' +
+                    cancelButtonText: '<div class="flex items-center justify-center gap-2 group">' +
+                                    '<i class="fas fa-times group-hover:rotate-90 transition-transform duration-300"></i>' +
                                     '<span>Tutup</span>' +
                                     '</div>',
                     cancelButtonColor: '#6b7280',
-                    reverseButtons: true
+                    reverseButtons: true,
+                    customClass: {
+                        confirmButton: 'px-6 py-3 rounded-xl font-semibold transition-all duration-300 hover:shadow-lg',
+                        cancelButton: 'px-6 py-3 rounded-xl font-semibold transition-all duration-300 hover:shadow-lg group'
+                    }
                 }).then((result) => {
                     if (result.isConfirmed) {
                         viewDetail(tagihanId);
@@ -751,7 +702,13 @@
                                 '<i class="fas fa-redo"></i>' +
                                 '<span>Refresh</span>' +
                                 '</div>',
-                confirmButtonColor: '#f59e0b'
+                confirmButtonColor: '#f59e0b',
+                showCancelButton: true,
+                cancelButtonText: '<div class="flex items-center justify-center gap-2 group">' +
+                                '<i class="fas fa-times group-hover:rotate-90 transition-transform duration-300"></i>' +
+                                '<span>Tutup</span>' +
+                                '</div>',
+                cancelButtonColor: '#6b7280'
             }).then((result) => {
                 if (result.isConfirmed) {
                     viewDetail(tagihanId);
