@@ -39,7 +39,7 @@ return new class extends Migration
             $table->date('sewa_berakhir')->nullable();
             
             // Parent untuk renewal
-            $table->foreignId('parent_tagihan_id')->nullable()->constrained('tagihan')->nullOnDelete();
+            $table->foreignId('parent_tagihan_id')->nullable()->constrained('tagihans')->nullOnDelete();
             
             $table->timestamps();
             
@@ -55,6 +55,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('tagihan');
+        Schema::dropIfExists('tagihans');
     }
 };

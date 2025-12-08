@@ -1,232 +1,267 @@
+{{-- resources/views/admin/raks/partials/form-photo.blade.php --}}
+
 <div class="card border-0 shadow-sm mb-4">
     <div class="card-header bg-white border-0 py-3">
         <h5 class="mb-0 font-weight-bold">
-            <i class="fas fa-images mr-2"></i>Foto Rak
-            @if (!isset($rak))
-                <span class="badge badge-info ml-2">Bisa upload multiple</span>
-            @endif
+            <i class="fas fa-images mr-2 text-primary"></i>Foto Rak
         </h5>
     </div>
     <div class="card-body">
-        @if (isset($rak) && $rak->fotos && $rak->fotos->count() > 0)
-            <!-- Existing Photos (Only on Edit) -->
+        @if (isset($rak) && $rak->fotos->count() > 0)
+            {{-- Preview existing photos for edit mode --}}
             <div class="mb-3">
-                <label class="form-label font-weight-bold">Foto Saat Ini:</label>
-                <div class="row" id="existing-photos">
-                    @foreach ($rak->fotos as $foto)
-                        <div class="col-6 mb-3" data-foto-id="{{ $foto->id }}">
-                            <div class="card">
-                                <img src="{{ asset('storage/' . $foto->path) }}" class="card-img-top" alt="Foto Rak"
-                                    style="height: 150px; object-fit: cover;">
-                                <div class="card-body p-2">
-                                    <div class="form-check mb-2">
-                                        <input class="form-check-input" type="radio" name="foto_primary"
-                                            value="{{ $foto->id }}" id="primary_{{ $foto->id }}"
-                                            {{ $foto->is_primary ? 'checked' : '' }}>
-                                        <label class="form-check-label small" for="primary_{{ $foto->id }}">
-                                            <i class="fas fa-star text-warning"></i> Foto Utama
+                <label class="font-weight-bold mb-2">Foto Saat Ini</label>
+                <div class="alert alert-info alert-sm mb-3">
+                    <i class="fas fa-info-circle mr-2"></i>
+                    <small>
+                        Total foto: <strong>{{ $rak->fotos->count() }}/4</strong>
+                        @if ($rak->fotos->count() < 4)
+                            | Anda dapat menambah <strong>{{ 4 - $rak->fotos->count() }}</strong> foto lagi
+                        @else
+                            | <strong>Maksimal tercapai</strong>
+                        @endif
+                    </small>
+                </div>
+
+                <div class="row">
+                    @foreach ($rak->fotos->sortBy('urutan') as $foto)
+                        <div class="col-6 mb-3">
+                            <div class="position-relative border rounded p-2 bg-light">
+                                <img src="{{ asset('storage/' . $foto->path) }}" class="img-fluid rounded"
+                                    alt="Foto Rak" style="height: 120px; width: 100%; object-fit: cover;">
+
+                                {{-- Primary badge --}}
+                                @if ($foto->is_primary)
+                                    <span class="badge badge-success position-absolute" style="top: 10px; left: 10px;">
+                                        <i class="fas fa-star mr-1"></i>Primary
+                                    </span>
+                                @endif
+
+                                {{-- Action buttons --}}
+                                <div class="mt-2">
+                                    <div class="custom-control custom-checkbox d-inline-block">
+                                        <input type="checkbox" class="custom-control-input" name="delete_fotos[]"
+                                            value="{{ $foto->id }}" id="delete_foto_{{ $foto->id }}">
+                                        <label class="custom-control-label small" for="delete_foto_{{ $foto->id }}">
+                                            Hapus
                                         </label>
                                     </div>
-                                    <div class="form-check">
-                                        <input class="form-check-input" type="checkbox" name="delete_fotos[]"
-                                            value="{{ $foto->id }}" id="delete_{{ $foto->id }}">
-                                        <label class="form-check-label small text-danger"
-                                            for="delete_{{ $foto->id }}">
-                                            <i class="fas fa-trash"></i> Hapus foto ini
-                                        </label>
-                                    </div>
+
+                                    @if (!$foto->is_primary)
+                                        <div class="custom-control custom-radio d-inline-block ml-2">
+                                            <input type="radio" class="custom-control-input" name="foto_primary"
+                                                value="{{ $foto->id }}" id="primary_{{ $foto->id }}">
+                                            <label class="custom-control-label small" for="primary_{{ $foto->id }}">
+                                                Set Primary
+                                            </label>
+                                        </div>
+                                    @endif
                                 </div>
                             </div>
                         </div>
                     @endforeach
                 </div>
             </div>
-            <hr>
+
+            <hr class="my-3">
         @endif
 
-        <!-- Upload New Photos -->
-        <div class="form-group">
+        {{-- Upload new photos --}}
+        <div class="mb-3">
             <label for="fotos" class="font-weight-bold">
-                @if (isset($rak))
-                    <i class="fas fa-plus-circle"></i> Tambah Foto Baru
-                @else
-                    <i class="fas fa-camera"></i> Upload Foto Rak
-                @endif
-                <span class="text-muted small">(Bisa pilih lebih dari 1 foto)</span>
+                {{ isset($rak) ? 'Tambah Foto Baru' : 'Upload Foto' }}
+                <span class="text-danger">*</span>
             </label>
+
+            {{-- Info counter --}}
+            <div class="mb-2 p-2 border rounded bg-light">
+                <small class="text-muted">
+                    Foto yang dipilih: <strong id="foto-count">{{ isset($rak) ? $rak->fotos->count() : 0 }}</strong> |
+                    Foto saat ini: <strong>{{ isset($rak) ? $rak->fotos->count() : 0 }}/4</strong> |
+                    Batas maksimal: <strong>4 foto</strong>
+                </small>
+            </div>
+
+            {{-- Info alert --}}
+            <div class="alert alert-info alert-sm mb-2">
+                <i class="fas fa-info-circle mr-2"></i>
+                <small>
+                    Format: JPG, JPEG, PNG | Ukuran maksimal: 2MB per foto
+                </small>
+            </div>
 
             <div class="custom-file">
                 <input type="file" class="custom-file-input @error('fotos.*') is-invalid @enderror" id="fotos"
-                    name="fotos[]" accept="image/jpeg,image/png,image/jpg" multiple
+                    name="fotos[]" multiple accept="image/jpeg,image/png,image/jpg"
                     onchange="previewMultipleImages(event)">
-                <label class="custom-file-label" for="fotos" id="file-label">
-                    Pilih foto...
+                <label class="custom-file-label" for="fotos" data-browse="Pilih">
+                    Pilih foto (maksimal 4)
                 </label>
             </div>
 
-            <small class="form-text text-muted mt-2">
-                <i class="fas fa-info-circle"></i>
-                <strong>Tips:</strong> Tekan <kbd>Ctrl</kbd> (Windows) atau <kbd>Cmd</kbd> (Mac) untuk memilih beberapa
-                foto sekaligus.
-                <br>
-                <i class="fas fa-check-circle text-success"></i> Format: JPG, JPEG, PNG | Maksimal: 2MB per foto
-            </small>
-
+            @error('fotos')
+                <div class="invalid-feedback d-block">{{ $message }}</div>
+            @enderror
             @error('fotos.*')
                 <div class="invalid-feedback d-block">{{ $message }}</div>
             @enderror
+
+            <small class="form-text text-muted">
+                <i class="fas fa-info-circle mr-1"></i>
+                Foto pertama akan menjadi foto utama jika belum ada foto primary.
+            </small>
         </div>
 
-        <!-- Preview New Photos -->
-        <div id="preview-container" class="mt-3" style="display: none;">
-            <div class="alert alert-info">
-                <i class="fas fa-images"></i>
-                <strong id="preview-count">0</strong> foto dipilih:
-            </div>
-            <div class="row" id="preview-images"></div>
-        </div>
+        {{-- Preview container for new photos --}}
+        <div id="preview-container" class="row mt-3" style="display: none;"></div>
     </div>
 </div>
 
 @push('scripts')
     <script>
         function previewMultipleImages(event) {
-            const previewContainer = document.getElementById('preview-container');
-            const previewImages = document.getElementById('preview-images');
-            const previewCount = document.getElementById('preview-count');
-            const fileLabel = document.getElementById('file-label');
             const files = event.target.files;
+            const previewContainer = document.getElementById('preview-container');
+            const fileLabel = event.target.nextElementSibling;
+            const fotoCounter = document.getElementById('foto-count');
 
             // Clear previous previews
-            previewImages.innerHTML = '';
+            previewContainer.innerHTML = '';
 
             if (files.length > 0) {
-                previewContainer.style.display = 'block';
-                previewCount.textContent = files.length;
+                // Check maximum photos
+                const existingPhotos = {{ isset($rak) ? $rak->fotos->count() : 0 }};
+                const maxAllowed = 4 - existingPhotos;
+                const totalPhotos = existingPhotos + files.length;
 
-                // Update file label
+                // Update counter
+                if (fotoCounter) {
+                    fotoCounter.textContent = totalPhotos;
+                }
+
+                if (files.length > maxAllowed) {
+                    alert('Maksimal 4 foto!\n\nFoto saat ini: ' + existingPhotos + '\nFoto yang dipilih: ' + files.length +
+                        '\nBatas maksimal: 4 foto');
+                    event.target.value = '';
+                    fileLabel.textContent = 'Pilih foto (maksimal 4)';
+                    previewContainer.style.display = 'none';
+                    if (fotoCounter) {
+                        fotoCounter.textContent = existingPhotos;
+                    }
+                    return;
+                }
+
+                // Update label
                 if (files.length === 1) {
                     fileLabel.textContent = files[0].name;
                 } else {
                     fileLabel.textContent = files.length + ' foto dipilih';
                 }
 
+                // Check file size and type
+                let validFiles = true;
+                let errorMessage = '';
+
                 Array.from(files).forEach((file, index) => {
-                    if (file.type.match('image.*')) {
-                        // Check file size (2MB = 2097152 bytes)
-                        if (file.size > 2097152) {
-                            const col = document.createElement('div');
-                            col.className = 'col-6 col-md-4 col-lg-3 mb-3';
-                            col.innerHTML = `
-                        <div class="card border-danger">
-                            <div class="card-body p-2 text-center">
-                                <i class="fas fa-exclamation-triangle fa-2x text-danger mb-2"></i>
-                                <p class="small mb-0 text-danger">
-                                    <strong>${file.name}</strong><br>
-                                    Ukuran terlalu besar (${(file.size / 1024 / 1024).toFixed(2)}MB)
-                                </p>
-                            </div>
-                        </div>
-                    `;
-                            previewImages.appendChild(col);
-                            return;
-                        }
-
-                        const reader = new FileReader();
-
-                        reader.onload = function(e) {
-                            const col = document.createElement('div');
-                            col.className = 'col-6 col-md-4 col-lg-3 mb-3';
-
-                            const fileSize = (file.size / 1024).toFixed(1); // KB
-
-                            col.innerHTML = `
-                        <div class="card h-100">
-                            <img src="${e.target.result}" 
-                                 class="card-img-top" 
-                                 style="height: 150px; object-fit: cover;">
-                            <div class="card-body p-2">
-                                <small class="text-muted d-block text-truncate" title="${file.name}">
-                                    <i class="fas fa-image"></i> ${file.name}
-                                </small>
-                                <small class="text-muted">
-                                    <i class="fas fa-weight"></i> ${fileSize} KB
-                                </small>
-                                ${index === 0 ? '<div class="badge badge-primary badge-sm mt-1 w-100"><i class="fas fa-star"></i> Foto Utama</div>' : ''}
-                            </div>
-                        </div>
-                    `;
-
-                            previewImages.appendChild(col);
-                        };
-
-                        reader.readAsDataURL(file);
+                    // Check file size (2MB = 2048KB)
+                    if (file.size > 2048 * 1024) {
+                        const fileSizeMB = (file.size / (1024 * 1024)).toFixed(2);
+                        errorMessage += '\n• ' + file.name + ' terlalu besar (' + fileSizeMB + ' MB)';
+                        validFiles = false;
+                        return;
                     }
+
+                    // Check file type
+                    const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png'];
+                    if (!allowedTypes.includes(file.type)) {
+                        const fileExt = file.name.split('.').pop().toUpperCase();
+                        errorMessage += '\n• ' + file.name + ' format tidak didukung (.' + fileExt + ')';
+                        validFiles = false;
+                        return;
+                    }
+
+                    // Create preview
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        const col = document.createElement('div');
+                        col.className = 'col-6 mb-3';
+                        col.innerHTML = `
+                    <div class="border rounded p-2 bg-light">
+                        <img src="${e.target.result}" 
+                             class="img-fluid rounded" 
+                             alt="Preview"
+                             style="height: 120px; width: 100%; object-fit: cover;">
+                        <small class="d-block mt-2 text-truncate">${file.name}</small>
+                        <small class="text-muted">${(file.size / 1024).toFixed(2)} KB</small>
+                    </div>
+                `;
+                        previewContainer.appendChild(col);
+                    };
+                    reader.readAsDataURL(file);
                 });
+
+                if (!validFiles) {
+                    alert('File tidak valid!' + errorMessage + '\n\nFormat: JPG, JPEG, PNG | Maksimal: 2MB per file');
+                    event.target.value = '';
+                    fileLabel.textContent = 'Pilih foto (maksimal 4)';
+                    previewContainer.style.display = 'none';
+                    if (fotoCounter) {
+                        fotoCounter.textContent = existingPhotos;
+                    }
+                    return;
+                }
+
+                previewContainer.style.display = 'flex';
             } else {
+                fileLabel.textContent = 'Pilih foto (maksimal 4)';
                 previewContainer.style.display = 'none';
-                fileLabel.textContent = 'Pilih foto...';
+                const existingPhotos = {{ isset($rak) ? $rak->fotos->count() : 0 }};
+                if (fotoCounter) {
+                    fotoCounter.textContent = existingPhotos;
+                }
             }
         }
 
-        // Handle delete checkbox warning (only on edit)
+        // Update file input label on page load if needed
         document.addEventListener('DOMContentLoaded', function() {
-            const deleteCheckboxes = document.querySelectorAll('input[name="delete_fotos[]"]');
-
-            deleteCheckboxes.forEach(checkbox => {
-                checkbox.addEventListener('change', function() {
-                    const card = this.closest('.card');
-                    if (this.checked) {
-                        card.style.opacity = '0.5';
-                        card.style.border = '2px solid #dc3545';
-                    } else {
-                        card.style.opacity = '1';
-                        card.style.border = '';
-                    }
-                });
-            });
+            const fileInput = document.getElementById('fotos');
+            if (fileInput && fileInput.files.length > 0) {
+                const fileLabel = fileInput.nextElementSibling;
+                if (fileInput.files.length === 1) {
+                    fileLabel.textContent = fileInput.files[0].name;
+                } else {
+                    fileLabel.textContent = fileInput.files.length + ' foto dipilih';
+                }
+            }
         });
     </script>
 @endpush
 
 @push('styles')
     <style>
-        #existing-photos .card {
-            transition: all 0.3s ease;
-        }
-
-        #existing-photos .card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-        }
-
-        .form-check-input:checked+.form-check-label {
-            font-weight: bold;
-        }
-
-        #preview-images .card {
-            transition: all 0.3s ease;
-        }
-
-        #preview-images .card:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        .alert-sm {
+            padding: 0.5rem 0.75rem;
+            font-size: 0.875rem;
         }
 
         .custom-file-label::after {
-            content: "Browse";
+            content: "Pilih";
         }
 
-        kbd {
-            padding: 2px 6px;
-            font-size: 11px;
-            background-color: #f8f9fa;
-            border: 1px solid #dee2e6;
-            border-radius: 3px;
+        .position-absolute {
+            position: absolute !important;
         }
 
-        .badge-sm {
-            font-size: 0.7rem;
+        /* Preview image hover effect */
+        #preview-container img:hover {
+            opacity: 0.8;
+            transition: opacity 0.3s ease;
+        }
+
+        /* Custom checkbox and radio styling */
+        .custom-control-label.small {
+            font-size: 0.875rem;
+            padding-top: 0.125rem;
         }
     </style>
 @endpush

@@ -85,7 +85,7 @@ class Transaction extends Model
         if ($this->is_pengosongan) {
             $pengosonganEnd = Carbon::parse($this->pengosongan_berakhir);
             $daysLeft = $now->diffInDays($pengosonganEnd, false);
-            
+
             if ($daysLeft >= 0) {
                 return "Pengosongan ({$daysLeft} hari tersisa)";
             } else {
@@ -129,61 +129,60 @@ class Transaction extends Model
     }
 
 
-public function parent()
-{
-    return $this->belongsTo(Transaction::class, 'parent_transaction_id');
-}
-
-public function renewals()
-{
-    return $this->hasMany(Transaction::class, 'parent_transaction_id')
-        ->where('is_renewal', true);
-}
-
-// Tambahkan method ini untuk menangani pembayaran berhasil renewal
-public function handleRenewalSuccess()
-{
-    \DB::beginTransaction();
-    
-    try {
-        $originalTransaction = $this->parent;
-        $rak = $this->rak;
-        
-        if ($originalTransaction && $rak) {
-            // Calculate new sewa_berakhir date
-            $durasi = $rak->durasi_sewa_hari ?? 30;
-            
-            // Start from the original sewa_berakhir or today
-            $startDate = $originalTransaction->sewa_berakhir > now() 
-                ? $originalTransaction->sewa_berakhir 
-                : now();
-            
-            $this->sewa_mulai = $startDate;
-            $this->sewa_berakhir = $startDate->copy()->addDays($durasi);
-            $this->save();
-            
-            // Update original transaction
-            if ($originalTransaction->sewa_berakhir < now()) {
-                $originalTransaction->sewa_berakhir = $this->sewa_berakhir;
-                $originalTransaction->save();
-            }
-            
-            // Update rak status
-            if ($rak->status !== 'terisi') {
-                $rak->update(['status' => 'terisi']);
-            }
-            
-            \DB::commit();
-            return true;
-        }
-        
-        \DB::rollBack();
-        return false;
-        
-    } catch (\Exception $e) {
-        \DB::rollBack();
-        \Log::error('Handle Renewal Error: ' . $e->getMessage());
-        return false;
+    public function parent()
+    {
+        return $this->belongsTo(Transaction::class, 'parent_transaction_id');
     }
-}
+
+    public function renewals()
+    {
+        return $this->hasMany(Transaction::class, 'parent_transaction_id')
+            ->where('is_renewal', true);
+    }
+
+    // Tambahkan method ini untuk menangani pembayaran berhasil renewal
+    public function handleRenewalSuccess()
+    {
+        \DB::beginTransaction();
+
+        try {
+            $originalTransaction = $this->parent;
+            $rak = $this->rak;
+
+            if ($originalTransaction && $rak) {
+                // Calculate new sewa_berakhir date
+                $durasi = $rak->durasi_sewa_hari ?? 30;
+
+                // Start from the original sewa_berakhir or today
+                $startDate = $originalTransaction->sewa_berakhir > now()
+                    ? $originalTransaction->sewa_berakhir
+                    : now();
+
+                $this->sewa_mulai = $startDate;
+                $this->sewa_berakhir = $startDate->copy()->addDays($durasi);
+                $this->save();
+
+                // Update original transaction
+                if ($originalTransaction->sewa_berakhir < now()) {
+                    $originalTransaction->sewa_berakhir = $this->sewa_berakhir;
+                    $originalTransaction->save();
+                }
+
+                // Update rak status
+                if ($rak->status !== 'terisi') {
+                    $rak->update(['status' => 'terisi']);
+                }
+
+                \DB::commit();
+                return true;
+            }
+
+            \DB::rollBack();
+            return false;
+        } catch (\Exception $e) {
+            \DB::rollBack();
+            \Log::error('Handle Renewal Error: ' . $e->getMessage());
+            return false;
+        }
+    }
 }
