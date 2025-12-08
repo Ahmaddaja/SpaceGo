@@ -54,6 +54,7 @@
             border: 1px solid #e5e7eb;
         }
 
+        
         .filter-card {
             background: white;
             border: 1px solid #e5e7eb;

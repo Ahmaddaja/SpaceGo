@@ -16,6 +16,11 @@
         box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
     }
     
+    .status-pengosongan {
+        background: linear-gradient(135deg, #9333ea, #db2777);
+        color: white;
+    }
+
     .type-badge {
         background: rgba(255, 255, 255, 0.95);
         color: #374151;
@@ -122,7 +127,6 @@
         box-shadow: 0 4px 12px rgba(107, 114, 128, 0.3);
     }
     
-    /* Animation for empty state */
     @keyframes float {
         0%, 100% { transform: translateY(0px); }
         50% { transform: translateY(-10px); }
@@ -132,7 +136,6 @@
         animation: float 3s ease-in-out infinite;
     }
     
-    /* Gradient text for title */
     .gradient-text {
         background: linear-gradient(135deg, #1e40af, #7c3aed);
         -webkit-background-clip: text;
@@ -140,7 +143,6 @@
         background-clip: text;
     }
 
-    /* CAROUSEL STYLES */
     .photo-carousel-container {
         position: relative;
     }
@@ -197,7 +199,6 @@
         right: 12px;
     }
 
-    /* INDICATORS */
     .carousel-indicators {
         position: absolute;
         bottom: 12px;
@@ -224,7 +225,6 @@
         border-radius: 4px;
     }
 
-    /* PHOTO COUNTER BADGE */
     .photo-counter-badge {
         position: absolute;
         top: 12px;
@@ -256,7 +256,6 @@
 <div class="py-12">
     <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
 
-        <!-- TITLE SECTION -->
         <div class="text-center mb-12">
             <div class="inline-flex items-center justify-center w-20 h-20 bg-gradient-to-br from-blue-500 to-purple-600 rounded-2xl shadow-lg mb-6">
                 <i class="fas fa-boxes text-white text-2xl"></i>
@@ -268,21 +267,15 @@
                 Kelola dan pantau semua rak penyimpanan yang telah Anda sewa dalam satu tempat
             </p>
             
-            <!-- Stats Summary -->
             <div class="flex justify-center items-center space-x-6 mt-6">
                 <div class="flex items-center space-x-2 text-sm text-gray-500">
                     <div class="w-2 h-2 bg-green-500 rounded-full"></div>
-                     <span>Total: <strong class="text-gray-700">{{ $raks->where('status', 'terisi')->count() }} rak</strong></span>
+                    <span>Total: <strong class="text-gray-700">{{ $raks->total() }} rak</strong></span>
                 </div>
-                {{-- <div class="flex items-center space-x-2 text-sm text-gray-500">
-                    <div class="w-2 h-2 bg-blue-500 rounded-full"></div>
-                    <span>Aktif: <strong class="text-gray-700">{{ $raks->where('status', 'terisi')->count() }} rak</strong></span>
-                </div> --}}
             </div>
         </div>
 
         @if($raks->count() == 0)
-            <!-- EMPTY STATE -->
             <div class="empty-state rounded-2xl p-8 md:p-12 text-center max-w-2xl mx-auto">
                 <div class="flex justify-center mb-6">
                     <div class="bg-yellow-100 p-6 rounded-full floating-icon">
@@ -301,13 +294,11 @@
             </div>
         @else
 
-        <!-- RAK LIST -->
         <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 lg:gap-8">
 
             @foreach($raks as $rak)
             <div class="rak-card bg-white rounded-2xl shadow-lg overflow-hidden">
                 
-                <!-- Image Section with Carousel -->
                 <div class="relative">
                     @php
                         $hasMultiplePhotos = $rak->fotos && $rak->fotos->count() > 0;
@@ -331,7 +322,6 @@
                             @endforeach
 
                             @if (count($photos) > 1)
-                                <!-- Navigation Arrows -->
                                 <button class="carousel-btn carousel-prev" onclick="changeSlide(this, -1, '{{ $rak->id }}')">
                                     <i class="fas fa-chevron-left"></i>
                                 </button>
@@ -339,7 +329,6 @@
                                     <i class="fas fa-chevron-right"></i>
                                 </button>
 
-                                <!-- Indicators -->
                                 <div class="carousel-indicators">
                                     @foreach ($photos as $idx => $photo)
                                         <button class="indicator {{ $idx === 0 ? 'active' : '' }}"
@@ -347,7 +336,6 @@
                                     @endforeach
                                 </div>
 
-                                <!-- Photo Counter Badge -->
                                 <div class="photo-counter-badge">
                                     <i class="fas fa-images"></i>
                                     <span class="current-photo">1</span>/<span class="total-photos">{{ count($photos) }}</span>
@@ -359,15 +347,12 @@
                             </div>
                         @endif
 
-                        <!-- Overlay Gradient -->
                         <div class="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent"></div>
                     </div>
                 </div>
 
-                <!-- Content Section -->
                 <div class="p-6 space-y-5">
                     
-                    <!-- Header -->
                     <div class="space-y-3">
                         <h3 class="text-xl font-bold text-gray-900 leading-tight">{{ $rak->nama_rak }}</h3>
                         <div class="code-gradient px-4 py-3 rounded-xl">
@@ -378,7 +363,6 @@
                         </div>
                     </div>
 
-                    <!-- Info Grid -->
                     <div class="space-y-3">
                         <div class="info-item flex items-center justify-between">
                             <span class="text-gray-600 text-sm flex items-center">
@@ -416,7 +400,6 @@
                             <span class="text-gray-900 font-semibold text-sm">{{ number_format($rak->kapasitas_berat, 0, ',', '.') }} kg</span>
                         </div>
 
-                        <!-- Status Info -->
                         <div class="info-item flex items-center justify-between">
                             <span class="text-gray-600 text-sm flex items-center">
                                 <i class="fas fa-info-circle text-purple-500 mr-3 w-5 text-center"></i>
@@ -432,16 +415,20 @@
                                     <i class="fas fa-box mr-1"></i>
                                     Terisi
                                 </span>
-                            @else
+                            @elseif($rak->status === 'maintenance')
                                 <span class="inline-flex items-center px-2 py-1 bg-yellow-100 text-yellow-700 rounded-lg text-xs font-semibold">
                                     <i class="fas fa-tools mr-1"></i>
                                     Maintenance
+                                </span>
+                            @elseif($rak->status === 'pengosongan')
+                                <span class="inline-flex items-center px-2 py-1 bg-purple-100 text-purple-700 rounded-lg text-xs font-semibold">
+                                    <i class="fas fa-box-open mr-1"></i>
+                                    Pengosongan
                                 </span>
                             @endif
                         </div>
                     </div>
 
-                    <!-- Duration Section -->
                     <div class="duration-gradient p-4 rounded-xl">
                         <p class="text-amber-700 text-sm font-medium mb-1 flex items-center">
                             <i class="fas fa-calendar-alt mr-2"></i>
@@ -455,7 +442,6 @@
                         </p>
                     </div>
 
-                    <!-- Price Section -->
                     <div class="price-gradient p-4 rounded-xl">
                         <p class="text-green-700 text-sm font-medium mb-1 flex items-center">
                             <i class="fas fa-money-bill-wave mr-2"></i>
@@ -467,7 +453,6 @@
                         </p>
                     </div>
 
-                    <!-- Action Buttons -->
                     <div class="flex space-x-3">
                         <a href="{{ route('customer.list-rak.detail', $rak->id) }}" 
                            class="flex-1 action-btn btn-detail text-center py-3 px-4 rounded-lg font-semibold text-sm">
@@ -480,7 +465,6 @@
 
         </div>
 
-        <!-- PAGINATION -->
         @if($raks->hasPages())
         <div class="pagination-container mt-12 p-6">
             <div class="flex items-center justify-between">
@@ -494,7 +478,6 @@
                     rak
                 </div>
                 <div class="flex space-x-2">
-                    <!-- Previous Page -->
                     @if ($raks->onFirstPage())
                         <span class="px-3 py-2 bg-gray-100 text-gray-400 rounded-lg cursor-not-allowed">
                             <i class="fas fa-chevron-left"></i>
@@ -505,7 +488,6 @@
                         </a>
                     @endif
 
-                    <!-- Page Numbers -->
                     @php
                         $current = $raks->currentPage();
                         $last = $raks->lastPage();
@@ -535,7 +517,6 @@
                         <a href="{{ $raks->url($last) }}" class="px-3 py-2 bg-white text-gray-700 rounded-lg border border-gray-300 hover:bg-gray-50 transition duration-200">{{ $last }}</a>
                     @endif
 
-                    <!-- Next Page -->
                     @if ($raks->hasMorePages())
                         <a href="{{ $raks->nextPageUrl() }}" class="px-3 py-2 bg-white text-gray-700 rounded-lg border border-gray-300 hover:bg-gray-50 transition duration-200">
                             <i class="fas fa-chevron-right"></i>
@@ -575,15 +556,12 @@
         if (newIndex >= slides.length) newIndex = 0;
         if (newIndex < 0) newIndex = slides.length - 1;
 
-        // Update slides
         slides[currentIndex].classList.remove('active');
         slides[newIndex].classList.add('active');
 
-        // Update indicators
         indicators[currentIndex].classList.remove('active');
         indicators[newIndex].classList.add('active');
 
-        // Update counter
         if (counterCurrent) {
             counterCurrent.textContent = newIndex + 1;
         }
@@ -595,22 +573,18 @@
         const indicators = container.querySelectorAll('.indicator');
         const counterCurrent = container.querySelector('.current-photo');
 
-        // Remove active from all
         slides.forEach(slide => slide.classList.remove('active'));
         indicators.forEach(ind => ind.classList.remove('active'));
 
-        // Add active to target
         slides[index].classList.add('active');
         indicators[index].classList.add('active');
 
-        // Update counter
         if (counterCurrent) {
             counterCurrent.textContent = index + 1;
         }
     }
 
     document.addEventListener('DOMContentLoaded', function() {
-        // Add loading animation to cards
         const cards = document.querySelectorAll('.rak-card');
         cards.forEach((card, index) => {
             card.style.opacity = '0';
@@ -623,7 +597,6 @@
             }, index * 100);
         });
 
-        // Auto-play carousel
         const carousels = document.querySelectorAll('.photo-carousel-container');
         carousels.forEach(carousel => {
             const slides = carousel.querySelectorAll('.carousel-slide');

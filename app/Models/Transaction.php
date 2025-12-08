@@ -2,164 +2,132 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Carbon\Carbon;
 
 class Transaction extends Model
 {
-    use HasFactory;
-
     protected $fillable = [
         'order_id',
         'user_id',
         'rak_id',
         'amount',
-        'payment_type',
         'transaction_status',
-        'fraud_status',
-        'transaction_time',
         'snap_token',
-        'midtrans_response'
+        'payment_type',
+        'transaction_time',
+        'fraud_status',
+        'midtrans_response',
+        'sewa_mulai',
+        'sewa_berakhir',
+        'is_renewal',
+        'penalty_amount',
+        'is_pengosongan',
+        'pengosongan_dimulai',
+        'pengosongan_berakhir',
     ];
 
     protected $casts = [
-        'amount' => 'decimal:2',
         'transaction_time' => 'datetime',
-        'midtrans_response' => 'array'
+        'sewa_mulai' => 'datetime',
+        'sewa_berakhir' => 'datetime',
+        'pengosongan_dimulai' => 'datetime',
+        'pengosongan_berakhir' => 'datetime',
+        'is_renewal' => 'boolean',
+        'is_pengosongan' => 'boolean',
+        'amount' => 'decimal:2',
+        'penalty_amount' => 'decimal:2',
     ];
 
-    /**
-     * Relasi ke User
-     */
-    public function user()
+    // Relationships
+    public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
     }
 
-    /**
-     * Relasi ke Rak
-     */
-    public function rak()
+    public function rak(): BelongsTo
     {
         return $this->belongsTo(Rak::class);
     }
-    /**
-     * Relasi ke Tagihan
-     */
-    public function tagihan(): HasOne
-    {
-        return $this->hasOne(Tagihan::class, 'transaction_id');
-    }
-    /**
-     * Helper untuk format harga
-     */
-    public function getFormattedAmountAttribute()
-    {
-        return 'Rp ' . number_format($this->amount, 0, ',', '.');
-    }
 
-    /**
-     * Scope untuk transaksi sukses
-     */
+    // Scopes
     public function scopeSuccess($query)
     {
         return $query->whereIn('transaction_status', ['capture', 'settlement']);
     }
 
-    /**
-     * Scope untuk transaksi pending
-     */
     public function scopePending($query)
     {
         return $query->where('transaction_status', 'pending');
     }
 
-    /**
-     * Scope untuk transaksi gagal
-     */
     public function scopeFailed($query)
     {
         return $query->whereIn('transaction_status', ['deny', 'expire', 'cancel']);
     }
 
-    /**
-     * Check if transaction is successful
-     */
-    public function isSuccess()
+    // Attributes
+    public function getStatusSewaAttribute()
     {
-        return in_array($this->transaction_status, ['capture', 'settlement']);
+        if (!$this->sewa_berakhir || !in_array($this->transaction_status, ['capture', 'settlement'])) {
+            return 'Tidak Aktif';
+        }
+
+        $now = Carbon::now()->startOfDay();
+        $end = Carbon::parse($this->sewa_berakhir)->startOfDay();
+        $daysDiff = $now->diffInDays($end, false);
+
+        $gracePeriodDays = 3;
+        $maxLateDays = 30;
+
+        // Jika dalam masa pengosongan
+        if ($this->is_pengosongan) {
+            $pengosonganEnd = Carbon::parse($this->pengosongan_berakhir);
+            $daysLeft = $now->diffInDays($pengosonganEnd, false);
+            
+            if ($daysLeft >= 0) {
+                return "Pengosongan ({$daysLeft} hari tersisa)";
+            } else {
+                return "Selesai Pengosongan";
+            }
+        }
+
+        // Logika status sewa normal
+        if ($daysDiff > 0) {
+            return "Aktif ({$daysDiff} hari tersisa)";
+        } elseif ($daysDiff === 0) {
+            return "Berakhir Hari Ini";
+        } elseif (abs($daysDiff) <= $gracePeriodDays) {
+            return "Masa Tenggang (Hari ke-" . abs($daysDiff) . ")";
+        } else {
+            $totalLateDays = abs($daysDiff) - $gracePeriodDays;
+            if ($totalLateDays >= $maxLateDays) {
+                return "Memasuki Pengosongan";
+            }
+            return "Terlambat ({$totalLateDays} hari)";
+        }
     }
 
-    /**
-     * Check if transaction is pending
-     */
-    public function isPending()
+    public function getSisaHariAttribute()
     {
-        return $this->transaction_status === 'pending';
+        if (!$this->sewa_berakhir || !in_array($this->transaction_status, ['capture', 'settlement'])) {
+            return 0;
+        }
+
+        // Jika dalam masa pengosongan
+        if ($this->is_pengosongan && $this->pengosongan_berakhir) {
+            $now = Carbon::now()->startOfDay();
+            $pengosonganEnd = Carbon::parse($this->pengosongan_berakhir)->startOfDay();
+            return max(0, $now->diffInDays($pengosonganEnd, false));
+        }
+
+        // Sisa hari normal
+        $now = Carbon::now()->startOfDay();
+        $end = Carbon::parse($this->sewa_berakhir)->startOfDay();
+        return max(0, $now->diffInDays($end, false));
     }
 
-    // app/Models/Transaction.php
-public function getStatusBadgeColor()
-{
-    switch ($this->transaction_status) {
-        case 'settlement':
-        case 'success':
-            return 'success';
-        case 'pending':
-            return 'warning';
-        case 'deny':
-        case 'expire':
-        case 'cancel':
-            return 'danger';
-        case 'capture':
-            return 'info';
-        default:
-            return 'secondary';
-    }
-}
-
-// Method untuk mendapatkan icon berdasarkan status
-public function getStatusIcon()
-{
-    switch ($this->transaction_status) {
-        case 'settlement':
-        case 'success':
-            return 'fas fa-check-circle';
-        case 'pending':
-            return 'fas fa-clock';
-        case 'deny':
-        case 'expire':
-        case 'cancel':
-            return 'fas fa-times-circle';
-        case 'capture':
-            return 'fas fa-camera';
-        default:
-            return 'fas fa-question-circle';
-    }
-}
-
-public function getSisaHariAttribute()
-{
-    if (!$this->sewa_berakhir) {
-        return null;
-    }
-
-    return now()->diffInDays($this->sewa_berakhir, false);
-}
-
-public function getStatusSewaAttribute()
-{
-    $now = now()->startOfDay();
-    $end = \Carbon\Carbon::parse($this->sewa_berakhir)->startOfDay();
-
-    if ($now->gt($end)) {
-        return 'masa_tenggang';
-    } elseif ($now->eq($end)) {
-        return 'berakhir_hari_ini';
-    } else {
-        return 'aktif';
-    }
-}
 
 public function parent()
 {
