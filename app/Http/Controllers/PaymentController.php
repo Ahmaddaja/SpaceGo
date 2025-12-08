@@ -8,7 +8,7 @@ use Midtrans\Config;
 use Midtrans\Notification;
 use App\Models\Rak;
 use App\Models\Transaction;
-use App\Models\Tagihan; // TAMBAHAN: Import model Tagihan
+use App\Models\Tagihan;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Auth;
@@ -32,7 +32,6 @@ class PaymentController extends Controller
             $rak = Rak::findOrFail($id);
             $userId = Auth::id();
 
-            // CEK DARI TAGIHAN (bukan transaction lagi)
             $existingPendingTagihan = Tagihan::where('user_id', $userId)
                 ->where('rak_id', $rak->id)
                 ->where('status', 'pending')
@@ -111,7 +110,6 @@ class PaymentController extends Controller
             $userId = Auth::id();
             $rakId = $checkoutData['rak_id'];
 
-            // CEK DARI TAGIHAN (bukan transaction)
             $existingPendingTagihan = Tagihan::where('user_id', $userId)
                 ->where('rak_id', $rakId)
                 ->where('status', 'pending')
@@ -127,7 +125,6 @@ class PaymentController extends Controller
                 ], 400);
             }
 
-            // CREATE TRANSACTION (Observer akan auto-create Tagihan)
             $transaction = Transaction::create([
                 'order_id' => $checkoutData['order_id'],
                 'user_id' => $userId,
@@ -223,7 +220,6 @@ class PaymentController extends Controller
                 ], 404);
             }
 
-            // UPDATE TRANSACTION (Observer akan sync ke Tagihan)
             $transaction->update([
                 'transaction_status' => $transactionStatus,
                 'payment_type' => $paymentType,
@@ -279,7 +275,6 @@ class PaymentController extends Controller
             DB::beginTransaction();
 
             try {
-                // UPDATE TRANSACTION (Observer akan sync ke Tagihan)
                 $transaction->update([
                     'transaction_status' => $transactionStatus,
                     'fraud_status' => $fraudStatus,
@@ -387,7 +382,6 @@ class PaymentController extends Controller
             $paymentType = $request->payment_type ?? 'midtrans';
             $orderId = $pendingData['order_id'];
 
-            // CREATE TRANSACTION (Observer auto-create Tagihan)
             $transaction = Transaction::create([
                 'order_id' => $orderId,
                 'user_id' => Auth::id(),
@@ -432,16 +426,46 @@ class PaymentController extends Controller
                 ->whereIn('transaction_status', ['settlement', 'capture'])
                 ->firstOrFail();
 
-            $rak = Rak::findOrFail($transaction->rak_id);
+            // BLOKIR JIKA SEDANG PENGOSONGAN
+            if ($transaction->is_pengosongan) {
+                Log::warning('Renewal blocked: Transaction in pengosongan period', [
+                    'transaction_id' => $transaction->id,
+                    'user_id' => Auth::id()
+                ]);
 
-            // Gunakan DB time
+                return redirect()->back()
+                    ->with('error', 'Anda tidak bisa membayar atau memperpanjang masa sewa lagi karena rak sudah memasuki masa pengosongan.');
+            }
+
+            // CEK APAKAH AKAN MASUK PENGOSONGAN
             $currentDbTime = DB::selectOne('SELECT NOW() as db_time')->db_time;
             $now = \Carbon\Carbon::parse($currentDbTime)->startOfDay();
             $end = \Carbon\Carbon::parse($transaction->sewa_berakhir)->startOfDay();
             
             $daysDiff = $now->diffInDays($end, false);
-
             $gracePeriodDays = 3;
+            $maxLateDays = 30;
+
+            $totalLateDays = 0;
+            if ($daysDiff < 0) {
+                $totalLateDays = abs($daysDiff) - $gracePeriodDays;
+            }
+
+            $isEnteringPengosongan = $daysDiff < 0 && $totalLateDays >= $maxLateDays;
+
+            if ($isEnteringPengosongan) {
+                Log::warning('Renewal blocked: Transaction entering pengosongan', [
+                    'transaction_id' => $transaction->id,
+                    'user_id' => Auth::id(),
+                    'total_late_days' => $totalLateDays
+                ]);
+
+                return redirect()->back()
+                    ->with('error', 'Anda tidak bisa membayar atau memperpanjang masa sewa lagi karena rak akan memasuki masa pengosongan.');
+            }
+
+            $rak = Rak::findOrFail($transaction->rak_id);
+
             $dendaPerHari = 50000;
             $totalDenda = 0;
             
@@ -490,7 +514,6 @@ class PaymentController extends Controller
 
             $snapToken = Snap::getSnapToken($params);
 
-            // UPDATE TRANSACTION (Observer sync ke Tagihan)
             $transaction->update([
                 'order_id' => $orderId,
                 'snap_token' => $snapToken,
@@ -630,7 +653,6 @@ class PaymentController extends Controller
                 return response()->json(['message' => 'Transaction not found'], 404);
             }
 
-            // UPDATE TRANSACTION (Observer sync ke Tagihan)
             $transaction->update([
                 'transaction_status' => $transactionStatus,
                 'midtrans_response' => method_exists($notification, 'getResponse') ? $notification->getResponse() : json_encode($notification)
@@ -680,7 +702,6 @@ class PaymentController extends Controller
                 return response()->json(['success' => false, 'message' => 'Transaksi tidak ditemukan'], 404);
             }
 
-            // UPDATE TRANSACTION (Observer sync ke Tagihan)
             $transaction->update(['transaction_status' => $transactionStatus]);
 
             if (in_array($transactionStatus, ['capture', 'settlement'])) {
