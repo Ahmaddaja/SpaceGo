@@ -1,20 +1,28 @@
 <div class="relative">
     <!-- Status Ribbon - DIPINDAHKAN KE KIRI ATAS -->
     <div class="status-ribbon ribbon-{{ $rak->status }}">
-        <i
-            class="fas 
-            @if ($rak->status == 'tersedia') fa-check
-            @elseif($rak->status == 'terisi') fa-box
-            @else fa-tools @endif
-        "></i>
         <span>
-            @if ($rak->status == 'tersedia')
-                Tersedia
-            @elseif($rak->status == 'terisi')
-                Terisi
-            @else
-                Maintenance
-            @endif
+          @if ($rak->status === 'tersedia')
+        <span class="status-badge status-available flex items-center space-x-1">
+            <i class="fas fa-check-circle"></i>
+            <span>Tersedia</span>
+        </span>
+    @elseif($rak->status === 'terisi')
+        <span class="status-badge status-occupied flex items-center space-x-1">
+            <i class="fas fa-lock"></i>
+            <span>Terisi</span>
+        </span>
+    @elseif($rak->status === 'maintenance')
+        <span class="status-badge status-maintenance flex items-center space-x-1">
+            <i class="fas fa-tools"></i>
+            <span>Maintenance</span>
+        </span>
+    @elseif($rak->status === 'pengosongan')
+        <span class="status-badge status-pengosongan flex items-center space-x-1">
+            <i class="fas fa-box-open"></i>
+            <span>Pengosongan</span>
+        </span>
+    @endif
         </span>
     </div>
 
