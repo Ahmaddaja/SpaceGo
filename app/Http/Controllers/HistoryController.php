@@ -70,9 +70,11 @@ class HistoryController extends Controller
         $paymentStats = [
             'total_transactions' => 0,
             'successful_payments' => 0,
-            'total_amount' => 0,
-            'successful_amount' => 0,
-            'average_amount' => 0
+            'pending_payments' => 0,
+            'failed_payments' => 0,
+            'total_amount_all' => 0,      // SEMUA transaksi (termasuk pending)
+            'total_amount_settled' => 0,  // HANYA settlement
+            'average_amount_settled' => 0 // Rata-rata settlement
         ];
         
         if ($tableName) {
@@ -82,17 +84,23 @@ class HistoryController extends Controller
                 ->orderBy('created_at', 'desc')
                 ->get();
             
-            // Hitung statistik
+            // Hitung statistik berdasarkan status
             $paymentStats['total_transactions'] = $rawPayments->count();
             $paymentStats['successful_payments'] = $rawPayments->where('transaction_status', 'settlement')->count();
+            $paymentStats['pending_payments'] = $rawPayments->where('transaction_status', 'pending')->count();
+            $paymentStats['failed_payments'] = $rawPayments->whereIn('transaction_status', ['expire', 'deny', 'cancel'])->count();
             
-            // Hitung total amount
-            $paymentStats['total_amount'] = $rawPayments->sum('amount');
-            $paymentStats['successful_amount'] = $rawPayments->where('transaction_status', 'settlement')->sum('amount');
+            // Hitung total amount: SEMUA transaksi
+            $paymentStats['total_amount_all'] = $rawPayments->sum('amount');
             
-            // Hitung rata-rata
-            $paymentStats['average_amount'] = $paymentStats['total_transactions'] > 0 
-                ? $paymentStats['total_amount'] / $paymentStats['total_transactions'] 
+            // Hitung total amount: HANYA settlement (tidak termasuk pending/gagal)
+            $paymentStats['total_amount_settled'] = $rawPayments
+                ->where('transaction_status', 'settlement')
+                ->sum('amount');
+            
+            // Hitung rata-rata amount: HANYA settlement
+            $paymentStats['average_amount_settled'] = $paymentStats['successful_payments'] > 0 
+                ? $paymentStats['total_amount_settled'] / $paymentStats['successful_payments'] 
                 : 0;
             
             // Format data transaksi seperti CustomerHistory
