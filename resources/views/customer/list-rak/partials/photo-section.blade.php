@@ -1,5 +1,5 @@
 <div class="relative">
-    <!-- Status Ribbon -->
+    <!-- Status Ribbon - DIPINDAHKAN KE KIRI ATAS -->
     <div class="status-ribbon ribbon-{{ $rak->status }}">
         <i
             class="fas 
@@ -85,12 +85,12 @@
             overflow: hidden;
         }
 
-        /* RIBBON STYLE */
+        /* RIBBON STYLE - DIUBAH KE KIRI ATAS */
         .status-ribbon {
             position: absolute;
             top: 18px;
-            right: -60px;
-            transform: rotate(45deg);
+            left: -60px;
+            transform: rotate(-45deg);
             padding: 14px 75px;
             font-size: 0.85rem;
             font-weight: 700;
