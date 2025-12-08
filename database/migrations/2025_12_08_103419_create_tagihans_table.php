@@ -24,7 +24,7 @@ return new class extends Migration
             $table->decimal('total_tagihan', 15, 2);
             
             // Status & Type
-            $table->enum('status', ['pending', 'settlement', 'expired', 'overdue', 'failed', 'cancel'])->default('pending');
+            $table->enum('status', ['pending', 'settlement', 'expired', 'deny', 'cancel'])->default('pending');
             $table->enum('type', ['sewa_baru', 'renewal'])->default('sewa_baru');
             $table->boolean('is_renewal')->default(false);
             
