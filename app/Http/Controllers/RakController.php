@@ -15,6 +15,9 @@ use Illuminate\Support\Facades\DB;
 
 class RakController extends Controller
 {
+    // Konstanta untuk maksimal foto
+    const MAX_PHOTOS = 4;
+
     public function rakDibeli()
     {
         try {
@@ -150,10 +153,13 @@ class RakController extends Controller
             'tinggi' => 'required|numeric|min:0',
             'jumlah_tingkat' => 'required|integer|min:1',
             'harga_sewa_perbulan' => 'required|numeric|min:0',
+            'fotos' => 'nullable|array|max:' . self::MAX_PHOTOS,
             'fotos.*' => 'nullable|image|mimes:jpeg,png,jpg|max:2048',
             'spesifikasi_tambahan' => 'nullable|string',
             'is_active' => 'boolean',
             'durasi_sewa_hari' => 'required|integer|min:1'
+        ], [
+            'fotos.max' => 'Maksimal ' . self::MAX_PHOTOS . ' foto yang dapat diupload.'
         ]);
 
         DB::beginTransaction();
@@ -226,6 +232,18 @@ class RakController extends Controller
                 ->with('error', 'Rak memiliki transaksi aktif! Status harus tetap "Terisi".');
         }
 
+        // Hitung total foto setelah update
+        $existingPhotosCount = $rak->fotos()->count();
+        $photosToDelete = $request->has('delete_fotos') ? count($request->delete_fotos) : 0;
+        $newPhotosCount = $request->hasFile('fotos') ? count($request->file('fotos')) : 0;
+        $totalPhotosAfter = $existingPhotosCount - $photosToDelete + $newPhotosCount;
+
+        if ($totalPhotosAfter > self::MAX_PHOTOS) {
+            return redirect()->back()
+                ->withInput()
+                ->with('error', 'Total foto tidak boleh lebih dari ' . self::MAX_PHOTOS . '. Saat ini: ' . $existingPhotosCount . ' foto, akan dihapus: ' . $photosToDelete . ', akan ditambah: ' . $newPhotosCount . '.');
+        }
+
         $validated = $request->validate([
             'kode_rak' => 'required|unique:raks,kode_rak,' . $rak->id,
             'lokasi_gudang' => 'required|exists:gudangs,nama_gudang',
@@ -239,6 +257,7 @@ class RakController extends Controller
             'jumlah_tingkat' => 'required|integer|min:1',
             'harga_sewa_perbulan' => 'required|numeric|min:0',
             'status' => 'required|in:tersedia,terisi,maintenance',
+            'fotos' => 'nullable|array',
             'fotos.*' => 'nullable|image|mimes:jpeg,png,jpg|max:2048',
             'foto_primary' => 'nullable|integer',
             'delete_fotos' => 'nullable|array',
@@ -344,7 +363,11 @@ class RakController extends Controller
         $existingCount = $rak->fotos()->count();
         $isPrimarySet = $rak->fotos()->where('is_primary', true)->exists();
 
-        foreach ($files as $index => $file) {
+        // Pastikan tidak melebihi maksimal foto
+        $maxAllowed = self::MAX_PHOTOS - $existingCount;
+        $filesToProcess = array_slice($files, 0, $maxAllowed);
+
+        foreach ($filesToProcess as $index => $file) {
             $filename = time() . '_' . $index . '_' . Str::slug($rak->nama_rak) . '.' . $file->getClientOriginalExtension();
             $path = $file->storeAs('raks', $filename, 'public');
 
