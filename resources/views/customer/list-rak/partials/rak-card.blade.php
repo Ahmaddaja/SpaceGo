@@ -2,12 +2,6 @@
 
     <!-- RIBBON - DIPINDAHKAN KE KIRI ATAS -->
     <div class="status-ribbon ribbon-{{ $rak->status }}">
-        <i
-            class="fas 
-            @if ($rak->status == 'tersedia') fa-check
-            @elseif($rak->status == 'terisi') fa-box
-            @else fa-tools @endif
-        "></i>
         <span>
           @if ($rak->status === 'tersedia')
         <span class="status-badge status-available flex items-center space-x-1">
