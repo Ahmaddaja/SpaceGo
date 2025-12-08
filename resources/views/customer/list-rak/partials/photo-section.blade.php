@@ -76,14 +76,6 @@
             @endforeach
         </div>
     @endif
-
-    <!-- Jenis Badge -->
-    <div class="absolute top-4 left-4 z-20">
-        <span class="type-badge flex items-center space-x-2">
-            <i class="fas fa-layer-group text-blue-500"></i>
-            <span>{{ $rak->jenis_rak }}</span>
-        </span>
-    </div>
 </div>
 
 @push('styles')

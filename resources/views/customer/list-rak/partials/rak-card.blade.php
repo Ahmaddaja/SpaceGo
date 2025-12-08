@@ -68,14 +68,6 @@
                 <i class="fas fa-pallet text-4xl text-blue-500 opacity-50"></i>
             </div>
         @endif
-
-        <!-- Jenis Badge -->
-        <div class="absolute top-4 left-4 z-20">
-            <span class="type-badge">
-                <i class="fas fa-layer-group mr-1"></i>
-                {{ $rak->jenis_rak }}
-            </span>
-        </div>
     </div>
 
     <!-- CONTENT -->
