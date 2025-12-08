@@ -72,6 +72,9 @@ class HistoryController extends Controller
             'successful_payments' => 0,
             'pending_payments' => 0,
             'failed_payments' => 0,
+            'expire_count' => 0,      // Tambahan: kedaluwarsa
+            'deny_count' => 0,        // Tambahan: ditolak
+            'cancel_count' => 0,      // Tambahan: dibatalkan
             'total_amount_all' => 0,      // SEMUA transaksi (termasuk pending)
             'total_amount_settled' => 0,  // HANYA settlement
             'average_amount_settled' => 0 // Rata-rata settlement
@@ -88,7 +91,14 @@ class HistoryController extends Controller
             $paymentStats['total_transactions'] = $rawPayments->count();
             $paymentStats['successful_payments'] = $rawPayments->where('transaction_status', 'settlement')->count();
             $paymentStats['pending_payments'] = $rawPayments->where('transaction_status', 'pending')->count();
-            $paymentStats['failed_payments'] = $rawPayments->whereIn('transaction_status', ['expire', 'deny', 'cancel'])->count();
+            
+            // Hitung detail transaksi gagal
+            $paymentStats['expire_count'] = $rawPayments->where('transaction_status', 'expire')->count();
+            $paymentStats['deny_count'] = $rawPayments->where('transaction_status', 'deny')->count();
+            $paymentStats['cancel_count'] = $rawPayments->where('transaction_status', 'cancel')->count();
+            
+            // Total transaksi gagal
+            $paymentStats['failed_payments'] = $paymentStats['expire_count'] + $paymentStats['deny_count'] + $paymentStats['cancel_count'];
             
             // Hitung total amount: SEMUA transaksi
             $paymentStats['total_amount_all'] = $rawPayments->sum('amount');
@@ -144,6 +154,35 @@ class HistoryController extends Controller
                 ->whereIn('activity_type', ['PAYMENT_SUCCESS', 'PAYMENT_FAILED', 'RENTAL_PAYMENT'])
                 ->orderBy('created_at', 'desc')
                 ->paginate(10);
+            
+            // Untuk data lama, hitung statistik sederhana
+            $paymentStats['total_transactions'] = $paginatedPayments->count();
+            $paymentStats['successful_payments'] = $paginatedPayments->where('activity_type', 'PAYMENT_SUCCESS')->count();
+            
+            // Untuk data lama, kita tidak bisa detail pending/expire
+            $paymentStats['pending_payments'] = 0;
+            $paymentStats['expire_count'] = 0;
+            $paymentStats['deny_count'] = 0;
+            $paymentStats['cancel_count'] = 0;
+            $paymentStats['failed_payments'] = $paginatedPayments->where('activity_type', 'PAYMENT_FAILED')->count();
+            
+            // Hitung total amount dari additional_data
+            $totalAmount = 0;
+            $successfulAmount = 0;
+            foreach ($paginatedPayments as $payment) {
+                if ($payment->additional_data && isset($payment->additional_data['amount'])) {
+                    $totalAmount += $payment->additional_data['amount'];
+                    if ($payment->activity_type == 'PAYMENT_SUCCESS') {
+                        $successfulAmount += $payment->additional_data['amount'];
+                    }
+                }
+            }
+            
+            $paymentStats['total_amount_all'] = $totalAmount;
+            $paymentStats['total_amount_settled'] = $successfulAmount;
+            $paymentStats['average_amount_settled'] = $paymentStats['successful_payments'] > 0 
+                ? $successfulAmount / $paymentStats['successful_payments'] 
+                : 0;
         }
 
         return view('customer.history.payment', [
