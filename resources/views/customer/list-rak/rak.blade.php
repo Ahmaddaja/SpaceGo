@@ -359,14 +359,6 @@
                             </div>
                         @endif
 
-                        <!-- Type Badge -->
-                        <div class="absolute top-4 left-4 z-20">
-                            <span class="type-badge flex items-center space-x-1">
-                                <i class="fas fa-layer-group text-blue-500"></i>
-                                <span>{{ $rak->jenis_rak }}</span>
-                            </span>
-                        </div>
-
                         <!-- Overlay Gradient -->
                         <div class="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent"></div>
                     </div>

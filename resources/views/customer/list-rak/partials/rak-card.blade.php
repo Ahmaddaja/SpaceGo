@@ -1,5 +1,6 @@
 <div class="rak-card bg-white rounded-2xl shadow-lg overflow-hidden group border border-gray-100 relative">
 
+    <!-- RIBBON - DIPINDAHKAN KE KIRI ATAS -->
     <div class="status-ribbon ribbon-{{ $rak->status }}">
         <i
             class="fas 
@@ -160,12 +161,12 @@
                 transition: all 0.3s ease;
             }
 
-            /* RIBBON STYLE */
+            /* RIBBON STYLE - DIUBAH KE KIRI ATAS */
             .status-ribbon {
                 position: absolute;
                 top: 18px;
-                right: -60px;
-                transform: rotate(45deg);
+                left: -60px;
+                transform: rotate(-45deg);
                 padding: 14px 75px;
                 font-size: 0.85rem;
                 font-weight: 700;
