@@ -43,7 +43,13 @@ class Transaction extends Model
     {
         return $this->belongsTo(Rak::class);
     }
-
+    /**
+     * Relasi ke Tagihan
+     */
+    public function tagihan(): HasOne
+    {
+        return $this->hasOne(Tagihan::class, 'transaction_id');
+    }
     /**
      * Helper untuk format harga
      */

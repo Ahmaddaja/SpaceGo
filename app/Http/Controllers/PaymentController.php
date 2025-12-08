@@ -8,6 +8,7 @@ use Midtrans\Config;
 use Midtrans\Notification;
 use App\Models\Rak;
 use App\Models\Transaction;
+use App\Models\Tagihan; // TAMBAHAN: Import model Tagihan
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Auth;
@@ -31,14 +32,15 @@ class PaymentController extends Controller
             $rak = Rak::findOrFail($id);
             $userId = Auth::id();
 
-            $existingPendingTransaction = Transaction::where('user_id', $userId)
+            // CEK DARI TAGIHAN (bukan transaction lagi)
+            $existingPendingTagihan = Tagihan::where('user_id', $userId)
                 ->where('rak_id', $rak->id)
-                ->where('transaction_status', 'pending')
+                ->where('status', 'pending')
                 ->first();
 
-            if ($existingPendingTransaction) {
+            if ($existingPendingTagihan) {
                 return redirect()->route('customer.tagihan')
-                    ->with('info', 'Anda sudah memiliki transaksi pending untuk rak ini. Silakan selesaikan pembayaran di halaman Tagihan.');
+                    ->with('info', 'Anda sudah memiliki tagihan pending untuk rak ini. Silakan selesaikan pembayaran di halaman Tagihan.');
             }
 
             if ($rak->status !== 'tersedia') {
@@ -109,21 +111,23 @@ class PaymentController extends Controller
             $userId = Auth::id();
             $rakId = $checkoutData['rak_id'];
 
-            $existingPendingTransaction = Transaction::where('user_id', $userId)
+            // CEK DARI TAGIHAN (bukan transaction)
+            $existingPendingTagihan = Tagihan::where('user_id', $userId)
                 ->where('rak_id', $rakId)
-                ->where('transaction_status', 'pending')
+                ->where('status', 'pending')
                 ->first();
 
-            if ($existingPendingTransaction) {
+            if ($existingPendingTagihan) {
                 session()->forget('payment_checkout');
 
                 return response()->json([
                     'success' => false,
-                    'message' => 'Sudah ada transaksi pending untuk rak ini.',
+                    'message' => 'Sudah ada tagihan pending untuk rak ini.',
                     'redirect_url' => route('customer.tagihan')
                 ], 400);
             }
 
+            // CREATE TRANSACTION (Observer akan auto-create Tagihan)
             $transaction = Transaction::create([
                 'order_id' => $checkoutData['order_id'],
                 'user_id' => $userId,
@@ -137,7 +141,7 @@ class PaymentController extends Controller
 
             session()->forget('payment_checkout');
 
-            Log::info('Transaction created from checkout', [
+            Log::info('Transaction & Tagihan auto-created from checkout', [
                 'transaction_id' => $transaction->id,
                 'user_id' => $userId,
                 'rak_id' => $rakId,
@@ -219,13 +223,14 @@ class PaymentController extends Controller
                 ], 404);
             }
 
+            // UPDATE TRANSACTION (Observer akan sync ke Tagihan)
             $transaction->update([
                 'transaction_status' => $transactionStatus,
                 'payment_type' => $paymentType,
                 'transaction_time' => now()
             ]);
 
-            Log::info('Transaction Status Updated from Tagihan', [
+            Log::info('Transaction & Tagihan Status Updated', [
                 'transaction_id' => $transaction->id,
                 'status' => $transactionStatus
             ]);
@@ -274,6 +279,7 @@ class PaymentController extends Controller
             DB::beginTransaction();
 
             try {
+                // UPDATE TRANSACTION (Observer akan sync ke Tagihan)
                 $transaction->update([
                     'transaction_status' => $transactionStatus,
                     'fraud_status' => $fraudStatus,
@@ -281,7 +287,7 @@ class PaymentController extends Controller
                     'midtrans_response' => method_exists($notification, 'getResponse') ? $notification->getResponse() : json_encode($notification)
                 ]);
 
-                Log::info('Transaction Updated from Callback', [
+                Log::info('Transaction & Tagihan Updated from Callback', [
                     'transaction_id' => $transaction->id,
                     'status' => $transactionStatus
                 ]);
@@ -381,6 +387,7 @@ class PaymentController extends Controller
             $paymentType = $request->payment_type ?? 'midtrans';
             $orderId = $pendingData['order_id'];
 
+            // CREATE TRANSACTION (Observer auto-create Tagihan)
             $transaction = Transaction::create([
                 'order_id' => $orderId,
                 'user_id' => Auth::id(),
@@ -394,7 +401,7 @@ class PaymentController extends Controller
 
             session()->forget('pending_payment');
 
-            Log::info('Transaction Created After Midtrans Popup', [
+            Log::info('Transaction & Tagihan Created After Midtrans Popup', [
                 'transaction_id' => $transaction->id,
                 'order_id' => $orderId,
                 'user_id' => Auth::id(),
@@ -427,19 +434,19 @@ class PaymentController extends Controller
 
             $rak = Rak::findOrFail($transaction->rak_id);
 
-            $now = now()->startOfDay();
+            // Gunakan DB time
+            $currentDbTime = DB::selectOne('SELECT NOW() as db_time')->db_time;
+            $now = \Carbon\Carbon::parse($currentDbTime)->startOfDay();
             $end = \Carbon\Carbon::parse($transaction->sewa_berakhir)->startOfDay();
             
-            // PERBAIKAN: daysDiff positif berarti sudah lewat tanggal berakhir
             $daysDiff = $now->diffInDays($end, false);
 
             $gracePeriodDays = 3;
             $dendaPerHari = 50000;
             $totalDenda = 0;
             
-            // PERBAIKAN: Denda HANYA dihitung jika sudah melewati masa tenggang (daysDiff > gracePeriodDays)
-            if ($daysDiff > $gracePeriodDays) {
-                $latenessDays = $daysDiff - $gracePeriodDays;
+            if ($daysDiff < 0 && abs($daysDiff) > $gracePeriodDays) {
+                $latenessDays = abs($daysDiff) - $gracePeriodDays;
                 $totalDenda = $latenessDays * $dendaPerHari;
             }
 
@@ -457,9 +464,8 @@ class PaymentController extends Controller
                 ]
             ];
 
-            // PERBAIKAN: Item denda hanya ditambahkan jika ada denda
             if ($totalDenda > 0) {
-                $latenessDays = $daysDiff - $gracePeriodDays;
+                $latenessDays = abs($daysDiff) - $gracePeriodDays;
                 $itemDetails[] = [
                     'id' => 'penalty-' . $transaction->id,
                     'price' => (int) $totalDenda,
@@ -484,6 +490,7 @@ class PaymentController extends Controller
 
             $snapToken = Snap::getSnapToken($params);
 
+            // UPDATE TRANSACTION (Observer sync ke Tagihan)
             $transaction->update([
                 'order_id' => $orderId,
                 'snap_token' => $snapToken,
@@ -491,14 +498,12 @@ class PaymentController extends Controller
                 'is_renewal' => true
             ]);
 
-            Log::info('Renewal Snap Token Generated', [
+            Log::info('Renewal Snap Token Generated (Tagihan auto-synced)', [
                 'transaction_id' => $transaction->id,
                 'order_id' => $orderId,
                 'amount' => $totalBayar,
                 'penalty' => $totalDenda,
-                'days_late' => $daysDiff,
-                'grace_period' => $gracePeriodDays,
-                'lateness_days' => $totalDenda > 0 ? ($daysDiff - $gracePeriodDays) : 0
+                'days_diff' => $daysDiff
             ]);
 
             return view('customer.payment.renewal-checkout', compact(
@@ -625,6 +630,7 @@ class PaymentController extends Controller
                 return response()->json(['message' => 'Transaction not found'], 404);
             }
 
+            // UPDATE TRANSACTION (Observer sync ke Tagihan)
             $transaction->update([
                 'transaction_status' => $transactionStatus,
                 'midtrans_response' => method_exists($notification, 'getResponse') ? $notification->getResponse() : json_encode($notification)
@@ -674,12 +680,13 @@ class PaymentController extends Controller
                 return response()->json(['success' => false, 'message' => 'Transaksi tidak ditemukan'], 404);
             }
 
+            // UPDATE TRANSACTION (Observer sync ke Tagihan)
             $transaction->update(['transaction_status' => $transactionStatus]);
 
             if (in_array($transactionStatus, ['capture', 'settlement'])) {
                 $this->handleSuccessPayment($transaction);
 
-                Log::info('Renewal payment successful', [
+                Log::info('Renewal payment successful (Tagihan auto-synced)', [
                     'transaction_id' => $transaction->id
                 ]);
             }

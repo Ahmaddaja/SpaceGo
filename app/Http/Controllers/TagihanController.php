@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Http\Controllers\Controller;
 use App\Models\Transaction;
+use App\Models\Tagihan;
 use App\Models\Rak;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -32,39 +33,54 @@ class TagihanController extends Controller
             session()->forget('payment_checkout');
         }
         
-        Transaction::where('user_id', $userId)
-            ->where('transaction_status', 'pending')
-            ->where('created_at', '<', Carbon::now()->subHours(24))
-            ->update(['transaction_status' => 'expired']);
+        // Ambil current time dari DATABASE
+        $currentDbTime = DB::selectOne('SELECT NOW() as db_time')->db_time;
+        $now = Carbon::parse($currentDbTime);
         
-        $pendingTransactions = Transaction::with('rak')
-            ->where('user_id', $userId)
-            ->where('transaction_status', 'pending')
-            ->orderBy('created_at', 'desc')
-            ->get()
-            ->unique(function ($item) {
-                return $item->rak_id;
+        // Auto-expire tagihan yang lewat 24 jam (dari database time)
+        Tagihan::where('user_id', $userId)
+            ->where('status', 'pending')
+            ->where('expired_at', '<=', $now)
+            ->each(function ($tagihan) use ($now) {
+                $tagihan->update([
+                    'status' => 'expired',
+                    'cancelled_at' => $now
+                ]);
+                
+                // Sync ke transaction
+                if ($tagihan->transaction) {
+                    $tagihan->transaction->update(['transaction_status' => 'expired']);
+                }
             });
-
-        $expiredTransactions = Transaction::with('rak')
+        
+        // Query tagihan pending (ambil dari tabel tagihan, bukan transaction)
+        $pendingTransactions = Tagihan::with(['transaction', 'rak'])
             ->where('user_id', $userId)
-            ->where('transaction_status', 'expired')
-            ->orderBy('created_at', 'desc')
+            ->where('status', 'pending')
+            ->orderBy('created_at_db', 'desc')
             ->get();
 
-        $rakIdsWithRenewal = Transaction::where('user_id', $userId)
+        // Query tagihan expired
+        $expiredTransactions = Tagihan::with(['transaction', 'rak'])
+            ->where('user_id', $userId)
+            ->where('status', 'expired')
+            ->orderBy('created_at_db', 'desc')
+            ->get();
+
+        // Rak yang punya renewal
+        $rakIdsWithRenewal = Tagihan::where('user_id', $userId)
             ->where('is_renewal', true)
-            ->whereIn('transaction_status', ['pending', 'settlement','expired','overdue'])
+            ->whereIn('status', ['pending', 'settlement', 'expired', 'overdue'])
             ->pluck('rak_id')
             ->unique()
             ->toArray();
 
-        $now = Carbon::now();
-        $oneDayFromNow = Carbon::now()->addDay();
+        $oneDayFromNow = Carbon::parse($currentDbTime)->addDay();
         
-        $overdueTransactions = Transaction::with('rak')
+        // Query tagihan overdue (sewa berakhir & belum renewal)
+        $overdueTransactions = Tagihan::with(['transaction', 'rak'])
             ->where('user_id', $userId)
-            ->where('transaction_status', 'settlement')
+            ->where('status', 'settlement')
             ->where('is_renewal', false)
             ->whereNotIn('rak_id', $rakIdsWithRenewal)
             ->where(function($query) use ($now, $oneDayFromNow) {
@@ -80,80 +96,62 @@ class TagihanController extends Controller
         return view('customer.tagihan.index', compact(
             'pendingTransactions', 
             'expiredTransactions', 
-            'overdueTransactions'
+            'overdueTransactions',
+            'now' // Pass DB time ke view
         ));
     }
 
     public function createPayment($id)
     {
         try {
-            $originalTransaction = Transaction::with('rak')
+            // Cari dari tabel tagihan
+            $tagihan = Tagihan::with(['transaction', 'rak'])
                 ->where('id', $id)
                 ->where('user_id', Auth::id())
                 ->firstOrFail();
 
-            $rak = $originalTransaction->rak;
+            $originalTransaction = $tagihan->transaction;
+            $rak = $tagihan->rak;
+
             if (!$rak) {
                 return redirect()->route('customer.tagihan')
                     ->with('error', 'Rak tidak ditemukan.');
             }
 
             // Cek apakah sudah ada renewal aktif
-            $existingRenewal = Transaction::where('rak_id', $rak->id)
+            $existingRenewal = Tagihan::where('rak_id', $rak->id)
                 ->where('user_id', Auth::id())
                 ->where('is_renewal', true)
-                ->whereNotIn('transaction_status', ['expired', 'failed', 'cancel', 'overdue'])
-                ->orderBy('created_at', 'desc')
+                ->whereNotIn('status', ['expired', 'failed', 'cancel', 'overdue'])
+                ->orderBy('created_at_db', 'desc')
                 ->first();
 
-            if ($existingRenewal) {
-                if ($existingRenewal->snap_token) {
-                    // Hitung ulang denda untuk tampilan - DISESUAIKAN DENGAN SHOW.BLADE.PHP
-                    $sewaBerahir = Carbon::parse($originalTransaction->sewa_berakhir)->startOfDay();
-                    $now = Carbon::now()->startOfDay();
-                    
-                    // daysDiff positif = masih ada sisa hari, negatif = sudah lewat
-                    $daysDiff = $now->diffInDays($sewaBerahir, false);
-                    
-                    $gracePeriodDays = 3;
-                    $dendaPerHari = 50000;
-                    $totalDenda = 0;
-                    
-                    // Denda hanya dihitung jika sudah melewati masa tenggang
-                    if ($daysDiff < 0 && abs($daysDiff) > $gracePeriodDays) {
-                        $latenessDays = abs($daysDiff) - $gracePeriodDays;
-                        $totalDenda = $latenessDays * $dendaPerHari;
-                    }
-                    
-                    return view('customer.payment.renewal-checkout', [
-                        'snapToken' => $existingRenewal->snap_token,
-                        'rak' => $existingRenewal->rak,
-                        'transaction' => $originalTransaction,
-                        'daysDiff' => $daysDiff,
-                        'totalDenda' => $totalDenda,
-                        'hargaSewa' => $rak->harga_sewa_perbulan,
-                        'totalBayar' => $rak->harga_sewa_perbulan + $totalDenda,
-                        'gracePeriodDays' => $gracePeriodDays,
-                    ]);
+            if ($existingRenewal && $existingRenewal->transaction?->snap_token) {
+                // Hitung denda untuk tampilan
+                $sewaBerahir = Carbon::parse($originalTransaction->sewa_berakhir)->startOfDay();
+                $now = Carbon::parse(DB::selectOne('SELECT NOW() as db_time')->db_time)->startOfDay();
+                
+                $daysDiff = $now->diffInDays($sewaBerahir, false);
+                
+                $gracePeriodDays = 3;
+                $dendaPerHari = 50000;
+                $totalDenda = 0;
+                
+                if ($daysDiff < 0 && abs($daysDiff) > $gracePeriodDays) {
+                    $latenessDays = abs($daysDiff) - $gracePeriodDays;
+                    $totalDenda = $latenessDays * $dendaPerHari;
                 }
-
-                $snapToken = Snap::getSnapToken([
-                    'transaction_details' => [
-                        'order_id' => $existingRenewal->order_id,
-                        'gross_amount' => (int) $existingRenewal->amount,
-                    ],
-                    'customer_details' => [
-                        'first_name' => Auth::user()->name,
-                        'email' => Auth::user()->email,
-                    ],
-                ]);
-
-                $existingRenewal->update(['snap_token' => $snapToken]);
-
+                
                 return view('customer.payment.renewal-checkout', [
-                    'snapToken' => $snapToken,
-                    'rak' => $existingRenewal->rak,
-                    'transaction' => $originalTransaction
+                    'snapToken' => $existingRenewal->transaction->snap_token,
+                    'rak' => $rak,
+                    'transaction' => $originalTransaction,
+                    'tagihan' => $existingRenewal,
+                    'daysDiff' => $daysDiff,
+                    'totalDenda' => $totalDenda,
+                    'hargaSewa' => $rak->harga_sewa_perbulan,
+                    'totalBayar' => $rak->harga_sewa_perbulan + $totalDenda,
+                    'gracePeriodDays' => $gracePeriodDays,
                 ]);
             }
 
@@ -167,23 +165,16 @@ class TagihanController extends Controller
             $durasi = $rak->durasi_sewa_hari ?? 30;
             $hargaSewa = $rak->harga_sewa_perbulan;
 
-            // LOGIKA DENDA DISESUAIKAN DENGAN SHOW.BLADE.PHP
+            // Hitung denda
             $sewaBerahir = Carbon::parse($originalTransaction->sewa_berakhir)->startOfDay();
-            $now = Carbon::now()->startOfDay();
+            $now = Carbon::parse(DB::selectOne('SELECT NOW() as db_time')->db_time)->startOfDay();
             
-            // daysDiff positif (+) = masih ada sisa hari
-            // daysDiff nol (0) = hari terakhir
-            // daysDiff negatif (-) = sudah lewat
             $daysDiff = $now->diffInDays($sewaBerahir, false);
             
             $gracePeriodDays = 3;
             $dendaPerHari = 50000;
             $totalDenda = 0;
             
-            // Denda HANYA dihitung jika sudah melewati masa tenggang
-            // Contoh: sewa_berakhir = 1 Jan, now = 6 Jan
-            // daysDiff = -5 (lewat 5 hari)
-            // abs(-5) = 5 > 3 (grace period), maka denda = (5-3) * 50000 = 100000
             if ($daysDiff < 0 && abs($daysDiff) > $gracePeriodDays) {
                 $latenessDays = abs($daysDiff) - $gracePeriodDays;
                 $totalDenda = $latenessDays * $dendaPerHari;
@@ -201,7 +192,6 @@ class TagihanController extends Controller
                 ]
             ];
 
-            // Item denda hanya ditambahkan jika totalDenda > 0
             if ($totalDenda > 0) {
                 $latenessDays = abs($daysDiff) - $gracePeriodDays;
                 $itemDetails[] = [
@@ -229,7 +219,8 @@ class TagihanController extends Controller
             $sewaMulaiBaru = max(now(), Carbon::parse($originalTransaction->sewa_berakhir));
             $sewaberakhirBaru = $sewaMulaiBaru->copy()->addDays($durasi);
 
-            Transaction::create([
+            // Create transaction (observer akan auto-create tagihan)
+            $newTransaction = Transaction::create([
                 'order_id' => $orderId,
                 'user_id' => Auth::id(),
                 'rak_id' => $rak->id,
@@ -244,10 +235,13 @@ class TagihanController extends Controller
                 'penalty_amount' => $totalDenda
             ]);
 
-            Log::info('Renewal payment created', [
+            // Ambil tagihan yang baru dibuat oleh observer
+            $newTagihan = Tagihan::where('transaction_id', $newTransaction->id)->first();
+
+            Log::info('Renewal payment created with tagihan', [
                 'order_id' => $orderId,
+                'tagihan_id' => $newTagihan?->id,
                 'days_diff' => $daysDiff,
-                'grace_period' => $gracePeriodDays,
                 'penalty' => $totalDenda,
                 'total' => $totalBayar
             ]);
@@ -256,6 +250,7 @@ class TagihanController extends Controller
                 'snapToken' => $snapToken,
                 'rak' => $rak,
                 'transaction' => $originalTransaction,
+                'tagihan' => $newTagihan,
                 'daysDiff' => $daysDiff,
                 'totalDenda' => $totalDenda,
                 'hargaSewa' => $hargaSewa,
@@ -271,92 +266,37 @@ class TagihanController extends Controller
         }
     }
 
-    public function createRenewal(Request $request)
-    {
-        $request->validate([
-            'transaction_id' => 'required|exists:transactions,id'
-        ]);
-
-        $originalTransaction = Transaction::find($request->transaction_id);
-
-        if ($originalTransaction->user_id !== Auth::id()) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Unauthorized'
-            ], 403);
-        }
-
-        $existingRenewal = Transaction::where('rak_id', $originalTransaction->rak_id)
-            ->where('user_id', Auth::id())
-            ->where('is_renewal', true)
-            ->whereNotIn('transaction_status', ['expired', 'failed', 'cancel', 'deny'])
-            ->exists();
-
-        if ($existingRenewal) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Anda sudah memiliki permintaan perpanjangan aktif untuk rak ini.'
-            ], 400);
-        }
-
-        $rak = $originalTransaction->rak;
-        $durasi = $rak->durasi_sewa_hari ?? 30;
-
-        $sewaMulaiBaru = max(
-            now(),
-            Carbon::parse($originalTransaction->sewa_berakhir)
-        );
-        $sewaberakhirBaru = $sewaMulaiBaru->copy()->addDays($durasi);
-
-        $pricePerMonth = $rak->harga_sewa_perbulan;
-        $priceForDuration = ($pricePerMonth / 30) * $durasi;
-        $hargaSewa = ceil($priceForDuration);
-
-        $renewal = Transaction::create([
-            'order_id' => 'RENEW-' . time() . '-' . $rak->id,
-            'user_id' => Auth::id(),
-            'rak_id' => $originalTransaction->rak_id,
-            'transaction_status' => 'pending',
-            'sewa_mulai' => $sewaMulaiBaru,
-            'sewa_berakhir' => $sewaberakhirBaru,
-            'amount' => $hargaSewa,
-            'is_renewal' => true,
-            'parent_transaction_id' => $originalTransaction->id,
-            'transaction_time' => now()
-        ]);
-
-        return response()->json([
-            'success' => true,
-            'message' => 'Permintaan perpanjangan berhasil dibuat!',
-            'data' => $renewal
-        ]);
-    }
-
     public function checkStatus($id)
     {
         try {
-            $transaction = Transaction::where('id', $id)
+            // Cek dari tagihan table
+            $tagihan = Tagihan::with('transaction')
+                ->where('id', $id)
                 ->where('user_id', Auth::id())
                 ->firstOrFail();
 
             return response()->json([
                 'success' => true,
-                'transaction' => [
-                    'id' => $transaction->id,
-                    'order_id' => $transaction->order_id,
-                    'status' => $transaction->transaction_status,
-                    'amount' => number_format($transaction->amount, 0, ',', '.'),
-                    'sewa_berakhir' => $transaction->sewa_berakhir 
-                        ? $transaction->sewa_berakhir->format('d M Y') 
+                'tagihan' => [
+                    'id' => $tagihan->id,
+                    'tagihan_code' => $tagihan->tagihan_code,
+                    'status' => $tagihan->status,
+                    'amount' => number_format($tagihan->total_tagihan, 0, ',', '.'),
+                    'expired_at' => $tagihan->expired_at 
+                        ? $tagihan->expired_at->format('d M Y H:i') 
                         : '-',
-                    'is_renewal' => $transaction->is_renewal,
-                    'created_at' => $transaction->created_at->format('d M Y H:i')
+                    'paid_at' => $tagihan->paid_at 
+                        ? $tagihan->paid_at->format('d M Y H:i') 
+                        : '-',
+                    'remaining_time' => $tagihan->remaining_time,
+                    'is_renewal' => $tagihan->is_renewal,
+                    'created_at' => $tagihan->created_at_db->format('d M Y H:i')
                 ]
             ]);
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Transaksi tidak ditemukan'
+                'message' => 'Tagihan tidak ditemukan'
             ], 404);
         }
     }
@@ -364,85 +304,69 @@ class TagihanController extends Controller
     public function processExpired(Request $request, $id)
     {
         try {
-            $transaction = Transaction::with('rak')
+            $tagihan = Tagihan::with(['transaction', 'rak'])
                 ->where('id', $id)
                 ->where('user_id', Auth::id())
                 ->firstOrFail();
 
             DB::beginTransaction();
 
-            $transaction->update([
-                'transaction_status' => 'expired',
-                'updated_at' => now()
+            // Update tagihan
+            $tagihan->update([
+                'status' => 'expired',
+                'cancelled_at' => now()
             ]);
 
-            if ($transaction->rak) {
-                $transaction->rak->update([
+            // Update transaction
+            if ($tagihan->transaction) {
+                $tagihan->transaction->update([
+                    'transaction_status' => 'expired',
+                    'updated_at' => now()
+                ]);
+            }
+
+            // Update rak
+            if ($tagihan->rak) {
+                $tagihan->rak->update([
                     'status' => 'tersedia',
                     'updated_at' => now()
                 ]);
             }
 
-            Transaction::where('rak_id', $transaction->rak_id)
+            // Expire semua renewal pending untuk rak ini
+            Tagihan::where('rak_id', $tagihan->rak_id)
                 ->where('user_id', Auth::id())
                 ->where('is_renewal', true)
-                ->where('transaction_status', 'pending')
+                ->where('status', 'pending')
                 ->update([
-                    'transaction_status' => 'expired',
-                    'updated_at' => now()
+                    'status' => 'expired',
+                    'cancelled_at' => now()
                 ]);
 
             DB::commit();
 
-            Log::info('Rak berhasil dilepas secara manual', [
-                'transaction_id' => $transaction->id,
-                'rak_id' => $transaction->rak_id,
-                'user_id' => Auth::id(),
-                'timestamp' => now()
+            Log::info('Tagihan manually expired', [
+                'tagihan_id' => $tagihan->id,
+                'transaction_id' => $tagihan->transaction_id,
+                'user_id' => Auth::id()
             ]);
 
-            if ($request->expectsJson() || $request->is('api/*') || $request->ajax()) {
+            if ($request->expectsJson() || $request->ajax()) {
                 return response()->json([
                     'success' => true,
-                    'message' => 'Rak berhasil dilepas dan status diubah menjadi kadaluarsa.',
-                    'data' => [
-                        'transaction_id' => $transaction->id,
-                        'transaction_status' => $transaction->transaction_status,
-                        'rak_status' => $transaction->rak ? $transaction->rak->status : null,
-                        'timestamp' => now()->format('Y-m-d H:i:s')
-                    ]
+                    'message' => 'Rak berhasil dilepas dan tagihan kadaluarsa.'
                 ]);
             }
 
             return redirect()->route('customer.tagihan')
-                ->with('success', 'Rak berhasil dilepas dan status diubah menjadi kadaluarsa.');
-
-        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
-            Log::error('Transaksi tidak ditemukan saat melepas rak: ' . $e->getMessage(), [
-                'transaction_id' => $id,
-                'user_id' => Auth::id()
-            ]);
-
-            if ($request->expectsJson() || $request->is('api/*') || $request->ajax()) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Transaksi tidak ditemukan.'
-                ], 404);
-            }
-
-            return redirect()->route('customer.tagihan')
-                ->with('error', 'Transaksi tidak ditemukan.');
+                ->with('success', 'Rak berhasil dilepas dan tagihan kadaluarsa.');
 
         } catch (\Exception $e) {
             DB::rollBack();
             
-            Log::error('Gagal melepas rak: ' . $e->getMessage(), [
-                'transaction_id' => $id,
-                'user_id' => Auth::id(),
-                'error_trace' => $e->getTraceAsString()
-            ]);
+            Log::error('Failed to expire tagihan: ' . $e->getMessage());
 
-            if ($request->expectsJson() || $request->is('api/*') || $request->ajax()) {
+            if ($request->expectsJson() || $request->ajax()) {
                 return response()->json([
                     'success' => false,
                     'message' => 'Gagal melepas rak: ' . $e->getMessage()
@@ -454,58 +378,56 @@ class TagihanController extends Controller
         }
     }
 
-    public function paymentDetails($id)
-    {
-        try {
-            $transaction = Transaction::with('rak')
-                ->where('id', $id)
-                ->where('user_id', Auth::id())
-                ->firstOrFail();
-
-            return view('customer.tagihan.payment-details', compact('transaction'));
-        } catch (\Exception $e) {
-            return redirect()->route('customer.tagihan')
-                ->with('error', 'Transaksi tidak ditemukan');
-        }
-    }
-
     public function checkOverdue()
     {
         try {
             $userId = Auth::id();
             
-            $expiredPendingCount = Transaction::where('user_id', $userId)
-                ->where('transaction_status', 'pending')
-                ->where('created_at', '<', Carbon::now()->subHours(24))
-                ->update(['transaction_status' => 'expired']);
+            // Get DB time
+            $currentDbTime = DB::selectOne('SELECT NOW() as db_time')->db_time;
+            $now = Carbon::parse($currentDbTime);
             
-            $transactions = Transaction::with('rak')
+            // Expire tagihan pending yang lewat 24 jam
+            $expiredPendingCount = Tagihan::where('user_id', $userId)
+                ->where('status', 'pending')
+                ->where('expired_at', '<=', $now)
+                ->count();
+            
+            Tagihan::where('user_id', $userId)
+                ->where('status', 'pending')
+                ->where('expired_at', '<=', $now)
+                ->each(function ($tagihan) use ($now) {
+                    $tagihan->markAsExpired();
+                    if ($tagihan->transaction) {
+                        $tagihan->transaction->update(['transaction_status' => 'expired']);
+                    }
+                });
+            
+            // Check overdue sewa
+            $tagihanOverdue = Tagihan::with(['transaction', 'rak'])
                 ->where('user_id', $userId)
-                ->where('transaction_status', 'settlement')
-                ->whereDate('sewa_berakhir', '<', Carbon::now())
+                ->where('status', 'settlement')
+                ->whereDate('sewa_berakhir', '<', $now)
                 ->get();
             
             $updatedCount = 0;
             $warningCount = 0;
             
-            foreach ($transactions as $transaction) {
-                $daysOverdue = Carbon::now()->diffInDays($transaction->sewa_berakhir);
+            foreach ($tagihanOverdue as $tagihan) {
+                $daysOverdue = $now->diffInDays($tagihan->sewa_berakhir);
                 
                 if ($daysOverdue > 3) {
-                    $transaction->update(['transaction_status' => 'expired']);
+                    $tagihan->markAsExpired();
                     
-                    $rak = $transaction->rak;
-                    if ($rak) {
-                        $rak->update(['status' => 'tersedia']);
+                    if ($tagihan->transaction) {
+                        $tagihan->transaction->update(['transaction_status' => 'expired']);
+                    }
+                    
+                    if ($tagihan->rak) {
+                        $tagihan->rak->update(['status' => 'tersedia']);
                     }
                     
                     $updatedCount++;
-                    
-                    Log::info('Manual check: Transaction expired', [
-                        'transaction_id' => $transaction->id,
-                        'user_id' => $userId,
-                        'days_overdue' => $daysOverdue
-                    ]);
                 } else if ($daysOverdue > 0) {
                     $warningCount++;
                 }
@@ -514,19 +436,19 @@ class TagihanController extends Controller
             $message = "Pengecekan selesai. ";
             
             if ($expiredPendingCount > 0) {
-                $message .= "{$expiredPendingCount} transaksi pending telah kadaluarsa. ";
+                $message .= "{$expiredPendingCount} tagihan pending telah kadaluarsa. ";
             }
             
             if ($updatedCount > 0) {
-                $message .= "{$updatedCount} transaksi sewa telah kadaluarsa. ";
+                $message .= "{$updatedCount} tagihan sewa telah kadaluarsa. ";
             }
             
             if ($warningCount > 0) {
-                $message .= "{$warningCount} transaksi mendekati kadaluarsa. ";
+                $message .= "{$warningCount} tagihan mendekati kadaluarsa. ";
             }
             
             if ($expiredPendingCount == 0 && $updatedCount == 0 && $warningCount == 0) {
-                $message = "Semua transaksi Anda dalam keadaan baik.";
+                $message = "Semua tagihan Anda dalam keadaan baik.";
             }
             
             return redirect()->route('customer.tagihan')
@@ -536,6 +458,214 @@ class TagihanController extends Controller
             Log::error('Manual Check Overdue Error: ' . $e->getMessage());
             return redirect()->route('customer.tagihan')
                 ->with('error', 'Terjadi kesalahan saat mengecek status.');
+        }
+    }
+
+    // DEBUG METHOD: Cek tagihan yang token-nya kosong
+    public function debugMissingTokens()
+    {
+        try {
+            $userId = Auth::id();
+            
+            $tagihanPending = Tagihan::with('transaction')
+                ->where('user_id', $userId)
+                ->where('status', 'pending')
+                ->get();
+
+            $missingTokens = [];
+            
+            foreach ($tagihanPending as $tagihan) {
+                if (!$tagihan->transaction || !$tagihan->transaction->snap_token) {
+                    $missingTokens[] = [
+                        'tagihan_id' => $tagihan->id,
+                        'tagihan_code' => $tagihan->tagihan_code,
+                        'transaction_id' => $tagihan->transaction_id,
+                        'has_transaction' => $tagihan->transaction ? 'Yes' : 'No',
+                        'snap_token' => $tagihan->transaction?->snap_token ?? 'NULL'
+                    ];
+                }
+            }
+
+            return response()->json([
+                'total_pending' => $tagihanPending->count(),
+                'missing_tokens' => count($missingTokens),
+                'details' => $missingTokens
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    // FIX METHOD: Regenerate snap token untuk tagihan yang kosong
+    public function regenerateToken($tagihanId)
+    {
+        try {
+            $tagihan = Tagihan::with(['transaction', 'rak'])
+                ->where('id', $tagihanId)
+                ->where('user_id', Auth::id())
+                ->where('status', 'pending')
+                ->firstOrFail();
+
+            if (!$tagihan->transaction) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Transaction tidak ditemukan'
+                ], 404);
+            }
+
+            // Generate snap token baru
+            $snapToken = Snap::getSnapToken([
+                'transaction_details' => [
+                    'order_id' => $tagihan->transaction->order_id,
+                    'gross_amount' => (int) $tagihan->total_tagihan,
+                ],
+                'item_details' => [
+                    [
+                        'id' => $tagihan->rak_id,
+                        'price' => (int) $tagihan->harga_sewa,
+                        'quantity' => 1,
+                        'name' => $tagihan->rak->nama_rak ?? 'Sewa Rak'
+                    ]
+                ],
+                'customer_details' => [
+                    'first_name' => Auth::user()->name,
+                    'email' => Auth::user()->email,
+                ]
+            ]);
+
+            // Update transaction dengan token baru
+            $tagihan->transaction->update(['snap_token' => $snapToken]);
+
+            Log::info('Snap token regenerated', [
+                'tagihan_id' => $tagihan->id,
+                'transaction_id' => $tagihan->transaction_id
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Token berhasil dibuat ulang',
+                'snap_token' => $snapToken
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('Regenerate Token Error: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Gagal membuat ulang token: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    // METHOD BARU: Lihat detail tagihan
+    public function getDetail($id)
+    {
+        try {
+            $tagihan = Tagihan::with(['transaction', 'rak'])
+                ->where('id', $id)
+                ->where('user_id', Auth::id())
+                ->firstOrFail();
+
+            // Get DB time untuk remaining time
+            $currentDbTime = DB::selectOne('SELECT NOW() as db_time')->db_time;
+            $now = Carbon::parse($currentDbTime);
+            
+            $remainingTime = 'Expired';
+            if ($tagihan->expired_at && $now->lt($tagihan->expired_at)) {
+                $remainingTime = $now->diffForHumans($tagihan->expired_at, true) . ' lagi';
+            }
+
+            return response()->json([
+                'success' => true,
+                'tagihan' => [
+                    'tagihan_code' => $tagihan->tagihan_code,
+                    'order_id' => $tagihan->transaction->order_id ?? '-',
+                    'rak_nama' => $tagihan->rak->nama_rak ?? 'Rak',
+                    'harga_sewa' => 'Rp ' . number_format($tagihan->harga_sewa, 0, ',', '.'),
+                    'penalty' => 'Rp ' . number_format($tagihan->penalty_amount, 0, ',', '.'),
+                    'penalty_amount' => $tagihan->penalty_amount,
+                    'total_tagihan' => 'Rp ' . number_format($tagihan->total_tagihan, 0, ',', '.'),
+                    'status' => $tagihan->status,
+                    'is_renewal' => $tagihan->is_renewal,
+                    'created_at' => $tagihan->created_at_db->format('d M Y H:i'),
+                    'expired_at' => $tagihan->expired_at ? $tagihan->expired_at->format('d M Y H:i') : '-',
+                    'remaining_time' => $remainingTime
+                ]
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Get Tagihan Detail Error: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Tagihan tidak ditemukan'
+            ], 404);
+        }
+    }
+
+    // METHOD BARU: Batalkan tagihan
+    public function cancelTagihan($id)
+    {
+        try {
+            DB::beginTransaction();
+
+            $tagihan = Tagihan::with(['transaction', 'rak'])
+                ->where('id', $id)
+                ->where('user_id', Auth::id())
+                ->where('status', 'pending') // Hanya pending yang bisa dibatalkan
+                ->firstOrFail();
+
+            // Update status tagihan
+            $tagihan->update([
+                'status' => 'cancel',
+                'cancelled_at' => now()
+            ]);
+
+            // Sync ke transaction
+            if ($tagihan->transaction) {
+                $tagihan->transaction->update([
+                    'transaction_status' => 'cancel',
+                    'updated_at' => now()
+                ]);
+            }
+
+            // Jika rak statusnya pending/terpesan, kembalikan jadi tersedia
+            if ($tagihan->rak && $tagihan->rak->status !== 'terisi') {
+                $tagihan->rak->update([
+                    'status' => 'tersedia',
+                    'updated_at' => now()
+                ]);
+            }
+
+            DB::commit();
+
+            Log::info('Tagihan dibatalkan oleh user', [
+                'tagihan_id' => $tagihan->id,
+                'tagihan_code' => $tagihan->tagihan_code,
+                'user_id' => Auth::id()
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Tagihan berhasil dibatalkan'
+            ]);
+
+        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+            DB::rollBack();
+            
+            return response()->json([
+                'success' => false,
+                'message' => 'Tagihan tidak ditemukan atau tidak dapat dibatalkan'
+            ], 404);
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            
+            Log::error('Cancel Tagihan Error: ' . $e->getMessage());
+            
+            return response()->json([
+                'success' => false,
+                'message' => 'Gagal membatalkan tagihan: ' . $e->getMessage()
+            ], 500);
         }
     }
 }
