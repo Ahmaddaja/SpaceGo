@@ -5,6 +5,8 @@ namespace App\Providers;
 use Illuminate\Support\ServiceProvider;
 use Midtrans\Config;
 use Illuminate\Pagination\Paginator;
+use App\Models\Transaction;
+use App\Observers\TransactionObserver;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -23,5 +25,7 @@ class AppServiceProvider extends ServiceProvider
         Config::$is3ds = true;
 
         Paginator::useBootstrap();
+
+        Transaction::observe(TransactionObserver::class);
     }
 }
