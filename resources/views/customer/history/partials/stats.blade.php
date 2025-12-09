@@ -12,7 +12,7 @@
         </div>
     </div>
     
-    <div class="bg-gradient-to-br from-green-50 to-green-100 rounded-xl p-6 shadow-sm border border-green-200">
+    {{-- <div class="bg-gradient-to-br from-green-50 to-green-100 rounded-xl p-6 shadow-sm border border-green-200">
         <div class="flex items-center">
             <div class="bg-green-500 p-3 rounded-lg mr-4">
                 <i class="fas fa-check-circle text-white text-xl"></i>
@@ -24,7 +24,7 @@
                 <div class="text-gray-700 font-medium">Pembayaran Berhasil</div>
             </div>
         </div>
-    </div>
+    </div> --}}
     
     <div class="bg-gradient-to-br from-purple-50 to-purple-100 rounded-xl p-6 shadow-sm border border-purple-200">
         <div class="flex items-center">
