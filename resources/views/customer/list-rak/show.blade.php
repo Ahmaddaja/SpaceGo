@@ -137,6 +137,73 @@
             padding: 1rem;
             margin-top: 1rem;
         }
+
+        /* Countdown Styles */
+        .countdown-container {
+            background: rgba(255, 255, 255, 0.15);
+            backdrop-filter: blur(10px);
+            border-radius: 1rem;
+            padding: 1.5rem;
+            margin-top: 1.5rem;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .countdown-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .countdown-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 1rem;
+        }
+
+        .countdown-item {
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 0.75rem;
+            padding: 1rem;
+            text-align: center;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+        }
+
+        .countdown-number {
+            font-size: 2rem;
+            font-weight: 700;
+            display: block;
+            line-height: 1;
+            margin-bottom: 0.5rem;
+        }
+
+        .countdown-label {
+            font-size: 0.875rem;
+            opacity: 0.9;
+            font-weight: 500;
+        }
+
+        .countdown-expired {
+            background: rgba(239, 68, 68, 0.2);
+            border-color: rgba(239, 68, 68, 0.4);
+        }
+
+        .countdown-warning {
+            background: rgba(245, 158, 11, 0.2);
+            border-color: rgba(245, 158, 11, 0.4);
+        }
+
+        @media (max-width: 640px) {
+            .countdown-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            
+            .countdown-number {
+                font-size: 1.5rem;
+            }
+        }
     </style>
 @endpush
 
@@ -260,6 +327,32 @@
                         }
                         $isEnteringPengosongan = $daysDiff < 0 && $totalLateDays >= $maxLateDays;
                     @endphp
+
+                    <!-- COUNTDOWN TIMER -->
+                    <div class="countdown-container">
+                        <div class="countdown-title">
+                            <i class="fas fa-clock"></i>
+                            <span id="countdownStatus">Sisa Waktu Sewa</span>
+                        </div>
+                        <div class="countdown-grid" id="countdownDisplay">
+                            <div class="countdown-item" id="daysBox">
+                                <span class="countdown-number" id="days">00</span>
+                                <span class="countdown-label">Hari</span>
+                            </div>
+                            <div class="countdown-item" id="hoursBox">
+                                <span class="countdown-number" id="hours">00</span>
+                                <span class="countdown-label">Jam</span>
+                            </div>
+                            <div class="countdown-item" id="minutesBox">
+                                <span class="countdown-number" id="minutes">00</span>
+                                <span class="countdown-label">Menit</span>
+                            </div>
+                            <div class="countdown-item" id="secondsBox">
+                                <span class="countdown-number" id="seconds">00</span>
+                                <span class="countdown-label">Detik</span>
+                            </div>
+                        </div>
+                    </div>
 
                     <div class="mt-4 p-3 rounded-lg text-white {{ $statusColor }}">
                         <div class="flex items-center justify-between">
@@ -489,50 +582,105 @@
         </div>
     </div>
 
-    @push('scripts')
-        <script>
-            document.addEventListener("DOMContentLoaded", function() {
-                let endTime = document.getElementById("rentalEndTime");
-                let daysDiff = parseInt(document.getElementById("daysDiff")?.value ?? 0);
+   {{-- Ganti bagian perhitungan status sewa (sekitar baris 277-317) --}}
 
-                if (!endTime) return;
 
-                let end = new Date(endTime.value).getTime();
+{{-- Ganti bagian script countdown (di dalam @push('scripts'), sekitar baris 570-640) --}}
 
-                function updateCountdown() {
-                    let now = new Date().getTime();
-                    let distance = end - now;
-                    let isGrace = distance < 0;
-                    let absDistance = Math.abs(distance);
+@push('scripts')
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            const endTimeElement = document.getElementById("rentalEndTime");
+            const gracePeriodDays = parseInt(document.getElementById("gracePeriodDays")?.value ?? 3);
+            
+            if (!endTimeElement) return;
 
-                    let days = Math.floor(absDistance / (1000 * 60 * 60 * 24));
-                    let hours = Math.floor((absDistance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-                    let minutes = Math.floor((absDistance % (1000 * 60 * 60)) / (1000 * 60));
-                    let seconds = Math.floor((absDistance % (1000 * 60)) / 1000);
+            const endTime = new Date(endTimeElement.value).getTime();
+            
+            function updateCountdown() {
+                const now = new Date().getTime();
+                const distance = endTime - now;
+                const isExpired = distance < 0;
+                const absDistance = Math.abs(distance);
 
-                    let formatted =
-                        days + " Hari " +
-                        (hours < 10 ? "0" + hours : hours) + " Jam " +
-                        (minutes < 10 ? "0" + minutes : minutes) + " Menit " +
-                        (seconds < 10 ? "0" + seconds : seconds) + " Detik";
+                // Calculate time units
+                const days = Math.floor(absDistance / (1000 * 60 * 60 * 24));
+                const hours = Math.floor((absDistance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+                const minutes = Math.floor((absDistance % (1000 * 60 * 60)) / (1000 * 60));
+                const seconds = Math.floor((absDistance % (1000 * 60)) / 1000);
 
-                    let display = document.getElementById("countdownTimer");
+                // Update display
+                document.getElementById("days").textContent = String(days).padStart(2, '0');
+                document.getElementById("hours").textContent = String(hours).padStart(2, '0');
+                document.getElementById("minutes").textContent = String(minutes).padStart(2, '0');
+                document.getElementById("seconds").textContent = String(seconds).padStart(2, '0');
 
-                    if (display) {
-                        if (isGrace) {
-                            display.innerHTML = "Lewat " + formatted;
-                            display.style.color = "#ffdddd";
-                        } else {
-                            display.innerHTML = formatted;
-                        }
+                // Update status and styling based on time remaining
+                const countdownItems = document.querySelectorAll('.countdown-item');
+                const statusElement = document.getElementById("countdownStatus");
+
+                if (isExpired) {
+                    // Sudah lewat waktu berakhir
+                    const totalDaysLate = Math.floor(absDistance / (1000 * 60 * 60 * 24));
+                    
+                    if (totalDaysLate < gracePeriodDays) {
+                        // Dalam masa tenggang (hari 0, 1, 2)
+                        const graceDay = totalDaysLate + 1; // Hari ke-1, 2, 3
+                        statusElement.textContent = `Masa Tenggang (Hari ke-${graceDay} dari ${gracePeriodDays})`;
+                        countdownItems.forEach(item => {
+                            item.classList.remove('countdown-expired');
+                            item.classList.add('countdown-warning');
+                        });
+                    } else if (totalDaysLate === gracePeriodDays) {
+                        // Tepat di hari terakhir masa tenggang
+                        statusElement.textContent = `Masa Tenggang (Hari Terakhir)`;
+                        countdownItems.forEach(item => {
+                            item.classList.remove('countdown-expired');
+                            item.classList.add('countdown-warning');
+                        });
+                    } else {
+                        // Melewati masa tenggang - kena denda
+                        const overdueDay = totalDaysLate - gracePeriodDays;
+                        statusElement.textContent = `Terlambat ${overdueDay} Hari (Kena Denda)`;
+                        countdownItems.forEach(item => {
+                            item.classList.remove('countdown-warning');
+                            item.classList.add('countdown-expired');
+                        });
+                    }
+                } else {
+                    // Masih dalam periode sewa
+                    if (days === 0) {
+                        // Hari terakhir
+                        statusElement.textContent = `⚠️ Berakhir Hari Ini (${hours} jam ${minutes} menit lagi)`;
+                        countdownItems.forEach(item => {
+                            item.classList.add('countdown-warning');
+                            item.classList.remove('countdown-expired');
+                        });
+                    } else if (days <= 3) {
+                        // 1-3 hari tersisa
+                        statusElement.textContent = "⚠️ Sisa Waktu Sewa (Segera Berakhir)";
+                        countdownItems.forEach(item => {
+                            item.classList.add('countdown-warning');
+                            item.classList.remove('countdown-expired');
+                        });
+                    } else {
+                        // Masih banyak waktu
+                        statusElement.textContent = "Sisa Waktu Sewa";
+                        countdownItems.forEach(item => {
+                            item.classList.remove('countdown-warning', 'countdown-expired');
+                        });
                     }
                 }
+            }
 
-                updateCountdown();
-                setInterval(updateCountdown, 1000);
-            });
-        </script>
-    @endpush
+            // Initial update
+            updateCountdown();
+            
+            // Update every second
+            setInterval(updateCountdown, 1000);
+        });
+    </script>
+@endpush
 
     @include('customer.payment.partials.whatsapp-button')
 @endsection
