@@ -78,7 +78,7 @@ class DashboardController extends Controller
         // ===== GRAFIK STATUS TRANSAKSI =====
         $statusSuccess = Transaction::whereIn('transaction_status', ['capture', 'settlement'])->count();
         $statusPending = Transaction::where('transaction_status', 'pending')->count();
-        $statusFailed = Transaction::whereIn('transaction_status', ['deny', 'expire', 'cancel'])->count();
+        $statusFailed = Transaction::whereIn('transaction_status', ['deny', 'expired', 'cancel'])->count();
 
         // ===== TRANSAKSI TERBARU =====
         $recentTransactions = Transaction::with(['user', 'rak'])
