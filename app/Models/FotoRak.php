@@ -15,13 +15,13 @@ class FotoRak extends Model
     protected $fillable = [
         'rak_id',
         'path',
-        'is_primary',
+        // 'is_primary',
         'urutan'
     ];
 
-    protected $casts = [
-        'is_primary' => 'boolean',
-    ];
+    // protected $casts = [
+    //     'is_primary' => 'boolean',
+    // ];
 
     /**
      * Relasi ke Rak

@@ -80,7 +80,7 @@ Route::middleware(['auth', 'role:customer'])->group(function () {
     // ========================
     Route::get('/payment/renewal-checkout/{transaction_id}', [PaymentController::class, 'renewal'])
         ->name('customer.payment.renewal-checkout');
-    
+
     Route::post('/payment/process-renewal', [PaymentController::class, 'processRenewal'])
         ->name('customer.payment.process-renewal');
 
@@ -99,17 +99,17 @@ Route::middleware(['auth', 'role:customer'])->group(function () {
     Route::prefix('customer/tagihan')->group(function () {
         // Index
         Route::get('/', [TagihanController::class, 'index'])->name('customer.tagihan');
-        
+
         // Detail & Actions
         Route::get('/{id}/detail', [TagihanController::class, 'getDetail'])->name('customer.tagihan.detail');
         Route::post('/{id}/cancel', [TagihanController::class, 'cancelTagihan'])->name('customer.tagihan.cancel');
         Route::post('/{id}/regenerate-token', [TagihanController::class, 'regenerateToken'])->name('customer.tagihan.regenerate-token');
-        
+
         // Payment & Status
         Route::get('/check-status/{id}', [TagihanController::class, 'checkStatus'])->name('customer.tagihan.check-status');
         Route::post('/process-expired/{id}', [TagihanController::class, 'processExpired'])->name('customer.tagihan.process-expired');
         Route::get('/payment-details/{id}', [TagihanController::class, 'paymentDetails'])->name('customer.tagihan.payment-details');
-        
+
         // Utils
         Route::get('/check-overdue', [TagihanController::class, 'checkOverdue'])->name('customer.tagihan.check-overdue');
         Route::get('/debug-tokens', [TagihanController::class, 'debugMissingTokens'])->name('customer.tagihan.debug-tokens');
@@ -132,6 +132,9 @@ Route::middleware(['auth', 'role:admin'])->group(function () {
 
     Route::resource('raks', RakController::class);
     Route::resource('gudangs', GudangController::class);
+
+    // Route untuk delete foto rak (AJAX)
+    Route::delete('/raks/photos/{id}', [RakController::class, 'deletePhoto'])->name('raks.photos.delete');
 
     // Customers
     Route::get('/customers', [CustomerController::class, 'index'])->name('admin.pelanggan.pelanggan');
