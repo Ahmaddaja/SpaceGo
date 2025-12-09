@@ -7,6 +7,8 @@ use Midtrans\Config;
 use Illuminate\Pagination\Paginator;
 use App\Models\Transaction;
 use App\Observers\TransactionObserver;
+use Illuminate\Support\Facades\Cache;      // ✅ TAMBAHIN INI
+use Illuminate\Support\Facades\Artisan;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -25,7 +27,20 @@ class AppServiceProvider extends ServiceProvider
         Config::$is3ds = true;
 
         Paginator::useBootstrap();
-
         Transaction::observe(TransactionObserver::class);
+
+        // Check expired tagihan
+        $this->checkExpiredTagihan();
+    }
+
+    private function checkExpiredTagihan()
+    {
+        if (!Cache::has('tagihan_expire_last_check')) {
+            dispatch(function() {
+                Artisan::call('tagihan:expire');
+            })->afterResponse();
+            
+            Cache::put('tagihan_expire_last_check', now(), now()->addMinute());
+        }
     }
 }
