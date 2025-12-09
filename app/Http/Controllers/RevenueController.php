@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\RentalRevenue;
 use App\Models\Transaction;
+use App\Models\Rak;
 use App\Services\RevenueService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -31,6 +32,46 @@ class RevenueController extends Controller
             ->orderBy('year', 'desc')
             ->pluck('year');
 
+        // Chart data for reports
+        $transaksiLabels = [];
+        $transaksiData = [];
+        $pendapatanLabels = [];
+        $pendapatanData = [];
+        $rakTerisi = Rak::where('status', 'terisi')->count();
+        $rakMaintenance = Rak::where('status', 'maintenance')->count();
+        $rakTersedia = Rak::where('status', 'tersedia')->count();
+        $statusSuccess = Transaction::whereIn('transaction_status', ['capture', 'settlement'])->count();
+        $statusPending = Transaction::where('transaction_status', 'pending')->count();
+        $statusFailed = Transaction::whereIn('transaction_status', ['deny', 'expire', 'cancel'])->count();
+
+        // If no rack data, set default
+        if ($rakTerisi == 0 && $rakMaintenance == 0 && $rakTersedia == 0) {
+            $rakTersedia = 1;
+        }
+
+        // Monthly transaction data for selected year
+        for ($i = 1; $i <= 12; $i++) {
+            $transaksiLabels[] = $this->getMonthName($i);
+
+            $count = Transaction::whereYear('transaction_time', $year)
+                ->whereMonth('transaction_time', $i)
+                ->count();
+
+            $transaksiData[] = $count;
+        }
+
+        // Monthly revenue data for selected year
+        for ($i = 1; $i <= 12; $i++) {
+            $pendapatanLabels[] = $this->getMonthName($i);
+
+            $total = Transaction::whereIn('transaction_status', ['capture', 'settlement'])
+                ->whereYear('transaction_time', $year)
+                ->whereMonth('transaction_time', $i)
+                ->sum('amount');
+
+            $pendapatanData[] = $total;
+        }
+
         $chartData = $this->getChartData($year);
 
         return view('admin.laporan.pendapatan', compact(
@@ -40,7 +81,17 @@ class RevenueController extends Controller
             'yearlyTotal',
             'yearlyTransactions',
             'availableYears',
-            'chartData'
+            'chartData',
+            'transaksiLabels',
+            'transaksiData',
+            'pendapatanLabels',
+            'pendapatanData',
+            'rakTerisi',
+            'rakMaintenance',
+            'rakTersedia',
+            'statusSuccess',
+            'statusPending',
+            'statusFailed'
         ));
     }
 
@@ -95,11 +146,39 @@ class RevenueController extends Controller
             'yearlyTotal'
         ));
 
-        $filename = $month 
+        $filename = $month
             ? "laporan-pendapatan-{$year}-{$month}.pdf"
             : "laporan-pendapatan-{$year}.pdf";
 
         return $pdf->download($filename);
+    }
+
+    public function viewPdf(Request $request)
+    {
+        $year = $request->input('year', now()->year);
+        $month = $request->input('month');
+
+        $query = RentalRevenue::where('year', $year);
+
+        if ($month) {
+            $query->where('month', $month);
+        }
+
+        $revenues = $query->orderBy('month')->get();
+        $yearlyTotal = $revenues->sum('total_revenue');
+
+        $pdf = Pdf::loadView('admin.laporan.pdf', compact(
+            'revenues',
+            'year',
+            'month',
+            'yearlyTotal'
+        ));
+
+        $filename = $month
+            ? "laporan-pendapatan-{$year}-{$month}.pdf"
+            : "laporan-pendapatan-{$year}.pdf";
+
+        return $pdf->stream($filename);
     }
 
     public function sync()

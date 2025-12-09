@@ -158,6 +158,7 @@ Route::middleware(['auth', 'role:admin'])->group(function () {
         Route::get('/pendapatan', [RevenueController::class, 'index'])->name('admin.laporan.pendapatan');
         Route::get('/pendapatan/detail', [RevenueController::class, 'detail'])->name('admin.laporan.detail');
         Route::get('/pendapatan/export-pdf', [RevenueController::class, 'exportPdf'])->name('admin.laporan.export.pdf');
+        Route::get('/pendapatan/view-pdf', [RevenueController::class, 'viewPdf'])->name('admin.laporan.view.pdf');
         Route::get('/pendapatan/sync', [RevenueController::class, 'sync'])->name('admin.laporan.sync');
     });
 
