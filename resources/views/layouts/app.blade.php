@@ -3,11 +3,10 @@
     <head>
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1">
-        <meta name="csrf-token" content="{{ csrf_token() }}">
-        <link rel="stylesheet" href="{{ asset('resource/css/app.css') }}">
-        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
+            <meta name="csrf-token" content="{{ csrf_token() }}">
+            @vite(['resources/css/app.css', 'resources/js/app.js'])
 
-        <title>{{ config('app.name', 'Laravel') }} - @yield('title', 'Dashboard')</title>
+            <title>{{ config('app.name', 'Laravel') }} - @yield('title', 'Dashboard')</title>
 
         <!-- Fonts -->
         <link rel="preconnect" href="https://fonts.bunny.net">
