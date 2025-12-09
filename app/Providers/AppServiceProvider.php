@@ -7,8 +7,11 @@ use Midtrans\Config;
 use Illuminate\Pagination\Paginator;
 use App\Models\Transaction;
 use App\Observers\TransactionObserver;
-use Illuminate\Support\Facades\Cache;      // ✅ TAMBAHIN INI
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Artisan;
+use Illuminate\Support\Facades\DB;
+use App\Models\Tagihan;
+use Carbon\Carbon;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -35,12 +38,53 @@ class AppServiceProvider extends ServiceProvider
 
     private function checkExpiredTagihan()
     {
-        if (!Cache::has('tagihan_expire_last_check')) {
-            dispatch(function() {
-                Artisan::call('tagihan:expire');
-            })->afterResponse();
+        try {
+            Log::info('🚀 Checking expired tagihan');
             
-            Cache::put('tagihan_expire_last_check', now(), now()->addMinute());
+            $now = Carbon::now();
+            
+            // Cari tagihan pending yang expired
+            $expiredTagihan = Tagihan::where('status', 'pending')
+                ->where('expired_at', '<=', $now)
+                ->get();
+
+            if ($expiredTagihan->isEmpty()) {
+                return;
+            }
+
+            DB::beginTransaction();
+
+            foreach ($expiredTagihan as $tagihan) {
+                // Update status tagihan
+                $tagihan->update([
+                    'status' => 'expired',
+                    'cancelled_at' => $now,
+                ]);
+
+                // Sync ke transaction
+                $transaction = $tagihan->transaction;
+                if ($transaction && $transaction->transaction_status === 'pending') {
+                    $transaction->update([
+                        'transaction_status' => 'expired',
+                        'updated_at' => $now,
+                    ]);
+
+                    // Update rak jadi tersedia
+                    if ($transaction->rak && $transaction->rak->status !== 'tersedia') {
+                        $transaction->rak->update([
+                            'status' => 'tersedia',
+                            'updated_at' => $now,
+                        ]);
+                    }
+                }
+            }
+
+            DB::commit();
+            Log::info("✅ Successfully expired {$expiredTagihan->count()} tagihan");
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error('ExpireTagihan failed: ' . $e->getMessage());
         }
     }
 }
