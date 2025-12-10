@@ -34,16 +34,107 @@
             padding: 10px;
             background: #fff;
         }
-        .chart-container canvas {
-            max-width: 100% !important;
-        }
         .chart-title {
             font-weight: bold;
             text-align: center;
-            margin-bottom: 10px;
+            margin-bottom: 15px;
+        }
+        /* Bar Chart Styles */
+        .bar-chart {
+            display: flex;
+            align-items: end;
+            justify-content: space-between;
+            height: 150px;
+            margin: 20px 0;
+            padding: 0 10px;
+        }
+        .bar {
+            flex: 1;
+            background: #43e97b;
+            margin: 0 2px;
+            border-radius: 4px 4px 0 0;
+            min-height: 10px;
+            position: relative;
+        }
+        .bar-label {
+            position: absolute;
+            bottom: -20px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 9px;
+            text-align: center;
+            white-space: nowrap;
+        }
+        .bar-value {
+            position: absolute;
+            top: -18px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 8px;
+            text-align: center;
+            font-weight: bold;
+        }
+        /* Doughnut Chart Styles */
+        .doughnut-chart {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            align-items: center;
+            margin: 20px 0;
+        }
+        .doughnut-legend {
+            display: flex;
+            flex-direction: column;
+            margin-left: 20px;
+        }
+        .legend-item {
+            display: flex;
+            align-items: center;
+            margin: 5px 0;
+            font-size: 10px;
+        }
+        .legend-color {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-right: 5px;
+        }
+        /* Simple horizontal bar for doughnut data */
+        .doughnut-bar {
+            width: 100%;
+            display: flex;
+            height: 20px;
+            margin: 10px 0;
+            border-radius: 10px;
+            overflow: hidden;
+            background: #f0f0f0;
+        }
+        .doughnut-segment {
+            height: 100%;
+            display: inline-block;
+        }
+        /* Container for percentages */
+        .doughnut-text {
+            text-align: center;
+            margin-top: 10px;
+            font-size: 11px;
+        }
+        /* Simple data table for complex charts */
+        .chart-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+        }
+        .chart-table th, .chart-table td {
+            border: 1px solid #ddd;
+            padding: 4px 6px;
+            font-size: 10px;
+        }
+        .chart-table th {
+            background: #f9f9f9;
+            font-weight: bold;
         }
     </style>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
 
@@ -96,176 +187,138 @@
         <!-- Row 1: Transaksi Bulanan and Status Rak -->
         <div class="chart-container">
             <div class="chart-title">Transaksi {{ $month ? \Carbon\Carbon::create(null, $month)->translatedFormat('F') . ' ' : '' }}{{ $year }}</div>
-            <canvas id="transaksiChart" width="300" height="200"></canvas>
+            <table class="chart-table">
+                <thead>
+                    <tr>
+                        <th>Bulan</th>
+                        <th>Jumlah Transaksi</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach($chartData['transaksiLabels'] as $index => $label)
+                    <tr>
+                        <td>{{ $label }}</td>
+                        <td>{{ $chartData['transaksiData'][$index] ?? 0 }}</td>
+                    </tr>
+                    @endforeach
+                </tbody>
+            </table>
         </div>
 
         <div class="chart-container">
             <div class="chart-title">Status Rak</div>
-            <canvas id="rakChart" width="300" height="200"></canvas>
+            <table class="chart-table">
+                <thead>
+                    <tr>
+                        <th>Status</th>
+                        <th>Jumlah</th>
+                        <th>Persentase</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @php
+                    $totalRaks = $chartData['rakTerisi'] + $chartData['rakTersedia'] + $chartData['rakMaintenance'];
+                    $rakStatuses = [
+                        'Terisi' => ['color' => '#f5576c', 'value' => $chartData['rakTerisi']],
+                        'Tersedia' => ['color' => '#43e97b', 'value' => $chartData['rakTersedia']],
+                        'Maintenance' => ['color' => '#e7ff0a', 'value' => $chartData['rakMaintenance']]
+                    ];
+                    @endphp
+                    @foreach($rakStatuses as $name => $data)
+                    <tr>
+                        <td>{{ $name }}</td>
+                        <td>{{ $data['value'] }}</td>
+                        <td>{{ $totalRaks > 0 ? number_format(($data['value'] / $totalRaks) * 100, 1) : 0 }}%</td>
+                    </tr>
+                    @endforeach
+                </tbody>
+            </table>
+            <div class="doughnut-chart">
+                <div style="width: 80px; height: 80px; border-radius: 50%; margin: 20px auto; background:
+                    @if($totalRaks > 0)
+                        conic-gradient(
+                            #f5576c 0% {{ (($chartData['rakTerisi'] / $totalRaks) * 100) }}%,
+                            #43e97b {{ (($chartData['rakTerisi'] / $totalRaks) * 100) }}% {{ (($chartData['rakTerisi'] + $chartData['rakTersedia']) / $totalRaks) * 100 }}%,
+                            #e7ff0a {{ (($chartData['rakTerisi'] + $chartData['rakTersedia']) / $totalRaks) * 100 }}% 100%
+                        )
+                    @else
+                        #f0f0f0
+                    @endif">
+                </div>
+            </div>
         </div>
 
         <!-- Row 2: Pendapatan and Status Transaksi -->
         <div class="chart-container">
             <div class="chart-title">Pendapatan {{ $month ? \Carbon\Carbon::create(null, $month)->translatedFormat('F') . ' ' : '' }}{{ $year }}</div>
-            <canvas id="pendapatanChart" width="300" height="200"></canvas>
+            <table class="chart-table">
+                <thead>
+                    <tr>
+                        <th>Bulan</th>
+                        <th>Pendapatan (Rp)</th>
+                        <th>Persentase</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @php
+                    $totalRevenue = array_sum($chartData['pendapatanData']);
+                    @endphp
+                    @foreach($chartData['pendapatanLabels'] as $index => $label)
+                    <tr>
+                        <td>{{ $label }}</td>
+                        <td>Rp {{ number_format($chartData['pendapatanData'][$index] ?? 0, 0, ',', '.') }}</td>
+                        <td>{{ $totalRevenue > 0 ? number_format((($chartData['pendapatanData'][$index] ?? 0) / $totalRevenue) * 100, 1) : 0 }}%</td>
+                    </tr>
+                    @endforeach
+                </tbody>
+            </table>
         </div>
 
         <div class="chart-container">
             <div class="chart-title">Status Transaksi</div>
-            <canvas id="statusChart" width="300" height="200"></canvas>
+            <table class="chart-table">
+                <thead>
+                    <tr>
+                        <th>Status</th>
+                        <th>Jumlah</th>
+                        <th>Persentase</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @php
+                    $totalTransactions = $chartData['statusSuccess'] + $chartData['statusPending'] + $chartData['statusFailed'];
+                    $statusTypes = [
+                        'Sukses' => ['color' => '#43e97b', 'value' => $chartData['statusSuccess']],
+                        'Pending' => ['color' => '#ffc107', 'value' => $chartData['statusPending']],
+                        'Gagal' => ['color' => '#dc3545', 'value' => $chartData['statusFailed']]
+                    ];
+                    @endphp
+                    @foreach($statusTypes as $name => $data)
+                    <tr>
+                        <td>{{ $name }}</td>
+                        <td>{{ $data['value'] }}</td>
+                        <td>{{ $totalTransactions > 0 ? number_format(($data['value'] / $totalTransactions) * 100, 1) : 0 }}%</td>
+                    </tr>
+                    @endforeach
+                </tbody>
+            </table>
+            <div class="doughnut-chart">
+                <div style="width: 80px; height: 80px; border-radius: 50%; margin: 20px auto; background:
+                    @if($totalTransactions > 0)
+                        conic-gradient(
+                            #43e97b 0% {{ (($chartData['statusSuccess'] / $totalTransactions) * 100) }}%,
+                            #ffc107 {{ (($chartData['statusSuccess'] / $totalTransactions) * 100) }}% {{ (($chartData['statusSuccess'] + $chartData['statusPending']) / $totalTransactions) * 100 }}%,
+                            #dc3545 {{ (($chartData['statusSuccess'] + $chartData['statusPending']) / $totalTransactions) * 100 }}% 100%
+                        )
+                    @else
+                        #f0f0f0
+                    @endif">
+                </div>
+            </div>
         </div>
     </div>
 
-    <script>
-        // Grafik Transaksi Bulanan
-        const transaksiCtx = document.getElementById('transaksiChart').getContext('2d');
-        const transaksiChart = new Chart(transaksiCtx, {
-            type: 'line',
-            data: {
-                labels: {!! json_encode($chartData['transaksiLabels']) !!},
-                datasets: [{
-                    label: 'Jumlah Transaksi',
-                    data: {!! json_encode($chartData['transaksiData']) !!},
-                    borderColor: '#667eea',
-                    backgroundColor: 'rgba(102, 126, 234, 0.1)',
-                    tension: 0.4,
-                    fill: true,
-                    borderWidth: 2,
-                    pointRadius: 4,
-                    pointBackgroundColor: '#667eea',
-                    pointBorderColor: '#fff',
-                    pointBorderWidth: 2
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: true,
-                plugins: {
-                    legend: {
-                        display: true,
-                        position: 'top'
-                    }
-                },
-                scales: {
-                    y: {
-                        beginAtZero: true,
-                        grid: {
-                            color: 'rgba(0, 0, 0, 0.05)'
-                        }
-                    },
-                    x: {
-                        grid: {
-                            display: false
-                        }
-                    }
-                }
-            }
-        });
 
-        // Grafik Status Rak
-        const rakCtx = document.getElementById('rakChart').getContext('2d');
-        const rakChart = new Chart(rakCtx, {
-            type: 'doughnut',
-            data: {
-                labels: ['Terisi', 'Tersedia', 'Maintenance'],
-                datasets: [{
-                    data: [{{ $chartData['rakTerisi'] }}, {{ $chartData['rakTersedia'] }}, {{ $chartData['rakMaintenance'] }}],
-                    backgroundColor: [
-                        'rgba(245, 87, 108, 0.8)',
-                        'rgba(67, 233, 123, 0.8)',
-                        'rgba(231, 255, 10, 0.8)'
-                    ],
-                    borderWidth: 2,
-                    borderColor: '#fff'
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: true,
-                plugins: {
-                    legend: {
-                        position: 'bottom',
-                        labels: {
-                            usePointStyle: true,
-                            pointStyle: 'circle'
-                        }
-                    }
-                }
-            }
-        });
-
-        // Grafik Pendapatan
-        const pendapatanCtx = document.getElementById('pendapatanChart').getContext('2d');
-        const pendapatanChart = new Chart(pendapatanCtx, {
-            type: 'bar',
-            data: {
-                labels: {!! json_encode($chartData['pendapatanLabels']) !!},
-                datasets: [{
-                    label: 'Pendapatan (Rp)',
-                    data: {!! json_encode($chartData['pendapatanData']) !!},
-                    backgroundColor: 'rgba(67, 233, 123, 0.7)',
-                    borderColor: 'rgba(67, 233, 123, 1)',
-                    borderWidth: 1,
-                    borderRadius: 4
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: true,
-                plugins: {
-                    legend: {
-                        display: true,
-                        position: 'top'
-                    }
-                },
-                scales: {
-                    y: {
-                        beginAtZero: true,
-                        grid: {
-                            color: 'rgba(0, 0, 0, 0.05)'
-                        }
-                    },
-                    x: {
-                        grid: {
-                            display: false
-                        }
-                    }
-                }
-            }
-        });
-
-        // Grafik Status Transaksi
-        const statusCtx = document.getElementById('statusChart').getContext('2d');
-        const statusChart = new Chart(statusCtx, {
-            type: 'doughnut',
-            data: {
-                labels: ['Sukses', 'Pending', 'Gagal'],
-                datasets: [{
-                    data: [{{ $chartData['statusSuccess'] }}, {{ $chartData['statusPending'] }}, {{ $chartData['statusFailed'] }}],
-                    backgroundColor: [
-                        'rgba(67, 233, 123, 0.8)',
-                        'rgba(255, 193, 7, 0.8)',
-                        'rgba(220, 53, 69, 0.8)'
-                    ],
-                    borderWidth: 2,
-                    borderColor: '#fff'
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: true,
-                plugins: {
-                    legend: {
-                        position: 'bottom',
-                        labels: {
-                            usePointStyle: true,
-                            pointStyle: 'circle'
-                        }
-                    }
-                }
-            }
-        });
-    </script>
 
     <div class="footer">
         <p>Dokumen ini digenerate otomatis oleh sistem.</p>
