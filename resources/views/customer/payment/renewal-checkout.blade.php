@@ -419,11 +419,53 @@ document.getElementById('pay-button').addEventListener('click', function () {
     snap.pay('{{ $snapToken }}', {
         onSuccess: function(result) {
             console.log('Payment Success:', result);
-            updateTransactionStatus(result.order_id, result.transaction_status, result.payment_type);
+            
+            // Update status dulu
+            fetch('{{ route("payment.update-status") }}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                },
+                body: JSON.stringify({
+                    order_id: result.order_id,
+                    transaction_status: 'settlement',
+                    payment_type: result.payment_type
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                console.log('Status Update Response:', data);
+                
+                // Langsung redirect ke list rak tanpa alert
+                window.location.href = '{{ route("customer.list-rak.rak") }}';
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                // Tetap redirect meskipun error update status
+                window.location.href = '{{ route("customer.list-rak.rak") }}';
+            });
         },
         onPending: function(result) {
             console.log('Payment Pending:', result);
-            updateTransactionStatus(result.order_id, 'pending', result.payment_type);
+            
+            fetch('{{ route("payment.update-status") }}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                },
+                body: JSON.stringify({
+                    order_id: result.order_id,
+                    transaction_status: 'pending',
+                    payment_type: result.payment_type
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                alert('Pembayaran sedang diproses. Silakan cek status pembayaran Anda.');
+                window.location.href = '{{ route("customer.tagihan") }}';
+            });
         },
         onError: function(result) {
             console.log('Payment Error:', result);
