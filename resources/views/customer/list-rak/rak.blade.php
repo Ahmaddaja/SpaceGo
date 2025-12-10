@@ -16,8 +16,8 @@
         box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
     }
     
-    .status-pengosongan {
-        background: linear-gradient(135deg, #9333ea, #db2777);
+    .status-dikosongkan {
+        background: linear-gradient(135deg, #3b82f6, #1d4ed8);
         color: white;
     }
 
@@ -145,6 +145,8 @@
 
     .photo-carousel-container {
         position: relative;
+        height: 200px;
+        overflow: hidden;
     }
 
     .carousel-slide {
@@ -244,10 +246,34 @@
 
     .image-hover {
         transition: transform 0.5s ease;
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
     }
 
     .rak-card:hover .image-hover {
         transform: scale(1.05);
+    }
+
+    .status-badge {
+        position: absolute;
+        top: 12px;
+        left: 12px;
+        z-index: 20;
+        font-size: 0.75rem;
+        font-weight: 600;
+        padding: 4px 12px;
+        border-radius: 20px;
+        backdrop-filter: blur(10px);
+    }
+    
+    .no-photo-placeholder {
+        width: 100%;
+        height: 100%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: linear-gradient(135deg, #f3f4f6, #e5e7eb);
     }
 </style>
 @endpush
@@ -275,7 +301,7 @@
             </div>
         </div>
 
-        @if($raks->count() == 0)
+        @if($raks->isEmpty())
             <div class="empty-state rounded-2xl p-8 md:p-12 text-center max-w-2xl mx-auto">
                 <div class="flex justify-center mb-6">
                     <div class="bg-yellow-100 p-6 rounded-full floating-icon">
@@ -297,56 +323,57 @@
         <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 lg:gap-8">
 
             @foreach($raks as $rak)
-
-            
             @php
-                // Hitung apakah rak sudah dikosongkan
-                $currentDbTime = DB::selectOne('SELECT NOW() as db_time')->db_time;
-                $now = \Carbon\Carbon::parse($currentDbTime);
-                
+                // Cek apakah rak sudah dikosongkan
                 $isDikosongkan = false;
-                if ($rak->transaction && $rak->transaction->sewa_berakhir) {
-                    $end = \Carbon\Carbon::parse($rak->transaction->sewa_berakhir);
-                    $daysPassed = $now->diffInDays($end, false);
-                    $isDikosongkan = $daysPassed < -37 || ($rak->is_dikosongkan ?? false);
+                $dikosongkanAt = null;
+                
+                if ($rak->transaction) {
+                    // Logika dari model Transaction
+                    $isDikosongkan = $rak->transaction->is_dikosongkan ?? false;
+                    $dikosongkanAt = $rak->transaction->dikosongkan_at ?? null;
+                }
+                
+                // Kumpulkan semua foto
+                $photos = [];
+                if ($rak->fotos && $rak->fotos->isNotEmpty()) {
+                    $photos = $rak->fotos->pluck('path')->toArray();
+                } elseif ($rak->foto) {
+                    $photos = [$rak->foto];
                 }
             @endphp
+            
             <div class="rak-card bg-white rounded-2xl shadow-lg overflow-hidden">
                 
+                <!-- Header dengan foto -->
                 <div class="relative">
-                    @php
-                        $hasMultiplePhotos = $rak->fotos && $rak->fotos->count() > 0;
-                        $photos = [];
-
-                        if ($hasMultiplePhotos) {
-                            $photos = $rak->fotos->pluck('path')->toArray();
-                        } elseif ($rak->foto) {
-                            $photos = [$rak->foto];
-                        }
-                    @endphp
-
-                    <div class="relative w-full h-48 overflow-hidden bg-gradient-to-br from-gray-100 to-gray-200 photo-carousel-container">
-                        @if (count($photos) > 0)
-                            @foreach ($photos as $index => $photo)
-                                <div class="carousel-slide {{ $index === 0 ? 'active' : '' }}" data-slide-index="{{ $index }}">
+                    <div class="photo-carousel-container">
+                        @if(count($photos) > 0)
+                            @foreach($photos as $index => $photo)
+                                <div class="carousel-slide {{ $index === 0 ? 'active' : '' }}" 
+                                     data-slide-index="{{ $index }}">
                                     <img src="{{ asset('storage/' . $photo) }}" 
-                                         class="w-full h-full object-cover image-hover"
-                                         alt="Foto Rak {{ $index + 1 }}">
+                                         class="image-hover"
+                                         alt="Foto Rak {{ $index + 1 }}"
+                                         onerror="this.onerror=null; this.src='https://via.placeholder.com/400x200?text=Rak+Tidak+Tersedia';">
                                 </div>
                             @endforeach
 
-                            @if (count($photos) > 1)
-                                <button class="carousel-btn carousel-prev" onclick="changeSlide(this, -1, '{{ $rak->id }}')">
+                            @if(count($photos) > 1)
+                                <button class="carousel-btn carousel-prev" 
+                                        onclick="changeSlide(this, -1)">
                                     <i class="fas fa-chevron-left"></i>
                                 </button>
-                                <button class="carousel-btn carousel-next" onclick="changeSlide(this, 1, '{{ $rak->id }}')">
+                                <button class="carousel-btn carousel-next" 
+                                        onclick="changeSlide(this, 1)">
                                     <i class="fas fa-chevron-right"></i>
                                 </button>
 
                                 <div class="carousel-indicators">
-                                    @foreach ($photos as $idx => $photo)
+                                    @foreach($photos as $idx => $photo)
                                         <button class="indicator {{ $idx === 0 ? 'active' : '' }}"
-                                            onclick="goToSlide(this, {{ $idx }}, '{{ $rak->id }}')"></button>
+                                                onclick="goToSlide(this, {{ $idx }})">
+                                        </button>
                                     @endforeach
                                 </div>
 
@@ -356,15 +383,25 @@
                                 </div>
                             @endif
                         @else
-                            <div class="w-full h-full flex items-center justify-center bg-gradient-to-br from-blue-100 to-purple-100">
-                                <i class="fas fa-pallet text-4xl text-blue-500 opacity-50"></i>
+                            <div class="no-photo-placeholder">
+                                <i class="fas fa-pallet text-4xl text-gray-400"></i>
                             </div>
                         @endif
 
-                        <div class="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent"></div>
+                        <!-- Status Badge -->
+                        @if($isDikosongkan)
+                            <div class="status-badge bg-blue-600 text-white">
+                                <i class="fas fa-box-open mr-1"></i> Dikosongkan
+                            </div>
+                        @elseif($rak->status === 'terisi')
+                            <div class="status-badge bg-red-600 text-white">
+                                <i class="fas fa-box mr-1"></i> Terisi
+                            </div>
+                        @endif
                     </div>
                 </div>
 
+                <!-- Content -->
                 <div class="p-6 space-y-5">
                     
                     <div class="space-y-3">
@@ -384,7 +421,7 @@
                                 Gudang
                             </span>
                             <span class="text-gray-900 font-semibold text-sm">
-                                {{ $rak->gudang->nama_gudang ?? $rak->lokasi_gudang }}
+                                {{ $rak->gudang->nama_gudang ?? $rak->lokasi_gudang ?? 'N/A' }}
                             </span>
                         </div>
 
@@ -402,7 +439,7 @@
                                 Dimensi
                             </span>
                             <span class="text-gray-900 font-semibold text-sm">
-                                {{ $rak->panjang }}×{{ $rak->lebar }}×{{ $rak->tinggi }}m
+                                {{ $rak->panjang ?? 0 }}×{{ $rak->lebar ?? 0 }}×{{ $rak->tinggi ?? 0 }}m
                             </span>
                         </div>
 
@@ -411,102 +448,109 @@
                                 <i class="fas fa-weight text-orange-500 mr-3 w-5 text-center"></i>
                                 Kapasitas
                             </span>
-                            <span class="text-gray-900 font-semibold text-sm">{{ number_format($rak->kapasitas_berat, 0, ',', '.') }} kg</span>
+                            <span class="text-gray-900 font-semibold text-sm">
+                                {{ number_format($rak->kapasitas_berat ?? 0, 0, ',', '.') }} kg
+                            </span>
                         </div>
 
                         <div class="info-item flex items-center justify-between">
-    <span class="text-gray-600 text-sm flex items-center">
-        <i class="fas fa-info-circle text-purple-500 mr-3 w-5 text-center"></i>
-        Status
-    </span>
-    
-    @if ($isDikosongkan)
-        <span class="inline-flex items-center px-2 py-1 bg-blue-100 text-blue-700 rounded-lg text-xs font-semibold">
-            <i class="fas fa-box-open mr-1"></i>
-            Sudah Dikosongkan
-        </span>
-    @elseif ($rak->status === 'tersedia')
-        <span class="inline-flex items-center px-2 py-1 bg-green-100 text-green-700 rounded-lg text-xs font-semibold">
-            <i class="fas fa-check mr-1"></i>
-            Tersedia
-        </span>
-    @elseif($rak->status === 'terisi')
-        <span class="inline-flex items-center px-2 py-1 bg-red-100 text-red-700 rounded-lg text-xs font-semibold">
-            <i class="fas fa-box mr-1"></i>
-            Terisi
-        </span>
-    @elseif($rak->status === 'maintenance')
-        <span class="inline-flex items-center px-2 py-1 bg-yellow-100 text-yellow-700 rounded-lg text-xs font-semibold">
-            <i class="fas fa-tools mr-1"></i>
-            Maintenance
-        </span>
-    @elseif($rak->status === 'pengosongan')
-        <span class="inline-flex items-center px-2 py-1 bg-purple-100 text-purple-700 rounded-lg text-xs font-semibold">
-            <i class="fas fa-box-open mr-1"></i>
-            Pengosongan
-        </span>
-    @endif
-</div>
-
-
-<!-- TAMBAHKAN INFO BOX JIKA DIKOSONGKAN -->
-@if ($isDikosongkan)
-    <div class="mt-4 p-4 bg-blue-50 rounded-lg border border-blue-200">
-        <div class="flex items-start">
-            <i class="fas fa-info-circle text-blue-600 mr-3 mt-1"></i>
-            <div class="flex-1">
-                <p class="text-blue-800 text-sm font-semibold mb-1">
-                    Rak Telah Dikosongkan
-                </p>
-                <p class="text-blue-700 text-xs leading-relaxed">
-                    Masa sewa telah berakhir lebih dari 37 hari. Rak telah dikosongkan dan kembali tersedia.
-                </p>
-                @if ($rak->dikosongkan_at)
-                    <p class="text-blue-600 text-xs mt-2">
-                        Dikosongkan: {{ \Carbon\Carbon::parse($rak->dikosongkan_at)->format('d M Y') }}
-                    </p>
-                @endif
-            </div>
-        </div>
-    </div>
-@endif
-
-                    <div class="duration-gradient p-4 rounded-xl">
-                        <p class="text-amber-700 text-sm font-medium mb-1 flex items-center">
-                            <i class="fas fa-calendar-alt mr-2"></i>
-                            Durasi Sewa
-                        </p>
-                        <p class="text-amber-600 text-2xl font-bold">
-                            {{ $rak->durasi_sewa_hari }} Hari
-                            <span class="text-sm font-normal text-amber-500">
-                                ({{ round($rak->durasi_sewa_hari / 30, 1) }} bulan)
+                            <span class="text-gray-600 text-sm flex items-center">
+                                <i class="fas fa-info-circle text-purple-500 mr-3 w-5 text-center"></i>
+                                Status
                             </span>
-                        </p>
-                    </div>
+                            
+                            @if($isDikosongkan)
+                                <span class="inline-flex items-center px-3 py-1 bg-blue-100 text-blue-700 rounded-lg text-xs font-semibold">
+                                    <i class="fas fa-box-open mr-1"></i>
+                                    Sudah Dikosongkan
+                                </span>
+                            @elseif($rak->status === 'tersedia')
+                                <span class="inline-flex items-center px-3 py-1 bg-green-100 text-green-700 rounded-lg text-xs font-semibold">
+                                    <i class="fas fa-check mr-1"></i>
+                                    Tersedia
+                                </span>
+                            @elseif($rak->status === 'terisi')
+                                <span class="inline-flex items-center px-3 py-1 bg-red-100 text-red-700 rounded-lg text-xs font-semibold">
+                                    <i class="fas fa-box mr-1"></i>
+                                    Terisi
+                                </span>
+                            @elseif($rak->status === 'maintenance')
+                                <span class="inline-flex items-center px-3 py-1 bg-yellow-100 text-yellow-700 rounded-lg text-xs font-semibold">
+                                    <i class="fas fa-tools mr-1"></i>
+                                    Maintenance
+                                </span>
+                            @else
+                                <span class="inline-flex items-center px-3 py-1 bg-gray-100 text-gray-700 rounded-lg text-xs font-semibold">
+                                    <i class="fas fa-question-circle mr-1"></i>
+                                    {{ $rak->status }}
+                                </span>
+                            @endif
+                        </div>
 
-                    <div class="price-gradient p-4 rounded-xl">
-                        <p class="text-green-700 text-sm font-medium mb-1 flex items-center">
-                            <i class="fas fa-money-bill-wave mr-2"></i>
-                            Harga Sewa
-                        </p>
-                        <p class="text-green-600 text-2xl font-bold">
-                            Rp {{ number_format($rak->harga_sewa_perbulan, 0, ',', '.') }}
-                            <span class="text-sm font-normal text-green-500">/{{ $rak->durasi_sewa_hari }} hari</span>
-                        </p>
-                    </div>
+                        <!-- Info Box jika dikosongkan -->
+                        @if($isDikosongkan && $dikosongkanAt)
+                            <div class="mt-4 p-4 bg-blue-50 rounded-lg border border-blue-200">
+                                <div class="flex items-start">
+                                    <i class="fas fa-info-circle text-blue-600 mr-3 mt-1"></i>
+                                    <div class="flex-1">
+                                        <p class="text-blue-800 text-sm font-semibold mb-1">
+                                            Rak Telah Dikosongkan
+                                        </p>
+                                        <p class="text-blue-700 text-xs leading-relaxed">
+                                            Masa sewa telah berakhir. Rak telah dikosongkan dan kembali tersedia.
+                                        </p>
+                                        <p class="text-blue-600 text-xs mt-2">
+                                            Dikosongkan: {{ \Carbon\Carbon::parse($dikosongkanAt)->format('d M Y') }}
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                        @endif
 
-                  <div class="flex space-x-3">
-                        @if ($isDikosongkan)
-                            <a href="{{ route('customer.list-rak.list-rak') }}" 
-                            class="flex-1 action-btn bg-gradient-to-r from-blue-600 to-purple-600 text-white text-center py-3 px-4 rounded-lg font-semibold text-sm">
-                                <i class="fas fa-shopping-cart mr-2"></i> Sewa Rak Lagi
-                            </a>
-                        @else
+                        @if($rak->durasi_sewa_hari)
+                        <div class="duration-gradient p-4 rounded-xl">
+                            <p class="text-amber-700 text-sm font-medium mb-1 flex items-center">
+                                <i class="fas fa-calendar-alt mr-2"></i>
+                                Durasi Sewa
+                            </p>
+                            <p class="text-amber-600 text-2xl font-bold">
+                                {{ $rak->durasi_sewa_hari }} Hari
+                                <span class="text-sm font-normal text-amber-500">
+                                    ({{ round($rak->durasi_sewa_hari / 30, 1) }} bulan)
+                                </span>
+                            </p>
+                        </div>
+                        @endif
+
+                        @if($rak->harga_sewa_perbulan)
+                        <div class="price-gradient p-4 rounded-xl">
+                            <p class="text-green-700 text-sm font-medium mb-1 flex items-center">
+                                <i class="fas fa-money-bill-wave mr-2"></i>
+                                Harga Sewa
+                            </p>
+                            <p class="text-green-600 text-2xl font-bold">
+                                Rp {{ number_format($rak->harga_sewa_perbulan, 0, ',', '.') }}
+                                <span class="text-sm font-normal text-green-500">
+                                    /{{ $rak->durasi_sewa_hari ?? 30 }} hari
+                                </span>
+                            </p>
+                        </div>
+                        @endif
+
+                        <!-- Action Buttons -->
+                        <div class="flex space-x-3 pt-2">
+                            @if($isDikosongkan)
+                                <a href="{{ route('customer.list-rak.list-rak') }}" 
+                                   class="flex-1 action-btn bg-gradient-to-r from-blue-600 to-purple-600 text-white text-center py-3 px-4 rounded-lg font-semibold text-sm hover:shadow-lg">
+                                    <i class="fas fa-shopping-cart mr-2"></i> Sewa Lagi
+                                </a>
+                            @endif
+                            
                             <a href="{{ route('customer.list-rak.detail', $rak->id) }}" 
-                            class="flex-1 action-btn btn-detail text-center py-3 px-4 rounded-lg font-semibold text-sm">
+                               class="{{ $isDikosongkan ? 'flex-1' : 'w-full' }} action-btn btn-detail text-center py-3 px-4 rounded-lg font-semibold text-sm hover:shadow-lg">
                                 <i class="fas fa-eye mr-2"></i> Detail Rak
                             </a>
-                        @endif
+                        </div>
                     </div>
                 </div>
             </div>
@@ -514,9 +558,10 @@
 
         </div>
 
+        <!-- Pagination -->
         @if($raks->hasPages())
         <div class="pagination-container mt-12 p-6">
-            <div class="flex items-center justify-between">
+            <div class="flex flex-col md:flex-row items-center justify-between gap-4">
                 <div class="text-sm text-gray-700">
                     Menampilkan 
                     <span class="font-medium">{{ $raks->firstItem() }}</span> 
@@ -527,54 +572,7 @@
                     rak
                 </div>
                 <div class="flex space-x-2">
-                    @if ($raks->onFirstPage())
-                        <span class="px-3 py-2 bg-gray-100 text-gray-400 rounded-lg cursor-not-allowed">
-                            <i class="fas fa-chevron-left"></i>
-                        </span>
-                    @else
-                        <a href="{{ $raks->previousPageUrl() }}" class="px-3 py-2 bg-white text-gray-700 rounded-lg border border-gray-300 hover:bg-gray-50 transition duration-200">
-                            <i class="fas fa-chevron-left"></i>
-                        </a>
-                    @endif
-
-                    @php
-                        $current = $raks->currentPage();
-                        $last = $raks->lastPage();
-                        $start = max(1, $current - 2);
-                        $end = min($last, $current + 2);
-                    @endphp
-
-                    @if($start > 1)
-                        <a href="{{ $raks->url(1) }}" class="px-3 py-2 bg-white text-gray-700 rounded-lg border border-gray-300 hover:bg-gray-50 transition duration-200">1</a>
-                        @if($start > 2)
-                            <span class="px-3 py-2 text-gray-500">...</span>
-                        @endif
-                    @endif
-
-                    @for ($page = $start; $page <= $end; $page++)
-                        @if ($page == $current)
-                            <span class="px-3 py-2 bg-blue-600 text-white rounded-lg font-medium">{{ $page }}</span>
-                        @else
-                            <a href="{{ $raks->url($page) }}" class="px-3 py-2 bg-white text-gray-700 rounded-lg border border-gray-300 hover:bg-gray-50 transition duration-200">{{ $page }}</a>
-                        @endif
-                    @endfor
-
-                    @if($end < $last)
-                        @if($end < $last - 1)
-                            <span class="px-3 py-2 text-gray-500">...</span>
-                        @endif
-                        <a href="{{ $raks->url($last) }}" class="px-3 py-2 bg-white text-gray-700 rounded-lg border border-gray-300 hover:bg-gray-50 transition duration-200">{{ $last }}</a>
-                    @endif
-
-                    @if ($raks->hasMorePages())
-                        <a href="{{ $raks->nextPageUrl() }}" class="px-3 py-2 bg-white text-gray-700 rounded-lg border border-gray-300 hover:bg-gray-50 transition duration-200">
-                            <i class="fas fa-chevron-right"></i>
-                        </a>
-                    @else
-                        <span class="px-3 py-2 bg-gray-100 text-gray-400 rounded-lg cursor-not-allowed">
-                            <i class="fas fa-chevron-right"></i>
-                        </span>
-                    @endif
+                    {{ $raks->links('vendor.pagination.custom') }}
                 </div>
             </div>
         </div>
@@ -588,7 +586,8 @@
 
 @push('scripts')
 <script>
-    function changeSlide(button, direction, rakId) {
+    // Fungsi untuk carousel
+    function changeSlide(button, direction) {
         const container = button.closest('.photo-carousel-container');
         const slides = container.querySelectorAll('.carousel-slide');
         const indicators = container.querySelectorAll('.indicator');
@@ -605,34 +604,41 @@
         if (newIndex >= slides.length) newIndex = 0;
         if (newIndex < 0) newIndex = slides.length - 1;
 
+        // Update slides
         slides[currentIndex].classList.remove('active');
         slides[newIndex].classList.add('active');
 
+        // Update indicators
         indicators[currentIndex].classList.remove('active');
         indicators[newIndex].classList.add('active');
 
+        // Update counter
         if (counterCurrent) {
             counterCurrent.textContent = newIndex + 1;
         }
     }
 
-    function goToSlide(button, index, rakId) {
+    function goToSlide(button, index) {
         const container = button.closest('.photo-carousel-container');
         const slides = container.querySelectorAll('.carousel-slide');
         const indicators = container.querySelectorAll('.indicator');
         const counterCurrent = container.querySelector('.current-photo');
 
+        // Update slides
         slides.forEach(slide => slide.classList.remove('active'));
-        indicators.forEach(ind => ind.classList.remove('active'));
-
         slides[index].classList.add('active');
+
+        // Update indicators
+        indicators.forEach(ind => ind.classList.remove('active'));
         indicators[index].classList.add('active');
 
+        // Update counter
         if (counterCurrent) {
             counterCurrent.textContent = index + 1;
         }
     }
 
+    // Animasi kartu saat load
     document.addEventListener('DOMContentLoaded', function() {
         const cards = document.querySelectorAll('.rak-card');
         cards.forEach((card, index) => {
@@ -646,6 +652,7 @@
             }, index * 100);
         });
 
+        // Auto-play carousel
         const carousels = document.querySelectorAll('.photo-carousel-container');
         carousels.forEach(carousel => {
             const slides = carousel.querySelectorAll('.carousel-slide');
@@ -656,7 +663,7 @@
                     autoPlayInterval = setInterval(() => {
                         const nextBtn = carousel.querySelector('.carousel-next');
                         if (nextBtn) {
-                            nextBtn.click();
+                            changeSlide(nextBtn, 1);
                         }
                     }, 5000);
                 };
@@ -665,7 +672,10 @@
                     clearInterval(autoPlayInterval);
                 };
 
+                // Start autoplay
                 startAutoPlay();
+                
+                // Pause on hover
                 carousel.addEventListener('mouseenter', stopAutoPlay);
                 carousel.addEventListener('mouseleave', startAutoPlay);
             }
