@@ -399,6 +399,56 @@
     // =========================================
     // ======= DETAILS PENDING FUNCTIONS =======
     // =========================================
+        function continuePayment(snapToken, transactionId) {
+        if (!snapToken || snapToken === '' || snapToken === 'null') {
+            Swal.fire({
+                icon: 'error',
+                title: 'Token Tidak Valid',
+                text: 'Silakan refresh halaman'
+            });
+            return;
+        }
+
+        window.snap.pay(snapToken, {
+            onSuccess: function(result) {
+                console.log('Payment success:', result);
+                
+                // Update status pembayaran
+                updateTransactionStatus(transactionId, 'settlement', result.payment_type);
+                
+                // Redirect ke halaman list rak setelah update status
+                setTimeout(() => {
+                    window.location.href = '/customer/list-rak/rak';
+                }, 2000);
+            },
+            onPending: function(result) {
+                console.log('Payment pending:', result);
+                
+                Swal.fire({
+                    icon: 'info',
+                    title: 'Pembayaran Pending',
+                    text: 'Silakan selesaikan pembayaran Anda',
+                    confirmButtonColor: '#3b82f6'
+                }).then(() => {
+                    window.location.reload();
+                });
+            },
+            onError: function(result) {
+                console.log('Payment error:', result);
+                
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Pembayaran Gagal',
+                    text: 'Terjadi kesalahan saat memproses pembayaran',
+                    confirmButtonColor: '#dc2626'
+                });
+            },
+            onClose: function() {
+                console.log('Payment popup closed');
+                // User menutup popup tanpa menyelesaikan pembayaran
+            }
+        });
+    }
     function updateTransactionStatus(transactionId, status, paymentType) {
         fetch('/customer/payment/update-status', {
             method: 'POST',
@@ -1142,17 +1192,14 @@
                             </div>
 
                             <!-- Action Buttons -->
-                            <div class="grid grid-cols-2 gap-3 pt-2">
-                                <button onclick="Swal.close()" 
-                                        class="py-3 bg-gray-100 hover:bg-gray-200 text-gray-800 font-medium rounded-xl transition-all duration-300 flex items-center justify-center gap-2 hover:shadow-md group">
-                                    <i class="fas fa-times group-hover:rotate-90 transition-transform duration-300"></i>
-                                    Tutup
-                                </button>
-                                <button onclick="createNewOrder('${tagihan.rak_nama}', '${tagihan.tagihan_code}')" 
-                                        class="py-3 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white font-medium rounded-xl transition-all duration-300 flex items-center justify-center gap-2 hover:shadow-lg transform hover:-translate-y-0.5">
-                                    <i class="fas fa-plus-circle"></i>
-                                    Buat Order Baru
-                                </button>
+                            <div class="pt-2">
+                                <div class="flex justify-center">
+                                    <button onclick="Swal.close()" 
+                                            class="w-full max-w-xs py-3 bg-gray-100 hover:bg-gray-200 text-gray-800 font-medium rounded-xl transition-all duration-300 flex items-center justify-center gap-2 hover:shadow-md group">
+                                        <i class="fas fa-times group-hover:rotate-90 transition-transform duration-300"></i>
+                                        Tutup
+                                    </button>
+                                </div>
                             </div>
                             
                             <!-- Note -->

@@ -27,73 +27,77 @@ class PaymentController extends Controller
     }
 
     public function bayar($id)
-    {
-        try {
-            $rak = Rak::findOrFail($id);
-            $userId = Auth::id();
+{
+    try {
+        $rak = Rak::findOrFail($id);
+        $userId = Auth::id();
 
-            $existingPendingTagihan = Tagihan::where('user_id', $userId)
-                ->where('rak_id', $rak->id)
-                ->where('status', 'pending')
-                ->first();
+        $existingPendingTagihan = Tagihan::where('user_id', $userId)
+            ->where('rak_id', $rak->id)
+            ->where('status', 'pending')
+            ->first();
 
-            if ($existingPendingTagihan) {
-                return redirect()->route('customer.tagihan')
-                    ->with('info', 'Anda sudah memiliki tagihan pending untuk rak ini. Silakan selesaikan pembayaran di halaman Tagihan.');
-            }
-
-            if ($rak->status !== 'tersedia') {
-                return redirect()->route('customer.list-rak.list-rak')
-                    ->with('error', 'Rak tidak tersedia untuk disewa.');
-            }
-
-            $orderId = 'ORDER-' . time() . '-' . $rak->id;
-
-            $params = [
-                'transaction_details' => [
-                    'order_id' => $orderId,
-                    'gross_amount' => (int) $rak->harga_sewa_perbulan,
-                ],
-                'item_details' => [
-                    [
-                        'id' => $rak->id,
-                        'price' => (int) $rak->harga_sewa_perbulan,
-                        'quantity' => 1,
-                        'name' => $rak->nama_rak
-                    ]
-                ],
-                'customer_details' => [
-                    'first_name' => Auth::user()->name,
-                    'email' => Auth::user()->email,
-                ]
-            ];
-
-            $snapToken = Snap::getSnapToken($params);
-
-            session([
-                'payment_checkout' => [
-                    'order_id' => $orderId,
-                    'rak_id' => $rak->id,
-                    'rak_nama' => $rak->nama_rak,
-                    'amount' => $rak->harga_sewa_perbulan,
-                    'snap_token' => $snapToken,
-                    'created_at' => now()
-                ]
-            ]);
-
-            Log::info('Checkout session created', [
-                'user_id' => $userId,
-                'rak_id' => $rak->id,
-                'order_id' => $orderId
-            ]);
-
-            return view('customer.payment.checkout', compact('snapToken', 'rak'));
-        } catch (\Exception $e) {
-            Log::error('Payment Checkout Error: ' . $e->getMessage());
-            return redirect()->back()
-                ->with('error', 'Terjadi kesalahan: ' . $e->getMessage());
+        if ($existingPendingTagihan) {
+            return redirect()->route('customer.tagihan')
+                ->with('info', 'Anda sudah memiliki tagihan pending untuk rak ini. Silakan selesaikan pembayaran di halaman Tagihan.');
         }
+
+        if ($rak->status !== 'tersedia') {
+            return redirect()->route('customer.list-rak.list-rak')
+                ->with('error', 'Rak tidak tersedia untuk disewa.');
+        }
+
+        $orderId = 'ORDER-' . time() . '-' . $rak->id;
+
+        $params = [
+            'transaction_details' => [
+                'order_id' => $orderId,
+                'gross_amount' => (int) $rak->harga_sewa_perbulan,
+            ],
+            'item_details' => [
+                [
+                    'id' => $rak->id,
+                    'price' => (int) $rak->harga_sewa_perbulan,
+                    'quantity' => 1,
+                    'name' => $rak->nama_rak
+                ]
+            ],
+            'customer_details' => [
+                'first_name' => Auth::user()->name,
+                'email' => Auth::user()->email,
+            ],
+            // ✅ TAMBAHKAN INI - REDIRECT KE LIST RAK SETELAH PEMBAYARAN
+            'callbacks' => [
+                'finish' => route('customer.list-rak.rak')
+            ]
+        ];
+
+        $snapToken = Snap::getSnapToken($params);
+
+        session([
+            'payment_checkout' => [
+                'order_id' => $orderId,
+                'rak_id' => $rak->id,
+                'rak_nama' => $rak->nama_rak,
+                'amount' => $rak->harga_sewa_perbulan,
+                'snap_token' => $snapToken,
+                'created_at' => now()
+            ]
+        ]);
+
+        Log::info('Checkout session created', [
+            'user_id' => $userId,
+            'rak_id' => $rak->id,
+            'order_id' => $orderId
+        ]);
+
+        return view('customer.payment.checkout', compact('snapToken', 'rak'));
+    } catch (\Exception $e) {
+        Log::error('Payment Checkout Error: ' . $e->getMessage());
+        return redirect()->back()
+            ->with('error', 'Terjadi kesalahan: ' . $e->getMessage());
     }
+}
 
     public function processPayment(Request $request)
     {
