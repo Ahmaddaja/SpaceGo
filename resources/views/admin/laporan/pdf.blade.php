@@ -20,7 +20,30 @@
             border: 1px solid #ddd;
             border-radius: 8px;
         }
+        .charts-section {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            margin: 20px 0;
+        }
+        .chart-container {
+            flex: 1 1 45%;
+            min-height: 250px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 10px;
+            background: #fff;
+        }
+        .chart-container canvas {
+            max-width: 100% !important;
+        }
+        .chart-title {
+            font-weight: bold;
+            text-align: center;
+            margin-bottom: 10px;
+        }
     </style>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
 
@@ -68,150 +91,181 @@
         </tbody>
     </table>
 
-    <!-- ==================================
-         ADMINLTE STYLE CHARTS SECTION
-    =====================================-->
+    <!-- CHARTS SECTION -->
+    <div class="charts-section">
+        <!-- Row 1: Transaksi Bulanan and Status Rak -->
+        <div class="chart-container">
+            <div class="chart-title">Transaksi {{ $month ? \Carbon\Carbon::create(null, $month)->translatedFormat('F') . ' ' : '' }}{{ $year }}</div>
+            <canvas id="transaksiChart" width="300" height="200"></canvas>
+        </div>
 
-    <div class="chart-box">
-        <h4 style="text-align:center; margin-bottom:10px;">📊 Grafik Pendapatan {{ $year }}</h4>
+        <div class="chart-container">
+            <div class="chart-title">Status Rak</div>
+            <canvas id="rakChart" width="300" height="200"></canvas>
+        </div>
 
-        @php
-            // PREPARE BASIC VARIABLES
-            $maxRevenue = max($chartData['pendapatanData']) ?: 1;
-            $chartW = 400;
-            $chartH = 180;
-            $barW = $chartW / count($chartData['pendapatanLabels']) - 10;
-            $adminLTEColors = ['#00a65a','#f39c12','#f56954','#00c0ef','#3c8dbc','#d2d6de','#605ca8','#39CCCC','#3c8dbc','#00a65a','#f39c12','#f56954'];
-        @endphp
+        <!-- Row 2: Pendapatan and Status Transaksi -->
+        <div class="chart-container">
+            <div class="chart-title">Pendapatan {{ $month ? \Carbon\Carbon::create(null, $month)->translatedFormat('F') . ' ' : '' }}{{ $year }}</div>
+            <canvas id="pendapatanChart" width="300" height="200"></canvas>
+        </div>
 
-        <!-- =======================
-             BAR CHART
-        ======================== -->
-        <svg width="{{ $chartW + 60 }}" height="{{ $chartH + 60 }}">
-            <rect width="100%" height="100%" fill="#f8f9fa" />
-
-            @for($i=1; $i<=5; $i++)
-                <line x1="40" y1="{{ $chartH - ($i*$chartH/5) + 20 }}" x2="{{ $chartW + 40 }}" y2="{{ $chartH - ($i*$chartH/5) + 20 }}"
-                      stroke="#ddd" stroke-dasharray="2,2"/>
-            @endfor
-
-            @foreach($chartData['pendapatanData'] as $i => $value)
-                @php
-                    $height = ($value / $maxRevenue) * $chartH;
-                    $x = $i * ($barW + 10) + 50;
-                    $y = $chartH + 20 - $height;
-                    $color = $adminLTEColors[$i % count($adminLTEColors)];
-                @endphp
-
-                <rect x="{{ $x }}" y="{{ $y }}" width="{{ $barW }}" height="{{ $height }}"
-                      fill="{{ $color }}" stroke="#ccc" rx="3"/>
-
-                <text x="{{ $x + $barW/2 }}" y="{{ $chartH + 40 }}" text-anchor="middle" font-size="10">
-                    {{ substr($chartData['pendapatanLabels'][$i], 0, 3) }}
-                </text>
-            @endforeach
-        </svg>
+        <div class="chart-container">
+            <div class="chart-title">Status Transaksi</div>
+            <canvas id="statusChart" width="300" height="200"></canvas>
+        </div>
     </div>
 
-    <!-- LINE CHART -->
-    <div class="chart-box">
-        @php
-            $maxT = max($chartData['transaksiData']) ?: 1;
-            $LW = 380; $LH = 160;
-            $cx = 30;
-        @endphp
+    <script>
+        // Grafik Transaksi Bulanan
+        const transaksiCtx = document.getElementById('transaksiChart').getContext('2d');
+        const transaksiChart = new Chart(transaksiCtx, {
+            type: 'line',
+            data: {
+                labels: {!! json_encode($chartData['transaksiLabels']) !!},
+                datasets: [{
+                    label: 'Jumlah Transaksi',
+                    data: {!! json_encode($chartData['transaksiData']) !!},
+                    borderColor: '#667eea',
+                    backgroundColor: 'rgba(102, 126, 234, 0.1)',
+                    tension: 0.4,
+                    fill: true,
+                    borderWidth: 2,
+                    pointRadius: 4,
+                    pointBackgroundColor: '#667eea',
+                    pointBorderColor: '#fff',
+                    pointBorderWidth: 2
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: true,
+                plugins: {
+                    legend: {
+                        display: true,
+                        position: 'top'
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        grid: {
+                            color: 'rgba(0, 0, 0, 0.05)'
+                        }
+                    },
+                    x: {
+                        grid: {
+                            display: false
+                        }
+                    }
+                }
+            }
+        });
 
-        <svg width="{{ $LW + 40 }}" height="{{ $LH + 60 }}">
-            @for($i=1;$i<=4;$i++)
-                <line x1="30" y1="{{ $LH - ($i*$LH/4) + 20 }}"
-                      x2="{{ $LW + 30 }}" y2="{{ $LH - ($i*$LH/4) + 20 }}"
-                      stroke="#ddd" stroke-dasharray="2,2"/>
-            @endfor
+        // Grafik Status Rak
+        const rakCtx = document.getElementById('rakChart').getContext('2d');
+        const rakChart = new Chart(rakCtx, {
+            type: 'doughnut',
+            data: {
+                labels: ['Terisi', 'Tersedia', 'Maintenance'],
+                datasets: [{
+                    data: [{{ $chartData['rakTerisi'] }}, {{ $chartData['rakTersedia'] }}, {{ $chartData['rakMaintenance'] }}],
+                    backgroundColor: [
+                        'rgba(245, 87, 108, 0.8)',
+                        'rgba(67, 233, 123, 0.8)',
+                        'rgba(231, 255, 10, 0.8)'
+                    ],
+                    borderWidth: 2,
+                    borderColor: '#fff'
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: true,
+                plugins: {
+                    legend: {
+                        position: 'bottom',
+                        labels: {
+                            usePointStyle: true,
+                            pointStyle: 'circle'
+                        }
+                    }
+                }
+            }
+        });
 
-            {{-- Build polyline points --}}
-            @php $points = ""; @endphp
-            @foreach($chartData['transaksiData'] as $i => $value)
-                @php
-                    $x = $i * ($LW / (count($chartData['transaksiData'])-1)) + 30;
-                    $y = $LH + 20 - (($value / $maxT) * $LH);
-                    $points .= "$x,$y ";
-                @endphp
-            @endforeach
+        // Grafik Pendapatan
+        const pendapatanCtx = document.getElementById('pendapatanChart').getContext('2d');
+        const pendapatanChart = new Chart(pendapatanCtx, {
+            type: 'bar',
+            data: {
+                labels: {!! json_encode($chartData['pendapatanLabels']) !!},
+                datasets: [{
+                    label: 'Pendapatan (Rp)',
+                    data: {!! json_encode($chartData['pendapatanData']) !!},
+                    backgroundColor: 'rgba(67, 233, 123, 0.7)',
+                    borderColor: 'rgba(67, 233, 123, 1)',
+                    borderWidth: 1,
+                    borderRadius: 4
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: true,
+                plugins: {
+                    legend: {
+                        display: true,
+                        position: 'top'
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        grid: {
+                            color: 'rgba(0, 0, 0, 0.05)'
+                        }
+                    },
+                    x: {
+                        grid: {
+                            display: false
+                        }
+                    }
+                }
+            }
+        });
 
-            <polyline points="{{ $points }}" fill="none" stroke="#007bff" stroke-width="3" />
-
-            @foreach($chartData['transaksiData'] as $i => $value)
-                @php
-                    $x = $i * ($LW / (count($chartData['transaksiData'])-1)) + 30;
-                    $y = $LH + 20 - (($value / $maxT) * $LH);
-                @endphp
-
-                <circle cx="{{ $x }}" cy="{{ $y }}" r="4" fill="#007bff" stroke="#fff" stroke-width="2" />
-                <text x="{{ $x }}" y="{{ $y - 8 }}" text-anchor="middle" font-size="9" fill="#007bff">{{ $value }}</text>
-
-                <text x="{{ $x }}" y="{{ $LH + 40 }}" text-anchor="middle" font-size="9">
-                    {{ substr($chartData['transaksiLabels'][$i], 0, 3) }}
-                </text>
-            @endforeach
-        </svg>
-    </div>
-
-    <!-- DONUT CHART -->
-    <div class="chart-box" style="text-align:center;">
-        @php
-            $total = array_sum($chartData['pendapatanData']);
-            $top = collect($chartData['pendapatanData'])->sortDesc()->take(4)->values();
-            $other = $total - $top->sum();
-            $donut = [...$top, $other];
-            $colors = ['#28a745','#007bff','#6f42c1','#fd7e14','#6c757d'];
-
-            $cx = 100; $cy = 90;
-            $r = 60; $r2 = 30;
-            $angleNow = 0;
-        @endphp
-
-        <svg width="200" height="180">
-            @foreach($donut as $i => $val)
-                @php
-                    if($val <= 0) continue;
-
-                    $pct = $val / $total;
-                    $angle = $pct * 360;
-
-                    $start = $angleNow;
-                    $end = $angleNow + $angle;
-
-                    $x1 = $cx + $r * cos(deg2rad($start));
-                    $y1 = $cy + $r * sin(deg2rad($start));
-                    $x2 = $cx + $r * cos(deg2rad($end));
-                    $y2 = $cy + $r * sin(deg2rad($end));
-
-                    $x1i = $cx + $r2 * cos(deg2rad($start));
-                    $y1i = $cy + $r2 * sin(deg2rad($start));
-                    $x2i = $cx + $r2 * cos(deg2rad($end));
-                    $y2i = $cy + $r2 * sin(deg2rad($end));
-
-                    $largeArc = ($angle > 180) ? 1 : 0;
-                @endphp
-
-                <path d="
-                    M {{ $x1i }} {{ $y1i }}
-                    L {{ $x1 }} {{ $y1 }}
-                    A {{ $r }} {{ $r }} 0 {{ $largeArc }} 1 {{ $x2 }} {{ $y2 }}
-                    L {{ $x2i }} {{ $y2i }}
-                    A {{ $r2 }} {{ $r2 }} 0 {{ $largeArc }} 0 {{ $x1i }} {{ $y1i }}
-                "
-                fill="{{ $colors[$i % count($colors)] }}" />
-
-                @php $angleNow += $angle; @endphp
-            @endforeach
-
-            <circle cx="{{ $cx }}" cy="{{ $cy }}" r="{{ $r2 }}" fill="#fff"/>
-            <text x="{{ $cx }}" y="{{ $cy + 4 }}" text-anchor="middle" font-size="12" font-weight="bold">
-                {{ number_format($total/1000000,1) }}M
-            </text>
-        </svg>
-    </div>
+        // Grafik Status Transaksi
+        const statusCtx = document.getElementById('statusChart').getContext('2d');
+        const statusChart = new Chart(statusCtx, {
+            type: 'doughnut',
+            data: {
+                labels: ['Sukses', 'Pending', 'Gagal'],
+                datasets: [{
+                    data: [{{ $chartData['statusSuccess'] }}, {{ $chartData['statusPending'] }}, {{ $chartData['statusFailed'] }}],
+                    backgroundColor: [
+                        'rgba(67, 233, 123, 0.8)',
+                        'rgba(255, 193, 7, 0.8)',
+                        'rgba(220, 53, 69, 0.8)'
+                    ],
+                    borderWidth: 2,
+                    borderColor: '#fff'
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: true,
+                plugins: {
+                    legend: {
+                        position: 'bottom',
+                        labels: {
+                            usePointStyle: true,
+                            pointStyle: 'circle'
+                        }
+                    }
+                }
+            }
+        });
+    </script>
 
     <div class="footer">
         <p>Dokumen ini digenerate otomatis oleh sistem.</p>
