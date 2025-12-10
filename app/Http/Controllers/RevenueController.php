@@ -16,9 +16,15 @@ class RevenueController extends Controller
     public function index(Request $request)
     {
         $year = $request->input('year', now()->year);
-        $month = $request->input('month');
+        $month = $request->input('month'); // Keep for backward compatibility
+        $monthFrom = $request->input('month_from');
+        $monthTo = $request->input('month_to');
         $gudangId = $request->input('gudang_id');
         $status = $request->input('status');
+
+        // Determine month range
+        $startMonth = $monthFrom ?: 1;
+        $endMonth = $monthTo ?: 12;
 
         // Build query for transactions with filters
         $transactionQuery = Transaction::query();
@@ -70,8 +76,16 @@ class RevenueController extends Controller
             }
 
             $revenues = $query->orderBy('month', 'desc')->get();
-            $yearlyTotal = $revenues->sum('total_revenue');
-            $yearlyTransactions = $revenues->sum('total_transactions');
+
+            // Filter for month range if selected
+            if ($monthFrom && $monthTo && !$month) {
+                $revenues = $revenues->where('month', '>=', $monthFrom)->where('month', '<=', $monthTo);
+                $yearlyTotal = $revenues->sum('total_revenue');
+                $yearlyTransactions = $revenues->sum('total_transactions');
+            } else {
+                $yearlyTotal = $revenues->sum('total_revenue');
+                $yearlyTransactions = $revenues->sum('total_transactions');
+            }
         }
 
         $availableYears = Transaction::selectRaw('DISTINCT YEAR(transaction_time) as year')
@@ -117,8 +131,14 @@ class RevenueController extends Controller
         }
 
         // Monthly transaction data for selected year (or single month if filtered)
-        $startMonth = $month ?: 1;
-        $endMonth = $month ?: 12;
+        // If month range is specified, use it; otherwise use single month or all months
+        if ($monthFrom && $monthTo && !$month) {
+            $startMonth = $monthFrom;
+            $endMonth = $monthTo;
+        } else {
+            $startMonth = $month ?: 1;
+            $endMonth = $month ?: 12;
+        }
 
         for ($i = $startMonth; $i <= $endMonth; $i++) {
             $transaksiLabels[] = $this->getMonthName($i);
@@ -146,6 +166,8 @@ class RevenueController extends Controller
             'revenues',
             'year',
             'month',
+            'monthFrom',
+            'monthTo',
             'yearlyTotal',
             'yearlyTransactions',
             'availableYears',
@@ -471,41 +493,70 @@ class RevenueController extends Controller
     public function performance(Request $request)
     {
         $year = $request->input('year', now()->year);
+        $monthFrom = $request->input('month_from');
+        $monthTo = $request->input('month_to');
+        $gudangId = $request->input('gudang_id');
+        $status = $request->input('status');
 
-        // KPI Metrics
-        $avgRevenuePerTransaction = Transaction::whereIn('transaction_status', ['capture', 'settlement'])
-            ->whereYear('transaction_time', $year)
+        // Determine month range for filtering
+        $monthRange = [];
+        if ($monthFrom && $monthTo) {
+            for ($i = $monthFrom; $i <= $monthTo; $i++) {
+                $monthRange[] = $i;
+            }
+        }
+
+        // Base query for filtering performance data
+        $baseQuery = Transaction::query()->whereYear('transaction_time', $year);
+
+        if ($gudangId) {
+            $baseQuery->whereHas('rak.gudang', function($q) use ($gudangId) {
+                $q->where('id', $gudangId);
+            });
+        }
+
+        if ($status === 'success') {
+            $baseQuery->whereIn('transaction_status', ['capture', 'settlement']);
+        } elseif ($status === 'pending') {
+            $baseQuery->where('transaction_status', 'pending');
+        } elseif ($status === 'failed') {
+            $baseQuery->whereIn('transaction_status', ['deny', 'expire', 'cancel']);
+        }
+
+        if (!empty($monthRange)) {
+            $baseQuery->whereIn(DB::raw('MONTH(transaction_time)'), $monthRange);
+        }
+
+        // KPI Metrics with filters applied
+        $avgRevenueQuery = clone $baseQuery;
+        $avgRevenuePerTransaction = $avgRevenueQuery->whereIn('transaction_status', ['capture', 'settlement'])
             ->avg('amount') ?? 0;
 
         $currentMonth = now()->month;
         $prevMonth = $currentMonth - 1 ?: 12;
         $prevYear = $prevMonth === 12 ? $year - 1 : $year;
 
-        $currentRevenue = Transaction::whereIn('transaction_status', ['capture', 'settlement'])
-            ->whereYear('transaction_time', $year)
+        $currentRevenue = (clone $baseQuery)->whereIn('transaction_status', ['capture', 'settlement'])
             ->whereMonth('transaction_time', $currentMonth)
             ->sum('amount');
 
-        $prevRevenue = Transaction::whereIn('transaction_status', ['capture', 'settlement'])
-            ->whereYear('transaction_time', $prevYear)
+        $prevRevenue = (clone $baseQuery)->whereIn('transaction_status', ['capture', 'settlement'])
             ->whereMonth('transaction_time', $prevMonth)
+            ->whereYear('transaction_time', $prevYear)
             ->sum('amount');
 
         $revenueGrowth = $prevRevenue > 0 ? (($currentRevenue - $prevRevenue) / $prevRevenue) * 100 : 0;
 
-        // Customer Retention
-        $totalUsersWithMultipleTransactions = DB::table('transactions')
+        // Customer Retention with filters applied
+        $retentionQuery = (clone $baseQuery)->whereIn('transaction_status', ['capture', 'settlement']);
+        $totalUsersWithMultipleTransactions = DB::table(DB::raw("({$retentionQuery->toSql()}) as filtered_transactions"))
+            ->mergeBindings($retentionQuery->getQuery())
             ->select('user_id')
-            ->whereIn('transaction_status', ['capture', 'settlement'])
-            ->whereYear('transaction_time', $year)
             ->groupBy('user_id')
             ->havingRaw('COUNT(*) > 1')
             ->count();
 
-        $totalUsers = Transaction::whereIn('transaction_status', ['capture', 'settlement'])
-            ->whereYear('transaction_time', $year)
-            ->distinct('user_id')
-            ->count('user_id');
+        $totalUsers = (clone $retentionQuery)->distinct('user_id')->count('user_id');
 
         $customerRetentionRate = $totalUsers > 0 ? ($totalUsersWithMultipleTransactions / $totalUsers) * 100 : 0;
 
@@ -514,66 +565,60 @@ class RevenueController extends Controller
         $occupiedRaks = Rak::where('status', 'terisi')->count();
         $currentOccupancyRate = $totalRaks > 0 ? ($occupiedRaks / $totalRaks) * 100 : 0;
 
-        // Transaction Success Rate
-        $totalTransactions = Transaction::whereYear('transaction_time', $year)->count();
-        $successfulTransactions = Transaction::whereIn('transaction_status', ['capture', 'settlement'])
-            ->whereYear('transaction_time', $year)
-            ->count();
+        // Transaction Success Rate with filters applied
+        $successRateQuery = clone $baseQuery;
+        $totalTransactions = $successRateQuery->count();
+        $successfulTransactions = (clone $successRateQuery)->whereIn('transaction_status', ['capture', 'settlement'])->count();
         $transactionSuccessRate = $totalTransactions > 0 ? ($successfulTransactions / $totalTransactions) * 100 : 0;
 
-        // Charts Data
-        // Customer Growth
+        // Charts Data with Filters Applied
+        // Customer Growth - Simplified approach
         $growthLabels = [];
         $newCustomerData = [];
         $repeatCustomerData = [];
 
-        for ($month = 1; $month <= 12; $month++) {
+        // Determine month range for charts
+        $chartStartMonth = $monthFrom ?: 1;
+        $chartEndMonth = $monthTo ?: 12;
+
+        for ($month = $chartStartMonth; $month <= $chartEndMonth; $month++) {
             $growthLabels[] = $this->getMonthName($month);
 
-            // New customers (first transaction in that month)
-            $newCustomers = DB::table('transactions')
+            // Get total unique customers this month (for "New Customer" line)
+            $totalCustomersThisMonth = (clone $baseQuery)
                 ->whereIn('transaction_status', ['capture', 'settlement'])
-                ->whereYear('transaction_time', $year)
                 ->whereMonth('transaction_time', $month)
-                ->whereNotIn('user_id', function($query) use ($year, $month) {
-                    $query->select('user_id')
-                        ->from('transactions')
-                        ->whereIn('transaction_status', ['capture', 'settlement'])
-                        ->whereYear('transaction_time', $year)
-                        ->whereMonth('transaction_time', $month - 1 >= 1 ? $month - 1 : 12)
-                        ->where('transaction_time', '<', DB::raw("CONCAT('$year-', '$month', '-01')"));
-                })
                 ->distinct('user_id')
                 ->count('user_id');
 
-            $repeatCustomers = DB::table('transactions')
-                ->select('user_id')
+            // Get customers with multiple transactions this month (for "Repeat Customer" line)
+            $repeatCustomers = (clone $baseQuery)
                 ->whereIn('transaction_status', ['capture', 'settlement'])
-                ->whereYear('transaction_time', $year)
                 ->whereMonth('transaction_time', $month)
+                ->select('user_id', DB::raw('COUNT(*) as transaction_count'))
                 ->groupBy('user_id')
                 ->havingRaw('COUNT(*) > 1')
+                ->distinct('user_id')
                 ->count();
 
-            $newCustomerData[] = $newCustomers;
+            $newCustomerData[] = $totalCustomersThisMonth;
             $repeatCustomerData[] = $repeatCustomers;
         }
 
-        // Monthly Revenue Data
+        // Monthly Revenue Data with filters applied
         $trendLabels = [];
         $monthlyRevenueData = [];
-        for ($month = 1; $month <= 12; $month++) {
+        for ($month = $chartStartMonth; $month <= $chartEndMonth; $month++) {
             $trendLabels[] = $this->getMonthName($month);
-            $monthlyRevenueData[] = Transaction::whereIn('transaction_status', ['capture', 'settlement'])
-                ->whereYear('transaction_time', $year)
-                ->whereMonth('transaction_time', $month)
-                ->sum('amount');
+            $revenueTrendQuery = (clone $baseQuery)->whereIn('transaction_status', ['capture', 'settlement'])
+                ->whereMonth('transaction_time', $month);
+            $monthlyRevenueData[] = $revenueTrendQuery->sum('amount');
         }
 
-        // Occupancy Trends
+        // Occupancy Trends with month range filtering
         $occupancyLabels = [];
         $occupancyData = [];
-        for ($month = 1; $month <= 12; $month++) {
+        for ($month = $chartStartMonth; $month <= $chartEndMonth; $month++) {
             $occupancyLabels[] = $this->getMonthName($month);
 
             // Calculate occupancy for each month (would need historical data)
@@ -581,14 +626,14 @@ class RevenueController extends Controller
             $occupancyData[] = $currentOccupancyRate;
         }
 
-        // Gudang Performance
-        $gudangPerformance = Gudang::with(['raks'])->get()->map(function($gudang) use ($year) {
-            $totalRevenue = Transaction::whereIn('transaction_status', ['capture', 'settlement'])
-                ->whereYear('transaction_time', $year)
-                ->whereHas('rak.gudang', function($q) use ($gudang) {
-                    $q->where('id', $gudang->id);
-                })
-                ->sum('amount');
+        // Gudang Performance with filters applied
+        $gudangPerformance = Gudang::with(['raks'])->get()->map(function($gudang) use ($baseQuery) {
+            $gudangQuery = clone $baseQuery;
+            $gudangQuery->whereHas('rak.gudang', function($q) use ($gudang) {
+                $q->where('id', $gudang->id);
+            });
+
+            $totalRevenue = $gudangQuery->whereIn('transaction_status', ['capture', 'settlement'])->sum('amount');
 
             $totalRaks = $gudang->raks->count();
             $occupiedRaks = $gudang->raks->where('status', 'terisi')->count();

@@ -56,7 +56,7 @@
             data: {
                 labels: {!! json_encode($growthLabels) !!},
                 datasets: [{
-                    label: 'Customer Baru',
+                    label: 'Total Customer',
                     data: {!! json_encode($newCustomerData) !!},
                     borderColor: '#28a745',
                     backgroundColor: 'rgba(40, 167, 69, 0.1)',
@@ -237,7 +237,7 @@
                     <div class="card-body">
                         <div class="d-flex justify-content-between">
                             <div>
-                                <h6 class="text-muted mb-1">Transaction Success Rate</h6>
+                                <h6 class="text-muted mb-1">Tingkat Keberhasilan Transaksi</h6>
                                 <h4 class="text-info mb-0">
                                     {{ number_format($transactionSuccessRate, 1) }}%
                                 </h4>
@@ -251,6 +251,81 @@
                         </small>
                     </div>
                 </div>
+            </div>
+        </div>
+
+        <!-- Filter Card -->
+        <div class="card mb-4">
+            <div class="card-body">
+                <form method="GET" action="{{ route('admin.laporan.performance') }}">
+                    <!-- Filter Row -->
+                    <div class="row g-3 mb-3">
+                        <div class="col-md-3">
+                            <label class="form-label">Gudang</label>
+                            <select name="gudang_id" class="form-control">
+                                <option value="">Semua Gudang</option>
+                                @foreach(\App\Models\Gudang::all() as $gudang)
+                                    <option value="{{ $gudang->id }}" {{ request('gudang_id') == $gudang->id ? 'selected' : '' }}>
+                                        {{ $gudang->nama_gudang }}
+                                    </option>
+                                @endforeach
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">Status</label>
+                            <select name="status" class="form-control">
+                                <option value="">Semua Status</option>
+                                <option value="success" {{ request('status') == 'success' ? 'selected' : '' }}>Berhasil</option>
+                                <option value="pending" {{ request('status') == 'pending' ? 'selected' : '' }}>Pending</option>
+                                <option value="failed" {{ request('status') == 'failed' ? 'selected' : '' }}>Gagal</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">Dari Bulan</label>
+                            <select name="month_from" class="form-control">
+                                <option value="">Pilih Bulan Awal</option>
+                                @for ($i = 1; $i <= 12; $i++)
+                                    <option value="{{ $i }}" {{ request('month_from') == $i ? 'selected' : '' }}>
+                                        {{ \Carbon\Carbon::create(null, $i)->translatedFormat('F') }}
+                                    </option>
+                                @endfor
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">Sampai Bulan</label>
+                            <select name="month_to" class="form-control">
+                                <option value="">Pilih Bulan Akhir</option>
+                                @for ($i = 1; $i <= 12; $i++)
+                                    <option value="{{ $i }}" {{ request('month_to') == $i ? 'selected' : '' }}>
+                                        {{ \Carbon\Carbon::create(null, $i)->translatedFormat('F') }}
+                                    </option>
+                                @endfor
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">Tahun</label>
+                            <select name="year" class="form-control">
+                                @foreach (\App\Models\Transaction::selectRaw('DISTINCT YEAR(transaction_time) as year')->orderBy('year', 'desc')->pluck('year') as $y)
+                                    <option value="{{ $y }}" {{ $year == $y ? 'selected' : '' }}>
+                                        {{ $y }}
+                                    </option>
+                                @endforeach
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Action Buttons Row -->
+                    <div class="row">
+                        <div class="col-12 d-flex justify-content-end align-items-center gap-2 flex-wrap">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-search"></i> Tampilkan
+                            </button>
+                            <a href="{{ route('admin.laporan.performance') }}" class="btn btn-secondary">
+                                <i class="fas fa-undo"></i> Reset
+                            </a>
+                        </div>
+                    </div>
+                </form>
             </div>
         </div>
 
