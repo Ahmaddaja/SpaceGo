@@ -19,149 +19,150 @@ class RakController extends Controller
     const MAX_PHOTOS = 4;
 
     public function rakDibeli()
-{
-    try {
+    {
+        try {
+            $user = Auth::user();
+
+            if (!$user) {
+                abort(403, 'User tidak ditemukan.');
+            }
+
+            $transactions = Transaction::where('user_id', $user->id)
+                ->whereIn('transaction_status', ['capture', 'settlement'])
+                ->with(['rak.gudang', 'rak.fotos'])
+                ->orderBy('created_at', 'desc')
+                ->get();
+
+            // ✅ CEK DAN UPDATE STATUS RAK YANG SUDAH MELEWATI 37 HARI
+            $currentDbTime = DB::selectOne('SELECT NOW() as db_time')->db_time;
+            $now = \Carbon\Carbon::parse($currentDbTime);
+
+            foreach ($transactions as $transaction) {
+                $end = \Carbon\Carbon::parse($transaction->sewa_berakhir);
+                $daysPassed = $now->diffInDays($end, false);
+
+                // Jika sudah lewat 37 hari (3 tenggang + 30 terlambat + 7 pengosongan - 3 buffer)
+                if ($daysPassed < -37 && $transaction->rak) {
+                    $rak = $transaction->rak;
+
+                    // Update status rak menjadi tersedia
+                    if (in_array($rak->status, ['terisi', 'pengosongan'])) {
+                        $rak->update(['status' => 'tersedia']);
+
+                        Log::info('Rak dikosongkan otomatis setelah 37 hari', [
+                            'rak_id' => $rak->id,
+                            'transaction_id' => $transaction->id,
+                            'days_passed' => abs($daysPassed)
+                        ]);
+                    }
+
+                    // Tandai transaksi sebagai sudah dikosongkan
+                    if (!$transaction->is_dikosongkan) {
+                        $transaction->update([
+                            'is_dikosongkan' => true,
+                            'dikosongkan_at' => $now
+                        ]);
+                    }
+                }
+            }
+
+            $rakIds = $transactions->pluck('rak_id')->unique();
+
+            $raks = Rak::whereIn('id', $rakIds)
+                ->with(['gudang', 'fotos'])
+                ->orderBy('created_at', 'desc')
+                ->paginate(9);
+
+            $raks->getCollection()->transform(function ($rak) use ($transactions) {
+                $transaction = $transactions->where('rak_id', $rak->id)->first();
+
+                if ($transaction) {
+                    $rak->transaction_date = $transaction->created_at;
+                    $rak->order_id = $transaction->order_id;
+                    $rak->payment_type = $transaction->payment_type;
+                    $rak->transaction_id = $transaction->id;
+
+                    // Tambahkan info pengosongan
+                    $rak->is_pengosongan = $transaction->is_pengosongan ?? false;
+                    $rak->pengosongan_dimulai = $transaction->pengosongan_dimulai ?? null;
+                    $rak->pengosongan_berakhir = $transaction->pengosongan_berakhir ?? null;
+
+                    // ✅ Tambahkan info sudah dikosongkan
+                    $rak->is_dikosongkan = $transaction->is_dikosongkan ?? false;
+                    $rak->dikosongkan_at = $transaction->dikosongkan_at ?? null;
+                }
+
+                return $rak;
+            });
+
+            return view('customer.list-rak.rak', compact('raks'));
+        } catch (\Exception $e) {
+            \Log::error('Error in rakDibeli: ' . $e->getMessage());
+
+            $raks = new \Illuminate\Pagination\LengthAwarePaginator([], 0, 9, 1);
+            return view('customer.list-rak.rak', compact('raks'));
+        }
+    }
+
+    public function detailRak($id)
+    {
         $user = Auth::user();
 
         if (!$user) {
             abort(403, 'User tidak ditemukan.');
         }
 
-        $transactions = Transaction::where('user_id', $user->id)
+        $transaction = Transaction::where('user_id', $user->id)
+            ->where('rak_id', $id)
             ->whereIn('transaction_status', ['capture', 'settlement'])
-            ->with(['rak.gudang', 'rak.fotos'])
-            ->orderBy('created_at', 'desc')
-            ->get();
+            ->with('rak.gudang', 'rak.fotos')
+            ->first();
 
-        // ✅ CEK DAN UPDATE STATUS RAK YANG SUDAH MELEWATI 37 HARI
+        if (!$transaction) {
+            return redirect()->route('customer.list-rak.rak')
+                ->with('error', 'Anda belum membeli rak ini atau transaksi belum berhasil.');
+        }
+
+        // ✅ CEK DAN UPDATE STATUS RAK
         $currentDbTime = DB::selectOne('SELECT NOW() as db_time')->db_time;
         $now = \Carbon\Carbon::parse($currentDbTime);
+        $end = \Carbon\Carbon::parse($transaction->sewa_berakhir);
+        $daysPassed = $now->diffInDays($end, false);
 
-        foreach ($transactions as $transaction) {
-            $end = \Carbon\Carbon::parse($transaction->sewa_berakhir);
-            $daysPassed = $now->diffInDays($end, false);
+        if ($daysPassed < -37) {
+            $rak = $transaction->rak;
 
-            // Jika sudah lewat 37 hari (3 tenggang + 30 terlambat + 7 pengosongan - 3 buffer)
-            if ($daysPassed < -37 && $transaction->rak) {
-                $rak = $transaction->rak;
-                
-                // Update status rak menjadi tersedia
-                if (in_array($rak->status, ['terisi', 'pengosongan'])) {
-                    $rak->update(['status' => 'tersedia']);
-                    
-                    Log::info('Rak dikosongkan otomatis setelah 37 hari', [
-                        'rak_id' => $rak->id,
-                        'transaction_id' => $transaction->id,
-                        'days_passed' => abs($daysPassed)
-                    ]);
-                }
-                
-                // Tandai transaksi sebagai sudah dikosongkan
-                if (!$transaction->is_dikosongkan) {
-                    $transaction->update([
-                        'is_dikosongkan' => true,
-                        'dikosongkan_at' => $now
-                    ]);
-                }
+            // Update status rak menjadi tersedia
+            if (in_array($rak->status, ['terisi', 'pengosongan'])) {
+                $rak->update(['status' => 'tersedia']);
+
+                Log::info('Rak dikosongkan otomatis saat detail view', [
+                    'rak_id' => $rak->id,
+                    'transaction_id' => $transaction->id,
+                    'days_passed' => abs($daysPassed)
+                ]);
+            }
+
+            // Tandai transaksi sebagai sudah dikosongkan
+            if (!$transaction->is_dikosongkan) {
+                $transaction->update([
+                    'is_dikosongkan' => true,
+                    'dikosongkan_at' => $now
+                ]);
             }
         }
 
-        $rakIds = $transactions->pluck('rak_id')->unique();
-
-        $raks = Rak::whereIn('id', $rakIds)
-            ->with(['gudang', 'fotos'])
-            ->orderBy('created_at', 'desc')
-            ->paginate(9);
-
-        $raks->getCollection()->transform(function ($rak) use ($transactions) {
-            $transaction = $transactions->where('rak_id', $rak->id)->first();
-
-            if ($transaction) {
-                $rak->transaction_date = $transaction->created_at;
-                $rak->order_id = $transaction->order_id;
-                $rak->payment_type = $transaction->payment_type;
-                $rak->transaction_id = $transaction->id;
-
-                // Tambahkan info pengosongan
-                $rak->is_pengosongan = $transaction->is_pengosongan ?? false;
-                $rak->pengosongan_dimulai = $transaction->pengosongan_dimulai ?? null;
-                $rak->pengosongan_berakhir = $transaction->pengosongan_berakhir ?? null;
-                
-                // ✅ Tambahkan info sudah dikosongkan
-                $rak->is_dikosongkan = $transaction->is_dikosongkan ?? false;
-                $rak->dikosongkan_at = $transaction->dikosongkan_at ?? null;
-            }
-
-            return $rak;
-        });
-
-        return view('customer.list-rak.rak', compact('raks'));
-    } catch (\Exception $e) {
-        \Log::error('Error in rakDibeli: ' . $e->getMessage());
-
-        $raks = new \Illuminate\Pagination\LengthAwarePaginator([], 0, 9, 1);
-        return view('customer.list-rak.rak', compact('raks'));
-    }
-}
-
-public function detailRak($id)
-{
-    $user = Auth::user();
-
-    if (!$user) {
-        abort(403, 'User tidak ditemukan.');
-    }
-
-    $transaction = Transaction::where('user_id', $user->id)
-        ->where('rak_id', $id)
-        ->whereIn('transaction_status', ['capture', 'settlement'])
-        ->with('rak.gudang', 'rak.fotos')
-        ->first();
-
-    if (!$transaction) {
-        return redirect()->route('customer.list-rak.rak')
-            ->with('error', 'Anda belum membeli rak ini atau transaksi belum berhasil.');
-    }
-
-    // ✅ CEK DAN UPDATE STATUS RAK
-    $currentDbTime = DB::selectOne('SELECT NOW() as db_time')->db_time;
-    $now = \Carbon\Carbon::parse($currentDbTime);
-    $end = \Carbon\Carbon::parse($transaction->sewa_berakhir);
-    $daysPassed = $now->diffInDays($end, false);
-
-    if ($daysPassed < -37) {
         $rak = $transaction->rak;
-        
-        // Update status rak menjadi tersedia
-        if (in_array($rak->status, ['terisi', 'pengosongan'])) {
-            $rak->update(['status' => 'tersedia']);
-            
-            Log::info('Rak dikosongkan otomatis saat detail view', [
-                'rak_id' => $rak->id,
-                'transaction_id' => $transaction->id,
-                'days_passed' => abs($daysPassed)
-            ]);
-        }
-        
-        // Tandai transaksi sebagai sudah dikosongkan
-        if (!$transaction->is_dikosongkan) {
-            $transaction->update([
-                'is_dikosongkan' => true,
-                'dikosongkan_at' => $now
-            ]);
-        }
+        $rak->transaction = $transaction;
+        $rak->transaction_date = $transaction->created_at;
+        $rak->order_id = $transaction->order_id;
+        $rak->payment_type = $transaction->payment_type;
+        $rak->status_sewa = $transaction->status_sewa;
+        $rak->sisa_hari = $transaction->sisa_hari;
+
+        return view('customer.list-rak.show', compact('rak'));
     }
 
-    $rak = $transaction->rak;
-    $rak->transaction = $transaction;
-    $rak->transaction_date = $transaction->created_at;
-    $rak->order_id = $transaction->order_id;
-    $rak->payment_type = $transaction->payment_type;
-    $rak->status_sewa = $transaction->status_sewa;
-    $rak->sisa_hari = $transaction->sisa_hari;
-
-    return view('customer.list-rak.show', compact('rak'));
-}
     private function userMemilikiRak($rakId, $user)
     {
         return Transaction::where('user_id', $user->id)
@@ -223,13 +224,9 @@ public function detailRak($id)
             'tinggi' => 'required|numeric|min:0',
             'jumlah_tingkat' => 'required|integer|min:1',
             'harga_sewa_perbulan' => 'required|numeric|min:0',
-            'fotos' => 'nullable|array|max:' . self::MAX_PHOTOS,
-            'fotos.*' => 'nullable|image|mimes:jpeg,png,jpg|max:2048',
             'spesifikasi_tambahan' => 'nullable|string',
             'is_active' => 'boolean',
             'durasi_sewa_hari' => 'required|integer|min:1'
-        ], [
-            'fotos.max' => 'Maksimal ' . self::MAX_PHOTOS . ' foto yang dapat diupload.'
         ]);
 
         DB::beginTransaction();
@@ -239,20 +236,12 @@ public function detailRak($id)
             $validated['lokasi_gudang'] = $gudang->nama_gudang;
             $validated['status'] = 'tersedia';
 
-            // Hapus fotos dari validated karena akan dihandle terpisah
-            unset($validated['fotos']);
-
             $rak = Rak::create($validated);
-
-            // Handle multiple photos
-            if ($request->hasFile('fotos')) {
-                $this->handleMultiplePhotos($request->file('fotos'), $rak);
-            }
 
             DB::commit();
 
-            return redirect()->route('raks.index')
-                ->with('success', 'Rak berhasil ditambahkan dengan status Tersedia!');
+            return redirect()->route('raks.edit', $rak->id)
+                ->with('success', 'Rak berhasil ditambahkan! Silakan upload foto rak.');
         } catch (\Exception $e) {
             DB::rollBack();
             Log::error('Error creating rak: ' . $e->getMessage());
@@ -323,17 +312,6 @@ public function detailRak($id)
                 ->with('error', 'Rak memiliki transaksi aktif! Status harus tetap "Terisi" atau "Pengosongan".');
         }
 
-        // Hitung total foto setelah update (tanpa delete_fotos karena sudah langsung dihapus)
-        $existingPhotosCount = $rak->fotos()->count();
-        $newPhotosCount = $request->hasFile('fotos') ? count($request->file('fotos')) : 0;
-        $totalPhotosAfter = $existingPhotosCount + $newPhotosCount;
-
-        if ($totalPhotosAfter > self::MAX_PHOTOS) {
-            return redirect()->back()
-                ->withInput()
-                ->with('error', 'Total foto tidak boleh lebih dari ' . self::MAX_PHOTOS . '. Saat ini: ' . $existingPhotosCount . ' foto, akan ditambah: ' . $newPhotosCount . '.');
-        }
-
         $validated = $request->validate([
             'kode_rak' => 'required|unique:raks,kode_rak,' . $rak->id,
             'lokasi_gudang' => 'required|exists:gudangs,nama_gudang',
@@ -347,8 +325,6 @@ public function detailRak($id)
             'jumlah_tingkat' => 'required|integer|min:1',
             'harga_sewa_perbulan' => 'required|numeric|min:0',
             'status' => 'required|in:tersedia,terisi,maintenance,pengosongan',
-            'fotos' => 'nullable|array',
-            'fotos.*' => 'nullable|image|mimes:jpeg,png,jpg|max:2048',
             'spesifikasi_tambahan' => 'nullable|string',
             'is_active' => 'boolean',
             'durasi_sewa_hari' => 'required|integer|min:1'
@@ -364,15 +340,7 @@ public function detailRak($id)
             $validated['gudang_id'] = $gudang->id;
             $validated['lokasi_gudang'] = $gudang->nama_gudang;
 
-            // Hapus fotos dari validated
-            unset($validated['fotos']);
-
             $rak->update($validated);
-
-            // Handle new photos
-            if ($request->hasFile('fotos')) {
-                $this->handleMultiplePhotos($request->file('fotos'), $rak);
-            }
 
             DB::commit();
 
@@ -385,6 +353,139 @@ public function detailRak($id)
             return redirect()->back()
                 ->withInput()
                 ->with('error', 'Gagal memperbarui rak: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Upload single photo via AJAX
+     */
+    public function uploadPhoto(Request $request, $id)
+    {
+        try {
+            $rak = Rak::findOrFail($id);
+
+            // Cek jumlah foto existing
+            $existingCount = $rak->fotos()->count();
+
+            if ($existingCount >= self::MAX_PHOTOS) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Maksimal 4 foto sudah tercapai!'
+                ], 422);
+            }
+
+            $request->validate([
+                'foto' => 'required|image|mimes:jpeg,png,jpg|max:2048'
+            ]);
+
+            $file = $request->file('foto');
+            $filename = time() . '_' . $existingCount . '_' . Str::slug($rak->nama_rak) . '.' . $file->getClientOriginalExtension();
+            $path = $file->storeAs('raks', $filename, 'public');
+
+            $foto = FotoRak::create([
+                'rak_id' => $rak->id,
+                'path' => $path,
+                'urutan' => $existingCount
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Foto berhasil diupload',
+                'foto' => [
+                    'id' => $foto->id,
+                    'url' => asset('storage/' . $foto->path),
+                    'path' => $foto->path
+                ],
+                'total_photos' => $rak->fotos()->count()
+            ]);
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Validasi gagal',
+                'errors' => $e->errors()
+            ], 422);
+        } catch (\Exception $e) {
+            Log::error('Error uploading photo: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Gagal mengupload foto: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Upload multiple photos secara instant (AJAX)
+     */
+    public function uploadMultiplePhotos(Request $request, $id)
+    {
+        try {
+            $rak = Rak::findOrFail($id);
+
+            // Cek jumlah foto existing
+            $existingCount = $rak->fotos()->count();
+            $maxAllowed = self::MAX_PHOTOS - $existingCount;
+
+            if ($maxAllowed <= 0) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Maksimal 4 foto sudah tercapai!'
+                ], 422);
+            }
+
+            $request->validate([
+                'fotos' => 'required|array|max:' . $maxAllowed,
+                'fotos.*' => 'required|image|mimes:jpeg,png,jpg|max:2048'
+            ], [
+                'fotos.max' => 'Maksimal ' . $maxAllowed . ' foto yang dapat diupload.',
+                'fotos.*.image' => 'File harus berupa gambar.',
+                'fotos.*.mimes' => 'Format gambar harus jpeg, png, atau jpg.',
+                'fotos.*.max' => 'Ukuran gambar maksimal 2MB.'
+            ]);
+
+            $uploadedPhotos = [];
+            $files = $request->file('fotos');
+
+            DB::beginTransaction();
+
+            foreach ($files as $index => $file) {
+                $filename = time() . '_' . ($existingCount + $index) . '_' . Str::slug($rak->nama_rak) . '.' . $file->getClientOriginalExtension();
+                $path = $file->storeAs('raks', $filename, 'public');
+
+                $foto = FotoRak::create([
+                    'rak_id' => $rak->id,
+                    'path' => $path,
+                    'urutan' => $existingCount + $index
+                ]);
+
+                $uploadedPhotos[] = [
+                    'id' => $foto->id,
+                    'url' => asset('storage/' . $foto->path),
+                    'path' => $foto->path
+                ];
+            }
+
+            DB::commit();
+
+            return response()->json([
+                'success' => true,
+                'message' => count($uploadedPhotos) . ' foto berhasil diupload',
+                'fotos' => $uploadedPhotos,
+                'total_photos' => $rak->fotos()->count()
+            ]);
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Validasi gagal',
+                'errors' => $e->errors()
+            ], 422);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error('Error uploading multiple photos: ' . $e->getMessage());
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Gagal mengupload foto: ' . $e->getMessage()
+            ], 500);
         }
     }
 
@@ -447,7 +548,9 @@ public function detailRak($id)
         try {
             // Hapus semua foto
             foreach ($rak->fotos as $foto) {
-                $foto->deleteFile();
+                if (Storage::disk('public')->exists($foto->path)) {
+                    Storage::disk('public')->delete($foto->path);
+                }
                 $foto->delete();
             }
 
@@ -468,33 +571,6 @@ public function detailRak($id)
 
             return redirect()->route('raks.index')
                 ->with('error', 'Gagal menghapus rak: ' . $e->getMessage());
-        }
-    }
-
-    /**
-     * Handle multiple photo uploads
-     */
-    /**
-     * Handle multiple photo uploads
-     */
-    private function handleMultiplePhotos($files, $rak)
-    {
-        $existingCount = $rak->fotos()->count();
-
-        // Pastikan tidak melebihi maksimal foto
-        $maxAllowed = self::MAX_PHOTOS - $existingCount;
-        $filesToProcess = array_slice($files, 0, $maxAllowed);
-
-        foreach ($filesToProcess as $index => $file) {
-            $filename = time() . '_' . $index . '_' . Str::slug($rak->nama_rak) . '.' . $file->getClientOriginalExtension();
-            $path = $file->storeAs('raks', $filename, 'public');
-
-            FotoRak::create([
-                'rak_id' => $rak->id,
-                'path' => $path,
-                'is_primary' => false, // Tidak ada primary lagi
-                'urutan' => $existingCount + $index
-            ]);
         }
     }
 }
