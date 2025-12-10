@@ -299,27 +299,6 @@
                     <!-- Filter Row -->
                     <div class="row g-3 mb-3">
                         <div class="col-md-3">
-                            <label class="form-label">Tahun</label>
-                            <select name="year" class="form-control">
-                                @foreach ($availableYears as $y)
-                                    <option value="{{ $y }}" {{ $year == $y ? 'selected' : '' }}>
-                                        {{ $y }}
-                                    </option>
-                                @endforeach
-                            </select>
-                        </div>
-                        <div class="col-md-3">
-                            <label class="form-label">Bulan</label>
-                            <select name="month" class="form-control">
-                                <option value="">Semua Bulan</option>
-                                @for ($i = 1; $i <= 12; $i++)
-                                    <option value="{{ $i }}" {{ $month == $i ? 'selected' : '' }}>
-                                        {{ \Carbon\Carbon::create(null, $i)->translatedFormat('F') }}
-                                    </option>
-                                @endfor
-                            </select>
-                        </div>
-                        <div class="col-md-3">
                             <label class="form-label">Gudang</label>
                             <select name="gudang_id" class="form-control">
                                 <option value="">Semua Gudang</option>
@@ -337,6 +316,38 @@
                                 <option value="success" {{ request('status') == 'success' ? 'selected' : '' }}>Berhasil</option>
                                 <option value="pending" {{ request('status') == 'pending' ? 'selected' : '' }}>Pending</option>
                                 <option value="failed" {{ request('status') == 'failed' ? 'selected' : '' }}>Gagal</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">BUlan Awal</label>
+                            <select name="month_from" class="form-control">
+                                <option value="">Pilih Bulan Awal</option>
+                                @for ($i = 1; $i <= 12; $i++)
+                                    <option value="{{ $i }}" {{ request('month_from') == $i ? 'selected' : '' }}>
+                                        {{ \Carbon\Carbon::create(null, $i)->translatedFormat('F') }}
+                                    </option>
+                                @endfor
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">Bulan Akhir</label>
+                            <select name="month_to" class="form-control">
+                                <option value="">Pilih Bulan Akhir</option>
+                                @for ($i = 1; $i <= 12; $i++)
+                                    <option value="{{ $i }}" {{ request('month_to') == $i ? 'selected' : '' }}>
+                                        {{ \Carbon\Carbon::create(null, $i)->translatedFormat('F') }}
+                                    </option>
+                                @endfor
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">Tahun</label>
+                            <select name="year" class="form-control">
+                                @foreach ($availableYears as $y)
+                                    <option value="{{ $y }}" {{ $year == $y ? 'selected' : '' }}>
+                                        {{ $y }}
+                                    </option>
+                                @endforeach
                             </select>
                         </div>
                     </div>
@@ -370,7 +381,7 @@
             <div class="col-md-6">
                 <div class="card">
                     <div class="card-body">
-                        <h6 class="text-muted">Total Pendapatan {{ $month ? \Carbon\Carbon::create(null, $month)->translatedFormat('F') . ' ' : '' }}{{ $year }}</h6>
+                        <h6 class="text-muted">Total Pendapatan {{ $month ? \Carbon\Carbon::create(null, $month)->translatedFormat('F') . ' ' : (($monthFrom && $monthTo) ? \Carbon\Carbon::create(null, $monthFrom)->translatedFormat('M') . '-' . \Carbon\Carbon::create(null, $monthTo)->translatedFormat('M') . ' ' : '') }}{{ $year }}</h6>
                         <h2 class="text-success mb-0">
                             Rp {{ number_format($yearlyTotal, 0, ',', '.') }}
                         </h2>
@@ -397,7 +408,7 @@
                     <div class="card-header bg-white border-0 d-flex justify-content-between align-items-center">
                         <h5 class="mb-0 font-weight-bold">
                             <i class="fas fa-chart-area text-primary me-2"></i>
-                            Transaksi {{ $month ? \Carbon\Carbon::create(null, $month)->translatedFormat('F') . ' ' : '' }}{{ $year }}
+                            Transaksi {{ $month ? \Carbon\Carbon::create(null, $month)->translatedFormat('F') . ' ' : (($monthFrom && $monthTo) ? \Carbon\Carbon::create(null, $monthFrom)->translatedFormat('M') . '-' . \Carbon\Carbon::create(null, $monthTo)->translatedFormat('M') . ' ' : '') }}{{ $year }}
                         </h5>
                     </div>
                     <div class="card-body">
