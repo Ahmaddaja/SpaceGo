@@ -133,7 +133,9 @@ Route::middleware(['auth', 'role:admin'])->group(function () {
     Route::resource('raks', RakController::class);
     Route::resource('gudangs', GudangController::class);
 
-    // Route untuk delete foto rak (AJAX)
+    // Routes untuk foto rak (AJAX) - TAMBAHKAN INI
+    Route::post('/raks/{id}/upload-photo', [RakController::class, 'uploadPhoto'])->name('raks.photos.upload');
+    Route::post('/raks/{id}/upload-photos', [RakController::class, 'uploadMultiplePhotos'])->name('raks.photos.upload-multiple');
     Route::delete('/raks/photos/{id}', [RakController::class, 'deletePhoto'])->name('raks.photos.delete');
 
     // Customers
