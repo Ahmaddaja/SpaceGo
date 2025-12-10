@@ -138,71 +138,97 @@
             margin-top: 1rem;
         }
 
-        /* Countdown Styles */
-        .countdown-container {
-            background: rgba(255, 255, 255, 0.15);
-            backdrop-filter: blur(10px);
+        /* Alert 10 Menit Styles */
+        .alert-10-minutes {
+            background: linear-gradient(135deg, #dc2626 0%, #991b1b 100%);
             border-radius: 1rem;
             padding: 1.5rem;
-            margin-top: 1.5rem;
-            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: white;
+            box-shadow: 0 10px 25px -5px rgba(220, 38, 38, 0.4);
+            margin-bottom: 1rem;
+            animation: pulseAlert 2s ease-in-out infinite;
+            border: 2px solid rgba(255, 255, 255, 0.3);
         }
 
-        .countdown-title {
-            font-size: 1.1rem;
-            font-weight: 600;
-            margin-bottom: 1rem;
+        @keyframes pulseAlert {
+            0%, 100% {
+                box-shadow: 0 10px 25px -5px rgba(220, 38, 38, 0.4);
+            }
+            50% {
+                box-shadow: 0 15px 35px -5px rgba(220, 38, 38, 0.6);
+            }
+        }
+
+        .alert-icon-wrapper {
+            background: rgba(255, 255, 255, 0.2);
+            width: 3.5rem;
+            height: 3.5rem;
+            border-radius: 50%;
             display: flex;
             align-items: center;
-            gap: 0.5rem;
+            justify-content: center;
+            font-size: 1.75rem;
+            animation: shake 0.5s ease-in-out infinite;
         }
 
-        .countdown-grid {
-            display: grid;
-            grid-template-columns: repeat(4, 1fr);
-            gap: 1rem;
+        .alert-dikosongkan {
+            background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+            border-radius: 1rem;
+            padding: 1.5rem;
+            color: white;
+            box-shadow: 0 10px 25px -5px rgba(99, 102, 241, 0.4);
+            animation: slideDown 0.5s ease-out;
+            border: 2px solid rgba(255, 255, 255, 0.3);
         }
 
-        .countdown-item {
+        .alert-icon-wrapper-dikosongkan {
             background: rgba(255, 255, 255, 0.2);
+            width: 3.5rem;
+            height: 3.5rem;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.75rem;
+        }
+
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-5px); }
+            75% { transform: translateX(5px); }
+        }
+
+        .countdown-timer {
+            background: rgba(255, 255, 255, 0.15);
+            backdrop-filter: blur(10px);
             border-radius: 0.75rem;
             padding: 1rem;
+            border: 1px solid rgba(255, 255, 255, 0.2);
             text-align: center;
-            border: 1px solid rgba(255, 255, 255, 0.3);
         }
 
-        .countdown-number {
+        .timer-digit {
             font-size: 2rem;
-            font-weight: 700;
-            display: block;
-            line-height: 1;
-            margin-bottom: 0.5rem;
+            font-weight: bold;
+            font-family: 'Courier New', monospace;
         }
 
-        .countdown-label {
-            font-size: 0.875rem;
-            opacity: 0.9;
-            font-weight: 500;
+        /* Time Display Badge */
+        .time-display-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            background: rgba(255, 255, 255, 0.2);
+            backdrop-filter: blur(10px);
+            border-radius: 0.75rem;
+            padding: 0.75rem 1.25rem;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            font-weight: 600;
+            font-size: 1.1rem;
         }
 
-        .countdown-expired {
-            background: rgba(239, 68, 68, 0.2);
-            border-color: rgba(239, 68, 68, 0.4);
-        }
-
-        .countdown-warning {
-            background: rgba(245, 158, 11, 0.2);
-            border-color: rgba(245, 158, 11, 0.4);
-        }
-
-        @media (max-width: 640px) {
-            .countdown-grid {
-                grid-template-columns: repeat(2, 1fr);
-            }
-            
-            .countdown-number {
-                font-size: 1.5rem;
-            }
+        .time-display-badge i {
+            font-size: 1.2rem;
         }
     </style>
 @endpush
@@ -241,446 +267,553 @@
             @endphp
 
             @if ($activeRental)
-                <div class="mb-8 rental-info-card">
-                    <div class="flex items-center mb-4">
-                        <div class="rental-icon mr-4">
-                            <i class="fas fa-check-circle"></i>
-                        </div>
-                        <div>
-                            <h3 class="text-xl font-bold">Anda Sedang Menyewa Rak Ini</h3>
-                            <p class="text-sm opacity-90">Order ID: {{ $activeRental->order_id }}</p>
-                        </div>
-                    </div>
-
-                    <div class="grid md:grid-cols-2 gap-4 mt-6">
-                        <div class="rental-date-box">
-                            <div class="flex items-center mb-2">
-                                <i class="fas fa-calendar-check mr-2 text-lg"></i>
-                                <span class="font-semibold">Tanggal Mulai Sewa</span>
-                            </div>
-                            <p class="text-2xl font-bold">
-                                {{ \Carbon\Carbon::parse($activeRental->sewa_mulai)->format('d M Y') }}
-                            </p>
-                            <p class="text-sm opacity-80 mt-1">
-                                {{ \Carbon\Carbon::parse($activeRental->sewa_mulai)->diffForHumans() }}
-                            </p>
-                        </div>
-
-                        <div class="rental-date-box">
-                            <div class="flex items-center mb-2">
-                                <i class="fas fa-calendar-times mr-2 text-lg"></i>
-                                <span class="font-semibold">Tanggal Berakhir Sewa</span>
-                            </div>
-                            <p class="text-2xl font-bold">
-                                {{ \Carbon\Carbon::parse($activeRental->sewa_berakhir)->format('d M Y') }}
-                            </p>
-                            <p class="text-sm opacity-80 mt-1">
-                                {{ \Carbon\Carbon::parse($activeRental->sewa_berakhir)->diffForHumans() }}
-                            </p>
-                        </div>
-                    </div>
-
-                    @php
-                        $now = now()->startOfDay();
-                        $end = \Carbon\Carbon::parse($activeRental->sewa_berakhir)->startOfDay();
-                        $daysDiff = $now->diffInDays($end, false);
-                        $gracePeriodDays = 3;
-                        $maxLateDays = 30;
-
-                        if ($daysDiff > 0) {
-                            $statusColor = 'bg-green-600';
-                            $statusText = $daysDiff . ' Hari Tersisa';
-                            $isInGracePeriod = false;
-                            $isOverdue = false;
-                        } elseif ($daysDiff === 0) {
-                            $statusColor = 'bg-yellow-500';
-                            $statusText = 'Berakhir Hari Ini';
-                            $isInGracePeriod = false;
-                            $isOverdue = false;
-                        } elseif (abs($daysDiff) <= $gracePeriodDays) {
-                            $statusColor = 'bg-yellow-500';
-                            $statusText = 'Masa Tenggang - Hari ke-' . abs($daysDiff) . ' dari ' . $gracePeriodDays;
-                            $isInGracePeriod = true;
-                            $isOverdue = false;
+                @php
+                    // Gunakan waktu database untuk konsistensi
+                    $currentDbTime = DB::selectOne('SELECT NOW() as db_time')->db_time;
+                    $now = \Carbon\Carbon::parse($currentDbTime);
+                    $end = \Carbon\Carbon::parse($activeRental->sewa_berakhir);
+                    
+                    // Hitung selisih dalam berbagai unit
+                    $totalMinutesRemaining = $now->diffInMinutes($end, false);
+                    $totalHoursRemaining = $now->diffInHours($end, false);
+                    $daysRemaining = $now->diffInDays($end, false);
+                    
+                    // Tentukan format tampilan berdasarkan waktu tersisa
+                    if ($totalMinutesRemaining > 0 && $totalMinutesRemaining < 60) {
+                        // Kurang dari 1 jam: tampilkan menit
+                        $timeRemainingDisplay = floor($totalMinutesRemaining) . ' Menit Tersisa';
+                        $showTenMinuteAlert = $totalMinutesRemaining <= 10;
+                    } elseif ($totalHoursRemaining > 0 && $totalHoursRemaining < 24) {
+                        // Kurang dari 1 hari: tampilkan jam dan menit
+                        $hours = floor($totalHoursRemaining);
+                        $minutes = floor($totalMinutesRemaining - ($hours * 60));
+                        if ($minutes > 0) {
+                            $timeRemainingDisplay = $hours . ' Jam ' . $minutes . ' Menit Tersisa';
                         } else {
-                            $latenessDays = abs($daysDiff) - $gracePeriodDays;
-                            $statusColor = 'bg-red-600';
-                            $statusText = 'Terlambat ' . $latenessDays . ' Hari (+ denda)';
-                            $isInGracePeriod = false;
-                            $isOverdue = true;
+                            $timeRemainingDisplay = $hours . ' Jam Tersisa';
                         }
+                        $showTenMinuteAlert = $totalMinutesRemaining <= 10;
+                    } else {
+                        // Lebih dari 1 hari: tampilkan hari
+                        $timeRemainingDisplay = abs($daysRemaining) . ' Hari Tersisa';
+                        $showTenMinuteAlert = false;
+                    }
+                @endphp
 
-                        $dendaPerHari = 50000;
-                        $totalDenda = 0;
+                
+@php
+    // Gunakan waktu database untuk konsistensi
+    $currentDbTime = DB::selectOne('SELECT NOW() as db_time')->db_time;
+    $now = \Carbon\Carbon::parse($currentDbTime);
+    $end = \Carbon\Carbon::parse($activeRental->sewa_berakhir);
+    
+    $totalMinutesRemaining = $now->diffInMinutes($end, false);
+    $daysPassed = $now->diffInDays($end, false);
+    
+    // ✅ CEK APAKAH RAK SUDAH DIKOSONGKAN (37 HARI)
+    $isDikosongkan = $daysPassed < -37 || $activeRental->is_dikosongkan;
+@endphp
 
-                        if ($isOverdue) {
-                            $latenessDays = abs($daysDiff) - $gracePeriodDays;
-                            $totalDenda = $latenessDays * $dendaPerHari;
-                        }
-
-                        $hargaSewa = $rak->harga_sewa_perbulan ?? 0;
-                        $totalBayar = $hargaSewa + $totalDenda;
-
-                        $totalLateDays = 0;
-                        if ($daysDiff < 0) {
-                            $totalLateDays = abs($daysDiff) - $gracePeriodDays;
-                        }
-                        $isEnteringPengosongan = $daysDiff < 0 && $totalLateDays >= $maxLateDays;
-                    @endphp
-
-                    <!-- COUNTDOWN TIMER -->
-                    <div class="countdown-container">
-                        <div class="countdown-title">
-                            <i class="fas fa-clock"></i>
-                            <span id="countdownStatus">Sisa Waktu Sewa</span>
-                        </div>
-                        <div class="countdown-grid" id="countdownDisplay">
-                            <div class="countdown-item" id="daysBox">
-                                <span class="countdown-number" id="days">00</span>
-                                <span class="countdown-label">Hari</span>
-                            </div>
-                            <div class="countdown-item" id="hoursBox">
-                                <span class="countdown-number" id="hours">00</span>
-                                <span class="countdown-label">Jam</span>
-                            </div>
-                            <div class="countdown-item" id="minutesBox">
-                                <span class="countdown-number" id="minutes">00</span>
-                                <span class="countdown-label">Menit</span>
-                            </div>
-                            <div class="countdown-item" id="secondsBox">
-                                <span class="countdown-number" id="seconds">00</span>
-                                <span class="countdown-label">Detik</span>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="mt-4 p-3 rounded-lg text-white {{ $statusColor }}">
-                        <div class="flex items-center justify-between">
-                            <span class="font-semibold text-white">Status Sewa:</span>
-                            <span class="text-xl font-bold text-white">
-                                {{ $statusText }}
-                            </span>
-                        </div>
-                    </div>
-
-                    @if ($isInGracePeriod)
-                        <div class="mt-4 p-4 bg-yellow-500 bg-opacity-90 rounded-lg text-white">
-                            <div class="flex items-start">
-                                <i class="fas fa-shield-alt mr-3 mt-1 text-xl"></i>
-                                <div>
-                                    <p class="font-semibold mb-1">Masa Tenggang Aktif ({{ $gracePeriodDays }} Hari)</p>
-                                    <p class="text-sm opacity-90">
-                                        Anda berada di hari ke-{{ abs($daysDiff) }} dari {{ $gracePeriodDays }} hari masa
-                                        tenggang. <strong>Tidak ada denda</strong> selama masa ini.
-                                        Perpanjang segera untuk menghindari denda Rp {{ number_format($dendaPerHari, 0, ',', '.') }}/hari 
-                                        setelah masa tenggang berakhir.
-                                    </p>
-                                </div>
-                            </div>
-                        </div>
-                    @endif
-
-                    <!-- STATUS PENGOSONGAN SECTION -->
-                    @if ($activeRental->is_pengosongan)
-                        <div class="mt-4 p-4 bg-gradient-to-r from-purple-600 to-pink-600 rounded-lg text-white">
-                            <div class="flex items-start">
-                                <i class="fas fa-box-open mr-3 mt-1 text-xl"></i>
-                                <div class="flex-1">
-                                    <p class="font-semibold mb-2 text-lg">🚨 Masa Pengosongan Aktif</p>
-                                    <div class="bg-white bg-opacity-20 rounded-lg p-3 mb-3">
-                                        <div class="grid grid-cols-2 gap-3 text-sm">
-                                            <div>
-                                                <p class="opacity-80 mb-1">Dimulai:</p>
-                                                <p class="font-bold">{{ \Carbon\Carbon::parse($activeRental->pengosongan_dimulai)->format('d M Y') }}</p>
-                                            </div>
-                                            <div>
-                                                <p class="opacity-80 mb-1">Berakhir:</p>
-                                                <p class="font-bold">{{ \Carbon\Carbon::parse($activeRental->pengosongan_berakhir)->format('d M Y') }}</p>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <p class="text-sm opacity-90 leading-relaxed">
-                                        Rak Anda telah memasuki <strong>masa pengosongan selama 7 hari</strong> karena pembayaran tidak dilakukan 
-                                        setelah masa tenggang + 30 hari keterlambatan. Setelah masa pengosongan berakhir, 
-                                        rak akan otomatis dikosongkan dan kembali tersedia untuk penyewa lain.
-                                    </p>
-                                    <div class="mt-3 p-3 bg-red-700 bg-opacity-50 rounded-lg">
-                                        <p class="text-xs font-semibold">
-                                            ⚠️ PERHATIAN: Harap segera kosongkan barang Anda sebelum masa pengosongan berakhir!
-                                        </p>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                    @elseif($isEnteringPengosongan)
-                        <div class="mt-4 p-4 bg-gradient-to-r from-red-600 to-orange-600 rounded-lg text-white">
-                            <div class="flex items-start">
-                                <i class="fas fa-exclamation-triangle mr-3 mt-1 text-xl"></i>
-                                <div class="flex-1">
-                                    <p class="font-semibold mb-2 text-lg">⚠️ Rak Akan Memasuki Masa Pengosongan</p>
-                                    <p class="text-sm opacity-90 leading-relaxed mb-3">
-                                        Anda telah terlambat <strong>{{ $totalLateDays }} hari</strong> (melebihi batas maksimal 30 hari setelah masa tenggang).
-                                        Rak akan segera memasuki <strong>masa pengosongan 7 hari</strong>.
-                                    </p>
-                                    <div class="bg-white bg-opacity-20 rounded-lg p-3">
-                                        <p class="text-sm font-semibold mb-2">Yang Perlu Anda Ketahui:</p>
-                                        <ul class="text-xs space-y-1 opacity-90">
-                                            <li>• Masa pengosongan dimulai otomatis setelah 30 hari keterlambatan</li>
-                                            <li>• Durasi pengosongan: 7 hari</li>
-                                            <li>• Setelah 7 hari, rak akan dikosongkan dan kembali tersedia</li>
-                                            <li>• Segera kosongkan barang Anda untuk menghindari kehilangan</li>
-                                        </ul>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    @endif
-
-                    <!-- RENEWAL SECTION - DENGAN BLOCKER PENGOSONGAN -->
-                    @if ($activeRental->is_pengosongan || $isEnteringPengosongan)
-                        <div class="mt-4 p-4 bg-gray-700 rounded-lg text-white">
-                            <div class="flex items-center">
-                                <i class="fas fa-lock mr-3 text-xl"></i>
-                                <div>
-                                    <p class="font-semibold">Perpanjangan Tidak Tersedia</p>
-                                    <p class="text-sm opacity-90 mt-1">
-                                        Anda tidak bisa membayar atau memperpanjang masa sewa lagi karena rak sudah memasuki atau akan memasuki masa pengosongan.
-                                    </p>
-                                </div>
-                            </div>
-                        </div>
-                    @elseif ($daysDiff <= 1 && !$hasPendingRenewal)
-                        <div class="renewal-card">
-                            <div class="flex items-center mb-4">
-                                <div class="rental-icon mr-4">
-                                    <i class="fas fa-redo-alt"></i>
-                                </div>
-                                <div>
-                                    <h3 class="text-xl font-bold">
-                                        @if ($isOverdue)
-                                            Perpanjang Sewa & Bayar Denda
-                                        @elseif($isInGracePeriod)
-                                            Perpanjang Sewa (Masih Tanpa Denda)
-                                        @else
-                                            Perpanjang Masa Sewa
-                                        @endif
-                                    </h3>
-                                    <p class="text-sm opacity-90">
-                                        @if ($isOverdue)
-                                            Segera perpanjang untuk menghindari denda lebih lanjut
-                                        @elseif($isInGracePeriod)
-                                            Perpanjang sekarang sebelum dikenakan denda
-                                        @else
-                                            Perpanjang sekarang untuk melanjutkan penyewaan
-                                        @endif
-                                    </p>
-                                </div>
-                            </div>
-
-                            <div class="price-breakdown">
-                                <div class="flex justify-between items-center mb-2">
-                                    <span class="text-sm">Harga Sewa ({{ $rak->durasi_sewa_hari ?? 30 }} hari)</span>
-                                    <span class="font-bold">Rp {{ number_format($hargaSewa, 0, ',', '.') }}</span>
-                                </div>
-
-                                @if ($isOverdue && $totalDenda > 0)
-                                    @php
-                                        $latenessDays = abs($daysDiff) - $gracePeriodDays;
-                                    @endphp
-                                    <div class="flex justify-between items-center mb-2 text-red-200">
-                                        <span class="text-sm">
-                                            Denda Keterlambatan ({{ $latenessDays }} hari × Rp {{ number_format($dendaPerHari, 0, ',', '.') }})
-                                        </span>
-                                        <span class="font-bold">Rp {{ number_format($totalDenda, 0, ',', '.') }}</span>
-                                    </div>
-                                    <div class="text-xs text-red-200 mb-2 opacity-80">
-                                        *Denda dihitung setelah {{ $gracePeriodDays }} hari masa tenggang
-                                    </div>
-                                @endif
-
-                                <div class="border-t border-white border-opacity-30 pt-2 mt-2">
-                                    <div class="flex justify-between items-center">
-                                        <span class="font-bold text-lg">Total Pembayaran</span>
-                                        <span class="font-bold text-2xl">Rp {{ number_format($totalBayar, 0, ',', '.') }}</span>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <a href="{{ route('customer.payment.renewal-checkout', ['transaction_id' => $activeRental->id]) }}"
-                                class="mt-4 w-full flex items-center justify-center space-x-3 px-6 py-4 bg-white text-orange-600 rounded-xl hover:bg-orange-50 transition-all duration-300 font-bold shadow-lg hover:shadow-xl">
-                                <i class="fas fa-credit-card"></i>
-                                <span>
-                                    @if ($isOverdue)
-                                        Bayar Sekarang (Sewa + Denda)
-                                    @elseif($isInGracePeriod)
-                                        Perpanjang Sekarang (Tanpa Denda)
-                                    @else
-                                        Perpanjang Sewa Sekarang
-                                    @endif
-                                </span>
-                            </a>
-                        </div>
-                    @elseif($hasPendingRenewal)
-                        <div class="mt-4 p-4 bg-blue-500 bg-opacity-90 rounded-lg text-white">
-                            <div class="flex items-start">
-                                <i class="fas fa-info-circle mr-3 mt-1 text-xl"></i>
-                                <div>
-                                    <p class="font-semibold mb-1">Pembayaran Perpanjangan Berhasil!</p>
-                                    <p class="text-sm opacity-90">
-                                        Anda sudah melakukan pembayaran perpanjangan. Silakan cek status pembayaran Anda di halaman riwayat transaksi.
-                                    </p>
-                                </div>
-                            </div>
-                        </div>
-                    @endif
-
-                    <input type="hidden" id="rentalEndTime" value="{{ \Carbon\Carbon::parse($activeRental->sewa_berakhir)->format('Y-m-d H:i:s') }}">
-                    <input type="hidden" id="daysDiff" value="{{ $daysDiff }}">
-                    <input type="hidden" id="gracePeriodDays" value="{{ $gracePeriodDays }}">
-                    <input type="hidden" id="isInGracePeriod" value="{{ $isInGracePeriod ? '1' : '0' }}">
-                </div>
-            @endif
-
-            <!-- MAIN CARD -->
-            <div class="bg-white rounded-2xl shadow-xl overflow-hidden border border-gray-100 detail-card">
-                <div class="grid lg:grid-cols-2 gap-8 p-8">
-                    @include('customer.list-rak.partials.photo-section')
-                    @include('customer.list-rak.partials.info-section')
-                </div>
+<!-- ✅ ALERT RAK SUDAH DIKOSONGKAN -->
+@if ($isDikosongkan)
+    <div class="alert-dikosongkan mb-8">
+        <div class="flex items-start">
+            <div class="alert-icon-wrapper-dikosongkan mr-4">
+                <i class="fas fa-box-open"></i>
             </div>
-
-            @include('customer.list-rak.partials.specifications-section')
-
-            <!-- ACTION BUTTONS -->
-            <div class="mt-8 flex flex-col sm:flex-row gap-4">
-                <a href="{{ route('customer.list-rak.list-rak') }}"
-                    class="flex items-center justify-center space-x-3 px-8 py-4 bg-gray-200 text-gray-700 rounded-xl hover:bg-gray-300 transition-all duration-300 font-semibold shadow-md hover:shadow-lg group action-button">
-                    <i class="fas fa-arrow-left group-hover:-translate-x-1 transition-transform"></i>
-                    <span>Kembali ke Daftar Rak</span>
-                </a>
-
-                @if ($activeRental)
-                    <button class="flex-1 flex items-center justify-center space-x-3 px-8 py-4 bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-xl cursor-default font-semibold shadow-lg">
-                        <i class="fas fa-check-circle"></i>
-                        <span>Rak Sedang Anda Sewa</span>
-                    </button>
-                @elseif ($rak->status === 'tersedia')
-                    <a href="{{ route('customer.payment.checkout', $rak->id) }}"
-                        class="flex-1 flex items-center justify-center space-x-3 px-8 py-4 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-xl hover:shadow-xl transition-all duration-300 font-semibold shadow-lg action-button">
-                        <i class="fas fa-shopping-cart"></i>
-                        <span>Sewa Sekarang</span>
-                    </a>
-                @else
-                    <button class="flex-1 flex items-center justify-center space-x-3 px-8 py-4 bg-gray-300 text-gray-500 rounded-xl cursor-not-allowed font-semibold">
-                        <i class="fas fa-ban"></i>
-                        <span>Tidak Tersedia</span>
-                    </button>
+            <div class="flex-1">
+                <h3 class="text-2xl font-bold mb-3">📦 Rak Sudah Dikosongkan</h3>
+                <p class="text-lg opacity-95 mb-2">
+                    Masa sewa Anda telah berakhir lebih dari 37 hari (3 hari masa tenggang + 30 hari keterlambatan + 7 hari pengosongan).
+                </p>
+                <p class="text-base opacity-90 mb-4">
+                    Rak telah dikosongkan dan kembali tersedia untuk penyewa lain.
+                </p>
+                
+                @if ($activeRental->dikosongkan_at)
+                    <div class="bg-white bg-opacity-20 rounded-lg p-3 mb-4">
+                        <p class="text-sm font-semibold mb-1">Tanggal Pengosongan:</p>
+                        <p class="text-base">
+                            {{ \Carbon\Carbon::parse($activeRental->dikosongkan_at)->format('d M Y H:i') }}
+                            ({{ \Carbon\Carbon::parse($activeRental->dikosongkan_at)->diffForHumans() }})
+                        </p>
+                    </div>
                 @endif
-            </div>
 
+                <div class="mt-4 p-4 bg-blue-600 bg-opacity-50 rounded-lg">
+                    <p class="text-sm font-semibold mb-2">💡 Ingin menyewa lagi?</p>
+                    <p class="text-sm opacity-90 mb-3">
+                        Anda dapat menyewa rak yang sama atau memilih rak lain yang tersedia.
+                    </p>
+                    <a href="{{ route('customer.list-rak.list-rak') }}"
+                       class="inline-flex items-center justify-center space-x-2 px-6 py-3 bg-white text-blue-600 rounded-xl hover:bg-blue-50 transition-all duration-300 font-bold shadow-lg hover:shadow-xl">
+                        <i class="fas fa-shopping-cart"></i>
+                        <span>Sewa Rak Kembali</span>
+                    </a>
+                </div>
+            </div>
         </div>
     </div>
+@else
+    <!-- ALERT 10 MENIT -->
+    @if ($showTenMinuteAlert)
+        <div class="alert-10-minutes" id="tenMinuteAlert">
+            <div class="flex items-start mb-4">
+                <div class="alert-icon-wrapper mr-4">
+                    <i class="fas fa-exclamation-triangle"></i>
+                </div>
+                <div class="flex-1">
+                    <h3 class="text-2xl font-bold mb-2">⚠️ PERINGATAN WAKTU SEWA HAMPIR HABIS!</h3>
+                    <p class="text-lg opacity-95 mb-3">
+                        Masa sewa Anda akan berakhir dalam <strong id="minutesLeft">{{ floor($totalMinutesRemaining) }}</strong> menit lagi!
+                    </p>
+                    <p class="text-sm opacity-90">
+                        Segera perpanjang masa sewa Anda untuk menghindari denda keterlambatan dan masa pengosongan.
+                    </p>
+                </div>
+            </div>
 
-   {{-- Ganti bagian perhitungan status sewa (sekitar baris 277-317) --}}
+            <div class="countdown-timer">
+                <p class="text-sm opacity-90 mb-2">Waktu Tersisa:</p>
+                <div class="timer-digit" id="countdownDisplay">
+                    {{ sprintf('%02d:%02d', floor($totalMinutesRemaining), ($totalMinutesRemaining - floor($totalMinutesRemaining)) * 60) }}
+                </div>
+                <p class="text-xs opacity-80 mt-2">Menit : Detik</p>
+            </div>
 
+            <div class="mt-4 text-center">
+                <a href="{{ route('customer.payment.renewal-checkout', ['transaction_id' => $activeRental->id]) }}"
+                    class="inline-flex items-center justify-center space-x-3 px-8 py-3 bg-white text-red-600 rounded-xl hover:bg-red-50 transition-all duration-300 font-bold shadow-lg hover:shadow-xl">
+                    <i class="fas fa-bolt"></i>
+                    <span>PERPANJANG SEKARANG</span>
+                </a>
+            </div>
+        </div>
+    @endif
 
-{{-- Ganti bagian script countdown (di dalam @push('scripts'), sekitar baris 570-640) --}}
+    <div class="mb-8 rental-info-card">
+        <div class="flex items-center mb-4">
+            <div class="rental-icon mr-4">
+                <i class="fas fa-check-circle"></i>
+            </div>
+            <div>
+                <h3 class="text-xl font-bold">Anda Sedang Menyewa Rak Ini</h3>
+                <p class="text-sm opacity-90">Order ID: {{ $activeRental->order_id }}</p>
+            </div>
+        </div>
 
-@push('scripts')
+        <div class="grid md:grid-cols-2 gap-4 mt-6">
+            <div class="rental-date-box">
+                <div class="flex items-center mb-2">
+                    <i class="fas fa-calendar-check mr-2 text-lg"></i>
+                    <span class="font-semibold">Tanggal Mulai Sewa</span>
+                </div>
+                <p class="text-2xl font-bold">
+                    {{ \Carbon\Carbon::parse($activeRental->sewa_mulai)->format('d M Y H:i') }}
+                </p>
+                <p class="text-sm opacity-80 mt-1">
+                    {{ \Carbon\Carbon::parse($activeRental->sewa_mulai)->diffForHumans() }}
+                </p>
+            </div>
+
+            <div class="rental-date-box">
+                <div class="flex items-center mb-2">
+                    <i class="fas fa-calendar-times mr-2 text-lg"></i>
+                    <span class="font-semibold">Tanggal Berakhir Sewa</span>
+                </div>
+                <p class="text-2xl font-bold">
+                    {{ \Carbon\Carbon::parse($activeRental->sewa_berakhir)->format('d M Y H:i') }}
+                </p>
+                <div class="mt-3">
+                    <span class="time-display-badge" id="timeRemainingBadge">
+                        <i class="fas fa-clock"></i>
+                        <span id="timeRemainingText">{{ $timeRemainingDisplay }}</span>
+                    </span>
+                </div>
+            </div>
+        </div>
+        @php
+$now = \Carbon\Carbon::parse($currentDbTime);
+$end = \Carbon\Carbon::parse($activeRental->sewa_berakhir);
+
+$gracePeriodDays = 3;
+$maxLateDays = 30;
+$dendaPerHari = 50000;
+
+// ✅ SINGLE SOURCE OF TRUTH (menit, integer)
+$totalMinutesRemaining = (int) floor(
+    $now->diffInSeconds($end, false) / 60
+);
+
+// ✅ Default
+$isInGracePeriod = false;
+$isOverdue = false;
+$statusColor = 'bg-green-600';
+$statusLabel = 'Aktif';
+$lateDays = 0;
+
+// ✅ STATUS BISNIS SAJA (TANPA JAM/MENIT)
+if ($totalMinutesRemaining <= 0 && abs($totalMinutesRemaining) <= ($gracePeriodDays * 1440)) {
+    $statusColor = 'bg-yellow-500';
+    $statusLabel = 'Masa Tenggang';
+    $isInGracePeriod = true;
+
+} elseif ($totalMinutesRemaining <= 0) {
+    $lateDays = ceil(abs($totalMinutesRemaining) / 1440) - $gracePeriodDays;
+    $statusColor = 'bg-red-600';
+    $statusLabel = 'Terlambat';
+    $isOverdue = true;
+}
+
+// ✅ DENDA
+$totalDenda = $isOverdue
+    ? max(0, $lateDays * $dendaPerHari)
+    : 0;
+
+// ✅ TOTAL BAYAR
+$hargaSewa = $rak->harga_sewa_perbulan ?? 0;
+$totalBayar = $hargaSewa + $totalDenda;
+
+// ✅ PENGOSONGAN
+$totalLateDays = $isOverdue ? $lateDays : 0;
+$isEnteringPengosongan = $totalLateDays >= $maxLateDays;
+@endphp
+
+        <div class="mt-4 p-3 rounded-lg text-white {{ $statusColor }}">
+            <div class="flex items-center justify-between">
+                <span class="text-xl font-bold text-white" id="statusLabel">
+                    {{ $statusLabel }}
+                </span>
+            </div>
+        </div>
+
+        @if ($isInGracePeriod)
+            <div class="mt-4 p-4 bg-yellow-500 bg-opacity-90 rounded-lg text-white">
+                <div class="flex items-start">
+                    <i class="fas fa-shield-alt mr-3 mt-1 text-xl"></i>
+                    <div>
+                        <p class="font-semibold mb-1">
+                            Masa Tenggang Aktif ({{ $gracePeriodDays }} Hari)
+                        </p>
+
+                        @php
+                            // ✅ Hari ke berapa dalam masa tenggang (1-based)
+                            $graceDay = min(
+                                $gracePeriodDays,
+                                max(1, ceil(abs($totalMinutesRemaining) / 1440))
+                            );
+                        @endphp
+
+                        <p class="text-sm opacity-90 leading-relaxed">
+                            Anda berada di <strong>hari ke-{{ $graceDay }}</strong> dari
+                            {{ $gracePeriodDays }} hari masa tenggang.
+                            <br>
+                            <strong>Tidak ada denda</strong> selama masa ini.
+                            <br>
+                            Perpanjang segera untuk menghindari denda
+                            <strong>
+                                Rp {{ number_format($dendaPerHari, 0, ',', '.') }}/hari
+                            </strong>
+                            setelah masa tenggang berakhir.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        @endif
+
+        <!-- STATUS PENGOSONGAN SECTION -->
+        @if ($activeRental->is_pengosongan)
+            <div class="mt-4 p-4 bg-gradient-to-r from-purple-600 to-pink-600 rounded-lg text-white">
+                <div class="flex items-start">
+                    <i class="fas fa-box-open mr-3 mt-1 text-xl"></i>
+                    <div class="flex-1">
+                        <p class="font-semibold mb-2 text-lg">🚨 Masa Pengosongan Aktif</p>
+                        <div class="bg-white bg-opacity-20 rounded-lg p-3 mb-3">
+                            <div class="grid grid-cols-2 gap-3 text-sm">
+                                <div>
+                                    <p class="opacity-80 mb-1">Dimulai:</p>
+                                    <p class="font-bold">{{ \Carbon\Carbon::parse($activeRental->pengosongan_dimulai)->format('d M Y') }}</p>
+                                </div>
+                                <div>
+                                    <p class="opacity-80 mb-1">Berakhir:</p>
+                                    <p class="font-bold">{{ \Carbon\Carbon::parse($activeRental->pengosongan_berakhir)->format('d M Y') }}</p>
+                                </div>
+                            </div>
+                        </div>
+                        <p class="text-sm opacity-90 leading-relaxed">
+                            Rak Anda telah memasuki <strong>masa pengosongan selama 7 hari</strong> karena pembayaran tidak dilakukan 
+                            setelah masa tenggang + 30 hari keterlambatan. Setelah masa pengosongan berakhir, 
+                            rak akan otomatis dikosongkan dan kembali tersedia untuk penyewa lain.
+                        </p>
+                        <div class="mt-3 p-3 bg-red-700 bg-opacity-50 rounded-lg">
+                            <p class="text-xs font-semibold">
+                                ⚠️ PERHATIAN: Harap segera kosongkan barang Anda sebelum masa pengosongan berakhir!
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        @elseif($isEnteringPengosongan)
+            <div class="mt-4 p-4 bg-gradient-to-r from-red-600 to-orange-600 rounded-lg text-white">
+                <div class="flex items-start">
+                    <i class="fas fa-exclamation-triangle mr-3 mt-1 text-xl"></i>
+                    <div class="flex-1">
+                        <p class="font-semibold mb-2 text-lg">⚠️ Rak Akan Memasuki Masa Pengosongan</p>
+                        <p class="text-sm opacity-90 leading-relaxed mb-3">
+                            Anda telah terlambat <strong>{{ $totalLateDays }} hari</strong> (melebihi batas maksimal 30 hari setelah masa tenggang).
+                            Rak akan segera memasuki <strong>masa pengosongan 7 hari</strong>.
+                        </p>
+                        <div class="bg-white bg-opacity-20 rounded-lg p-3">
+                            <p class="text-sm font-semibold mb-2">Yang Perlu Anda Ketahui:</p>
+                            <ul class="text-xs space-y-1 opacity-90">
+                                <li>• Masa pengosongan dimulai otomatis setelah 30 hari keterlambatan</li>
+                                <li>• Durasi pengosongan: 7 hari</li>
+                                <li>• Setelah 7 hari, rak akan dikosongkan dan kembali tersedia</li>
+                                <li>• Segera kosongkan barang Anda untuk menghindari kehilangan</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        @endif
+
+        <!-- RENEWAL SECTION - DENGAN BLOCKER PENGOSONGAN -->
+        @if ($activeRental->is_pengosongan || $isEnteringPengosongan)
+            <div class="mt-4 p-4 bg-gray-700 rounded-lg text-white">
+                <div class="flex items-center">
+                    <i class="fas fa-lock mr-3 text-xl"></i>
+                    <div>
+                        <p class="font-semibold">Perpanjangan Tidak Tersedia</p>
+                        <p class="text-sm opacity-90 mt-1">
+                            Anda tidak bisa membayar atau memperpanjang masa sewa lagi karena rak
+                            sudah memasuki atau akan memasuki masa pengosongan.
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+        @elseif ($totalMinutesRemaining <= 1440 && !$hasPendingRenewal)
+            <div class="renewal-card">
+                <div class="flex items-center mb-4">
+                    <div class="rental-icon mr-4">
+                        <i class="fas fa-redo-alt"></i>
+                    </div>
+                    <div>
+                        <h3 class="text-xl font-bold">
+                            @if ($isOverdue)
+                                Perpanjang Sewa & Bayar Denda
+                            @elseif ($isInGracePeriod)
+                                Perpanjang Sewa (Masih Tanpa Denda)
+                            @else
+                                Perpanjang Masa Sewa
+                            @endif
+                        </h3>
+                        <p class="text-sm opacity-90">
+                            @if ($isOverdue)
+                                Segera perpanjang untuk menghindari denda lebih lanjut
+                            @elseif ($isInGracePeriod)
+                                Perpanjang sekarang sebelum dikenakan denda
+                            @else
+                                Perpanjang sekarang untuk melanjutkan penyewaan
+                            @endif
+                        </p>
+                    </div>
+                </div>
+
+                <div class="price-breakdown">
+                    <div class="flex justify-between items-center mb-2">
+                        <span class="text-sm">
+                            Harga Sewa ({{ $rak->durasi_sewa_hari ?? 30 }} hari)
+                        </span>
+                        <span class="font-bold">
+                            Rp {{ number_format($hargaSewa, 0, ',', '.') }}
+                        </span>
+                    </div>
+
+                    @if ($lateDays > 0)
+                        <div class="flex justify-between items-center mb-2 text-red-200">
+                            <span class="text-sm">
+                                Denda Keterlambatan
+                                ({{ $lateDays }} hari × Rp {{ number_format($dendaPerHari, 0, ',', '.') }})
+                            </span>
+                            <span class="font-bold">
+                                Rp {{ number_format($totalDenda, 0, ',', '.') }}
+                            </span>
+                        </div>
+                        <div class="text-xs text-red-200 opacity-80 mb-2">
+                            *Denda dihitung setelah {{ $gracePeriodDays }} hari masa tenggang
+                        </div>
+                    @endif
+
+                    <div class="flex justify-between items-center mt-3 border-t border-gray-600 pt-3">
+                        <span class="font-semibold">Total Pembayaran</span>
+                        <span class="font-bold text-lg">
+                            Rp {{ number_format($totalBayar, 0, ',', '.') }}
+                        </span>
+                    </div>
+                </div>
+
+                {{-- ✅ TOMBOL PEMBAYARAN HARUS DI DALAM CARD --}}
+                <a href="{{ route('customer.payment.renewal-checkout', ['transaction_id' => $activeRental->id]) }}"
+                   class="mt-4 w-full flex items-center justify-center space-x-3 px-6 py-4
+                          bg-white text-orange-600 rounded-xl hover:bg-orange-50
+                          transition-all duration-300 font-bold shadow-lg hover:shadow-xl">
+                    <i class="fas fa-credit-card"></i>
+                    <span>
+                        @if ($isOverdue)
+                            Bayar Sekarang (Sewa + Denda)
+                        @elseif($isInGracePeriod)
+                            Perpanjang Sekarang (Tanpa Denda)
+                        @else
+                            Perpanjang Sewa Sekarang
+                        @endif
+                    </span>
+                </a>
+            </div>
+        @endif
+    </div>
+
+    <!-- JavaScript untuk Real-time Countdown -->
     <script>
-        document.addEventListener("DOMContentLoaded", function() {
-            const endTimeElement = document.getElementById("rentalEndTime");
-            const gracePeriodDays = parseInt(document.getElementById("gracePeriodDays")?.value ?? 3);
+document.addEventListener('DOMContentLoaded', function () {
+    const sewaBerakir = new Date("{{ $activeRental->sewa_berakhir }}").getTime();
+    const gracePeriodDays = {{ $gracePeriodDays }};
+    const gracePeriodMs = gracePeriodDays * 24 * 60 * 60 * 1000;
+
+    const alertElement = document.getElementById('tenMinuteAlert');
+    const countdownDisplay = document.getElementById('countdownDisplay');
+    const minutesLeftText = document.getElementById('minutesLeft');
+    const timeRemainingText = document.getElementById('timeRemainingText');
+    const timeRemainingBadge = document.getElementById('timeRemainingBadge');
+    const statusLabel = document.getElementById('statusLabel');
+
+    function updateCountdown() {
+        const now = Date.now();
+        let distance = sewaBerakir - now;
+
+        // Jika waktu sewa sudah habis
+        if (distance <= 0) {
+            const timeOverdue = Math.abs(distance);
             
-            if (!endTimeElement) return;
-
-            const endTime = new Date(endTimeElement.value).getTime();
-            
-            function updateCountdown() {
-                const now = new Date().getTime();
-                const distance = endTime - now;
-                const isExpired = distance < 0;
-                const absDistance = Math.abs(distance);
-
-                // Calculate time units
-                const days = Math.floor(absDistance / (1000 * 60 * 60 * 24));
-                const hours = Math.floor((absDistance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-                const minutes = Math.floor((absDistance % (1000 * 60 * 60)) / (1000 * 60));
-                const seconds = Math.floor((absDistance % (1000 * 60)) / 1000);
-
-                // Update display
-                document.getElementById("days").textContent = String(days).padStart(2, '0');
-                document.getElementById("hours").textContent = String(hours).padStart(2, '0');
-                document.getElementById("minutes").textContent = String(minutes).padStart(2, '0');
-                document.getElementById("seconds").textContent = String(seconds).padStart(2, '0');
-
-                // Update status and styling based on time remaining
-                const countdownItems = document.querySelectorAll('.countdown-item');
-                const statusElement = document.getElementById("countdownStatus");
-
-                if (isExpired) {
-                    // Sudah lewat waktu berakhir
-                    const totalDaysLate = Math.floor(absDistance / (1000 * 60 * 60 * 24));
-                    
-                    if (totalDaysLate < gracePeriodDays) {
-                        // Dalam masa tenggang (hari 0, 1, 2)
-                        const graceDay = totalDaysLate + 1; // Hari ke-1, 2, 3
-                        statusElement.textContent = `Masa Tenggang (Hari ke-${graceDay} dari ${gracePeriodDays})`;
-                        countdownItems.forEach(item => {
-                            item.classList.remove('countdown-expired');
-                            item.classList.add('countdown-warning');
-                        });
-                    } else if (totalDaysLate === gracePeriodDays) {
-                        // Tepat di hari terakhir masa tenggang
-                        statusElement.textContent = `Masa Tenggang (Hari Terakhir)`;
-                        countdownItems.forEach(item => {
-                            item.classList.remove('countdown-expired');
-                            item.classList.add('countdown-warning');
-                        });
+            // CEK APAKAH MASIH DALAM MASA TENGGANG
+            if (timeOverdue <= gracePeriodMs) {
+                // MASA TENGGANG
+                const graceDaysRemaining = Math.ceil((gracePeriodMs - timeOverdue) / (1000 * 60 * 60 * 24));
+                const graceHoursRemaining = Math.floor((gracePeriodMs - timeOverdue) / (1000 * 60 * 60));
+                const graceMinutesRemaining = Math.floor((gracePeriodMs - timeOverdue) / (1000 * 60));
+                
+                if (countdownDisplay) countdownDisplay.textContent = '00:00';
+                
+                if (timeRemainingText) {
+                    if (graceDaysRemaining > 0) {
+                        timeRemainingText.textContent = 'Masa Tenggang: ' + graceDaysRemaining + ' Hari Tersisa';
+                    } else if (graceHoursRemaining > 0) {
+                        timeRemainingText.textContent = 'Masa Tenggang: ' + graceHoursRemaining + ' Jam Tersisa';
                     } else {
-                        // Melewati masa tenggang - kena denda
-                        const overdueDay = totalDaysLate - gracePeriodDays;
-                        statusElement.textContent = `Terlambat ${overdueDay} Hari (Kena Denda)`;
-                        countdownItems.forEach(item => {
-                            item.classList.remove('countdown-warning');
-                            item.classList.add('countdown-expired');
-                        });
+                        timeRemainingText.textContent = 'Masa Tenggang: ' + graceMinutesRemaining + ' Menit Tersisa';
                     }
-                } else {
-                    // Masih dalam periode sewa
-                    if (days === 0) {
-                        // Hari terakhir
-                        statusElement.textContent = `⚠️ Berakhir Hari Ini (${hours} jam ${minutes} menit lagi)`;
-                        countdownItems.forEach(item => {
-                            item.classList.add('countdown-warning');
-                            item.classList.remove('countdown-expired');
-                        });
-                    } else if (days <= 3) {
-                        // 1-3 hari tersisa
-                        statusElement.textContent = "⚠️ Sisa Waktu Sewa (Segera Berakhir)";
-                        countdownItems.forEach(item => {
-                            item.classList.add('countdown-warning');
-                            item.classList.remove('countdown-expired');
-                        });
-                    } else {
-                        // Masih banyak waktu
-                        statusElement.textContent = "Sisa Waktu Sewa";
-                        countdownItems.forEach(item => {
-                            item.classList.remove('countdown-warning', 'countdown-expired');
-                        });
-                    }
+                }
+
+                if (timeRemainingBadge) {
+                    timeRemainingBadge.style.background = 'rgba(251, 191, 36, 0.3)';
+                }
+
+                if (statusLabel) {
+                    statusLabel.textContent = 'Masa Tenggang';
+                }
+
+                if (alertElement) {
+                    alertElement.style.display = 'none';
+                }
+            } else {
+                // TERLAMBAT (SETELAH MASA TENGGANG)
+                const lateDays = Math.floor((timeOverdue - gracePeriodMs) / (1000 * 60 * 60 * 24));
+                
+                if (countdownDisplay) countdownDisplay.textContent = '00:00';
+                
+                if (timeRemainingText) {
+                    timeRemainingText.textContent = 'Terlambat ' + lateDays + ' Hari';
+                }
+
+                if (timeRemainingBadge) {
+                    timeRemainingBadge.style.background = 'rgba(239, 68, 68, 0.3)';
+                }
+
+                if (statusLabel) {
+                    statusLabel.textContent = 'Terlambat';
+                }
+
+                if (alertElement) {
+                    alertElement.style.display = 'none';
                 }
             }
 
-            // Initial update
-            updateCountdown();
-            
-            // Update every second
-            setInterval(updateCountdown, 1000);
-        });
-    </script>
-@endpush
+            return;
+        }
 
-    @include('customer.payment.partials.whatsapp-button')
+        // WAKTU MASIH TERSISA (BELUM HABIS)
+        const days = Math.floor(distance / (1000 * 60 * 60 * 24));
+        const hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+        const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
+        const seconds = Math.floor((distance % (1000 * 60)) / 1000);
+
+        // ALERT 10 MENIT
+        if (distance <= 600000) {
+            if (alertElement) alertElement.style.display = 'block';
+
+            if (countdownDisplay) {
+                countdownDisplay.textContent =
+                    String(minutes).padStart(2, '0') + ':' + String(seconds).padStart(2, '0');
+            }
+
+            if (minutesLeftText) minutesLeftText.textContent = minutes;
+        } else if (alertElement) {
+            alertElement.style.display = 'none';
+        }
+
+        // BADGE TEKS WAKTU
+        let displayText = '';
+
+        if (days > 0) {
+            displayText = days + ' Hari Tersisa';
+        } else if (hours > 0) {
+            displayText = hours + ' Jam';
+            if (minutes > 0) displayText += ' ' + minutes + ' Menit';
+            displayText += ' Tersisa';
+
+            if (timeRemainingBadge) {
+                if (hours < 3) {
+                    timeRemainingBadge.style.background = 'rgba(239, 68, 68, 0.3)';
+                } else if (hours < 6) {
+                    timeRemainingBadge.style.background = 'rgba(251, 191, 36, 0.3)';
+                }
+            }
+        } else if (minutes > 0) {
+            displayText = minutes + ' Menit Tersisa';
+            if (timeRemainingBadge) {
+                timeRemainingBadge.style.background = 'rgba(239, 68, 68, 0.3)';
+            }
+        } else {
+            displayText = seconds + ' Detik Tersisa';
+            if (timeRemainingBadge) {
+                timeRemainingBadge.style.background = 'rgba(220, 38, 38, 0.4)';
+            }
+        }
+
+        if (timeRemainingText) timeRemainingText.textContent = displayText;
+
+        if (statusLabel) {
+            if (hours > 0 || days > 0 || minutes > 0) {
+                statusLabel.textContent = 'Aktif';
+            }
+        }
+    }
+
+    updateCountdown();
+    setInterval(updateCountdown, 1000);
+});
+    </script>
+@endif
+@endif
 @endsection

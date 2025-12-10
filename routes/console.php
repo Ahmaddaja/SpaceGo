@@ -3,6 +3,13 @@
 use Illuminate\Foundation\Inspiring;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Schedule;
+use App\Http\Controllers\PaymentController;
+
+/*
+|--------------------------------------------------------------------------
+| Console Commands
+|--------------------------------------------------------------------------
+*/
 
 Artisan::command('inspire', function () {
     $this->comment(Inspiring::quote());
@@ -12,16 +19,13 @@ Artisan::command('test:check-overdue', function () {
     $this->call('transactions:check-overdue');
 })->purpose('Test check overdue transactions manually');
 
-// Schedule command expire tagihan setiap 1 menit
-Schedule::command('tagihan:expire')
-    ->everyMinute()
-    ->withoutOverlapping()
-    ->runInBackground();
+/*
+|--------------------------------------------------------------------------
+| Scheduled Tasks (Laravel 11 / 12)
+|--------------------------------------------------------------------------
+*/
 
-// Alternatif: Setiap 5 menit jika load server tinggi
-// Schedule::command('tagihan:expire')->everyFiveMinutes();
-
-// Log ketika command dijalankan
+// ✅ 1. Expire tagihan tiap 1 menit
 Schedule::command('tagihan:expire')
     ->everyMinute()
     ->withoutOverlapping()
@@ -32,3 +36,10 @@ Schedule::command('tagihan:expire')
     ->onFailure(function () {
         \Log::error('Tagihan expire command failed');
     });
+
+// ✅ 2. Auto check expired rental harian jam 00:00
+Schedule::call(function () {
+    app(PaymentController::class)->autoCheckExpiredRentals();
+})
+->dailyAt('00:00')
+->name('auto-check-expired-rentals');
