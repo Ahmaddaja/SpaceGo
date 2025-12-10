@@ -26,7 +26,20 @@ class TransactionObserver
                     $parentTagihan = Tagihan::where('transaction_id', $transaction->parent_transaction_id)->first();
                     $parentTagihanId = $parentTagihan?->id;
                 }
-                
+
+                // Map transaction status to tagihan status
+                $statusMap = [
+                    'pending' => 'pending',
+                    'settlement' => 'settlement',
+                    'capture' => 'settlement',
+                    'deny' => 'deny',
+                    'expired' => 'expired',
+                    'expire' => 'expired',
+                    'cancel' => 'cancel',
+                ];
+
+                $mappedStatus = $statusMap[$transaction->transaction_status] ?? 'pending';
+
                 Tagihan::create([
                     'transaction_id' => $transaction->id,
                     'user_id' => $transaction->user_id,
@@ -34,7 +47,7 @@ class TransactionObserver
                     'harga_sewa' => $transaction->amount - ($transaction->penalty_amount ?? 0),
                     'penalty_amount' => $transaction->penalty_amount ?? 0,
                     'total_tagihan' => $transaction->amount,
-                    'status' => $transaction->transaction_status ?? 'pending',
+                    'status' => $mappedStatus,
                     'type' => $transaction->is_renewal ? 'renewal' : 'sewa_baru',
                     'is_renewal' => $transaction->is_renewal ?? false,
                     'sewa_mulai' => $transaction->sewa_mulai,
@@ -67,8 +80,10 @@ class TransactionObserver
                 $statusMap = [
                     'pending' => 'pending',
                     'settlement' => 'settlement',
+                    'capture' => 'settlement', // capture is successful like settlement
+                    'deny' => 'deny',
                     'expired' => 'expired',
-                    'failed' => 'failed',
+                    'expire' => 'expired',
                     'cancel' => 'cancel',
                 ];
 
