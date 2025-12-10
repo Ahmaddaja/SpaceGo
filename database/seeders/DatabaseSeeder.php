@@ -113,5 +113,7 @@ class DatabaseSeeder extends Seeder
             'status' => 'tersedia',
         ]);
 
+        // Seed transactions
+        $this->call(TransactionSeeder::class);
     }
 }

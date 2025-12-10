@@ -27,73 +27,77 @@ class PaymentController extends Controller
     }
 
     public function bayar($id)
-    {
-        try {
-            $rak = Rak::findOrFail($id);
-            $userId = Auth::id();
+{
+    try {
+        $rak = Rak::findOrFail($id);
+        $userId = Auth::id();
 
-            $existingPendingTagihan = Tagihan::where('user_id', $userId)
-                ->where('rak_id', $rak->id)
-                ->where('status', 'pending')
-                ->first();
+        $existingPendingTagihan = Tagihan::where('user_id', $userId)
+            ->where('rak_id', $rak->id)
+            ->where('status', 'pending')
+            ->first();
 
-            if ($existingPendingTagihan) {
-                return redirect()->route('customer.tagihan')
-                    ->with('info', 'Anda sudah memiliki tagihan pending untuk rak ini. Silakan selesaikan pembayaran di halaman Tagihan.');
-            }
-
-            if ($rak->status !== 'tersedia') {
-                return redirect()->route('customer.list-rak.list-rak')
-                    ->with('error', 'Rak tidak tersedia untuk disewa.');
-            }
-
-            $orderId = 'ORDER-' . time() . '-' . $rak->id;
-
-            $params = [
-                'transaction_details' => [
-                    'order_id' => $orderId,
-                    'gross_amount' => (int) $rak->harga_sewa_perbulan,
-                ],
-                'item_details' => [
-                    [
-                        'id' => $rak->id,
-                        'price' => (int) $rak->harga_sewa_perbulan,
-                        'quantity' => 1,
-                        'name' => $rak->nama_rak
-                    ]
-                ],
-                'customer_details' => [
-                    'first_name' => Auth::user()->name,
-                    'email' => Auth::user()->email,
-                ]
-            ];
-
-            $snapToken = Snap::getSnapToken($params);
-
-            session([
-                'payment_checkout' => [
-                    'order_id' => $orderId,
-                    'rak_id' => $rak->id,
-                    'rak_nama' => $rak->nama_rak,
-                    'amount' => $rak->harga_sewa_perbulan,
-                    'snap_token' => $snapToken,
-                    'created_at' => now()
-                ]
-            ]);
-
-            Log::info('Checkout session created', [
-                'user_id' => $userId,
-                'rak_id' => $rak->id,
-                'order_id' => $orderId
-            ]);
-
-            return view('customer.payment.checkout', compact('snapToken', 'rak'));
-        } catch (\Exception $e) {
-            Log::error('Payment Checkout Error: ' . $e->getMessage());
-            return redirect()->back()
-                ->with('error', 'Terjadi kesalahan: ' . $e->getMessage());
+        if ($existingPendingTagihan) {
+            return redirect()->route('customer.tagihan')
+                ->with('info', 'Anda sudah memiliki tagihan pending untuk rak ini. Silakan selesaikan pembayaran di halaman Tagihan.');
         }
+
+        if ($rak->status !== 'tersedia') {
+            return redirect()->route('customer.list-rak.list-rak')
+                ->with('error', 'Rak tidak tersedia untuk disewa.');
+        }
+
+        $orderId = 'ORDER-' . time() . '-' . $rak->id;
+
+        $params = [
+            'transaction_details' => [
+                'order_id' => $orderId,
+                'gross_amount' => (int) $rak->harga_sewa_perbulan,
+            ],
+            'item_details' => [
+                [
+                    'id' => $rak->id,
+                    'price' => (int) $rak->harga_sewa_perbulan,
+                    'quantity' => 1,
+                    'name' => $rak->nama_rak
+                ]
+            ],
+            'customer_details' => [
+                'first_name' => Auth::user()->name,
+                'email' => Auth::user()->email,
+            ],
+            // ✅ TAMBAHKAN INI - REDIRECT KE LIST RAK SETELAH PEMBAYARAN
+            'callbacks' => [
+                'finish' => route('customer.list-rak.rak')
+            ]
+        ];
+
+        $snapToken = Snap::getSnapToken($params);
+
+        session([
+            'payment_checkout' => [
+                'order_id' => $orderId,
+                'rak_id' => $rak->id,
+                'rak_nama' => $rak->nama_rak,
+                'amount' => $rak->harga_sewa_perbulan,
+                'snap_token' => $snapToken,
+                'created_at' => now()
+            ]
+        ]);
+
+        Log::info('Checkout session created', [
+            'user_id' => $userId,
+            'rak_id' => $rak->id,
+            'order_id' => $orderId
+        ]);
+
+        return view('customer.payment.checkout', compact('snapToken', 'rak'));
+    } catch (\Exception $e) {
+        Log::error('Payment Checkout Error: ' . $e->getMessage());
+        return redirect()->back()
+            ->with('error', 'Terjadi kesalahan: ' . $e->getMessage());
     }
+}
 
     public function processPayment(Request $request)
     {
@@ -437,12 +441,15 @@ class PaymentController extends Controller
                     ->with('error', 'Anda tidak bisa membayar atau memperpanjang masa sewa lagi karena rak sudah memasuki masa pengosongan.');
             }
 
-            // CEK APAKAH AKAN MASUK PENGOSONGAN
+            // CEK APAKAH AKAN MASUK PENGOSONGAN (dengan datetime precision)
             $currentDbTime = DB::selectOne('SELECT NOW() as db_time')->db_time;
-            $now = \Carbon\Carbon::parse($currentDbTime)->startOfDay();
-            $end = \Carbon\Carbon::parse($transaction->sewa_berakhir)->startOfDay();
+            $now = \Carbon\Carbon::parse($currentDbTime);
+            $end = \Carbon\Carbon::parse($transaction->sewa_berakhir);
             
+            // Hitung dalam menit untuk akurasi lebih tinggi
+            $minutesDiff = $now->diffInMinutes($end, false);
             $daysDiff = $now->diffInDays($end, false);
+            
             $gracePeriodDays = 3;
             $maxLateDays = 30;
 
@@ -526,7 +533,8 @@ class PaymentController extends Controller
                 'order_id' => $orderId,
                 'amount' => $totalBayar,
                 'penalty' => $totalDenda,
-                'days_diff' => $daysDiff
+                'days_diff' => $daysDiff,
+                'minutes_diff' => $minutesDiff
             ]);
 
             return view('customer.payment.renewal-checkout', compact(
@@ -555,6 +563,7 @@ class PaymentController extends Controller
             if ($transaction->is_renewal) {
                 $durasi = $rak->durasi_sewa_hari ?? 30;
 
+                // Gunakan waktu yang lebih presisi dengan datetime
                 $sewaMulai = max(
                     now(),
                     \Carbon\Carbon::parse($transaction->sewa_berakhir)
@@ -564,10 +573,10 @@ class PaymentController extends Controller
                 $transaction->sewa_berakhir = $sewaMulai->copy()->addDays($durasi);
                 $transaction->save();
 
-                Log::info('Renewal dates calculated', [
+                Log::info('Renewal dates calculated (datetime precision)', [
                     'transaction_id' => $transaction->id,
-                    'new_start' => $transaction->sewa_mulai,
-                    'new_end' => $transaction->sewa_berakhir,
+                    'new_start' => $transaction->sewa_mulai->format('Y-m-d H:i:s'),
+                    'new_end' => $transaction->sewa_berakhir->format('Y-m-d H:i:s'),
                     'duration' => $durasi
                 ]);
 
@@ -589,10 +598,10 @@ class PaymentController extends Controller
                 $transaction->sewa_berakhir = now()->addDays($durasi);
                 $transaction->save();
 
-                Log::info('Durasi sewa dihitung', [
+                Log::info('Durasi sewa dihitung (datetime precision)', [
                     'transaction_id' => $transaction->id,
-                    'sewa_mulai' => $transaction->sewa_mulai,
-                    'sewa_berakhir' => $transaction->sewa_berakhir,
+                    'sewa_mulai' => $transaction->sewa_mulai->format('Y-m-d H:i:s'),
+                    'sewa_berakhir' => $transaction->sewa_berakhir->format('Y-m-d H:i:s'),
                     'durasi' => $durasi
                 ]);
 
@@ -721,4 +730,95 @@ class PaymentController extends Controller
             return response()->json(['success' => false, 'message' => 'Gagal update status'], 500);
         }
     }
+
+    public function autoCheckExpiredRentals()
+{
+    try {
+        $currentDbTime = DB::selectOne('SELECT NOW() as db_time')->db_time;
+        $now = \Carbon\Carbon::parse($currentDbTime);
+
+        // Ambil semua transaksi aktif yang belum dikosongkan
+        $expiredTransactions = Transaction::whereIn('transaction_status', ['settlement', 'capture'])
+            ->where('is_dikosongkan', false)
+            ->whereNotNull('sewa_berakhir')
+            ->get();
+
+        $updatedCount = 0;
+
+        foreach ($expiredTransactions as $transaction) {
+            $end = \Carbon\Carbon::parse($transaction->sewa_berakhir);
+            $daysPassed = $now->diffInDays($end, false);
+
+            // Jika sudah lewat 37 hari
+            if ($daysPassed < -37) {
+                DB::beginTransaction();
+                
+                try {
+                    $rak = Rak::find($transaction->rak_id);
+                    
+                    if ($rak && in_array($rak->status, ['terisi', 'pengosongan'])) {
+                        // Update status rak menjadi tersedia
+                        $rak->update(['status' => 'tersedia']);
+                        
+                        // Tandai transaksi sebagai sudah dikosongkan
+                        $transaction->update([
+                            'is_dikosongkan' => true,
+                            'dikosongkan_at' => $now
+                        ]);
+                        
+                        $updatedCount++;
+                        
+                        Log::info('Auto-check: Rak dikosongkan otomatis', [
+                            'rak_id' => $rak->id,
+                            'rak_name' => $rak->nama_rak,
+                            'transaction_id' => $transaction->id,
+                            'days_passed' => abs($daysPassed),
+                            'user_id' => $transaction->user_id
+                        ]);
+                        
+                        // Optional: Log ke history
+                        try {
+                            HistoryService::logRakEmptied(
+                                $transaction->user_id,
+                                $rak->kode_rak ?? $rak->nama_rak,
+                                abs($daysPassed),
+                                'System Auto-Check'
+                            );
+                        } catch (\Exception $historyError) {
+                            Log::error('Failed to log rak emptied history: ' . $historyError->getMessage());
+                        }
+                    }
+                    
+                    DB::commit();
+                } catch (\Exception $e) {
+                    DB::rollBack();
+                    Log::error('Error auto-checking expired rental: ' . $e->getMessage(), [
+                        'transaction_id' => $transaction->id
+                    ]);
+                }
+            }
+        }
+
+        Log::info("Auto-check completed: {$updatedCount} rak(s) dikosongkan", [
+            'checked_count' => $expiredTransactions->count(),
+            'updated_count' => $updatedCount,
+            'timestamp' => $now->format('Y-m-d H:i:s')
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'message' => "Auto-check completed: {$updatedCount} rak(s) dikosongkan",
+            'checked' => $expiredTransactions->count(),
+            'updated' => $updatedCount
+        ]);
+        
+    } catch (\Exception $e) {
+        Log::error('Auto-check expired rentals error: ' . $e->getMessage());
+        
+        return response()->json([
+            'success' => false,
+            'message' => 'Error during auto-check: ' . $e->getMessage()
+        ], 500);
+    }
+}
 }

@@ -23,6 +23,8 @@ class TagihanController extends Controller
         Config::$isProduction = config('midtrans.is_production');
         Config::$isSanitized = true;
         Config::$is3ds = true;
+
+        \Midtrans\Config::$overrideNotifUrl = route('customer.list-rak.rak');
     }
 
     public function index()
@@ -213,7 +215,11 @@ class TagihanController extends Controller
                     'email' => Auth::user()->email,
                 ],
                 'custom_field1' => $originalTransaction->id,
-                'custom_field2' => 'renewal'
+                'custom_field2' => 'renewal',
+                // TAMBAHKAN INI:
+                'callbacks' => [
+                    'finish' => route('customer.list-rak.rak'), // Redirect setelah pembayaran
+                ]
             ]);
 
             $sewaMulaiBaru = max(now(), Carbon::parse($originalTransaction->sewa_berakhir));

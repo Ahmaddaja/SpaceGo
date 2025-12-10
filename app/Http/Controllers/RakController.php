@@ -19,84 +19,149 @@ class RakController extends Controller
     const MAX_PHOTOS = 4;
 
     public function rakDibeli()
-    {
-        try {
-            $user = Auth::user();
-
-            if (!$user) {
-                abort(403, 'User tidak ditemukan.');
-            }
-
-            $transactions = Transaction::where('user_id', $user->id)
-                ->whereIn('transaction_status', ['capture', 'settlement'])
-                ->with(['rak.gudang', 'rak.fotos'])
-                ->orderBy('created_at', 'desc')
-                ->get();
-
-            $rakIds = $transactions->pluck('rak_id')->unique();
-
-            $raks = Rak::whereIn('id', $rakIds)
-                ->with(['gudang', 'fotos'])
-                ->orderBy('created_at', 'desc')
-                ->paginate(9);
-
-            $raks->getCollection()->transform(function ($rak) use ($transactions) {
-                $transaction = $transactions->where('rak_id', $rak->id)->first();
-
-                if ($transaction) {
-                    $rak->transaction_date = $transaction->created_at;
-                    $rak->order_id = $transaction->order_id;
-                    $rak->payment_type = $transaction->payment_type;
-                    $rak->transaction_id = $transaction->id;
-
-                    // Tambahkan info pengosongan
-                    $rak->is_pengosongan = $transaction->is_pengosongan ?? false;
-                    $rak->pengosongan_dimulai = $transaction->pengosongan_dimulai ?? null;
-                    $rak->pengosongan_berakhir = $transaction->pengosongan_berakhir ?? null;
-                }
-
-                return $rak;
-            });
-
-            return view('customer.list-rak.rak', compact('raks'));
-        } catch (\Exception $e) {
-            \Log::error('Error in rakDibeli: ' . $e->getMessage());
-
-            $raks = new \Illuminate\Pagination\LengthAwarePaginator([], 0, 9, 1);
-            return view('customer.list-rak.rak', compact('raks'));
-        }
-    }
-
-    public function detailRak($id)
-    {
+{
+    try {
         $user = Auth::user();
 
         if (!$user) {
             abort(403, 'User tidak ditemukan.');
         }
 
-        $transaction = Transaction::where('user_id', $user->id)
-            ->where('rak_id', $id)
+        $transactions = Transaction::where('user_id', $user->id)
             ->whereIn('transaction_status', ['capture', 'settlement'])
-            ->with('rak.gudang', 'rak.fotos')
-            ->first();
+            ->with(['rak.gudang', 'rak.fotos'])
+            ->orderBy('created_at', 'desc')
+            ->get();
 
-        if (!$transaction) {
-            return redirect()->route('customer.list-rak.rak')
-                ->with('error', 'Anda belum membeli rak ini atau transaksi belum berhasil.');
+        // ✅ CEK DAN UPDATE STATUS RAK YANG SUDAH MELEWATI 37 HARI
+        $currentDbTime = DB::selectOne('SELECT NOW() as db_time')->db_time;
+        $now = \Carbon\Carbon::parse($currentDbTime);
+
+        foreach ($transactions as $transaction) {
+            $end = \Carbon\Carbon::parse($transaction->sewa_berakhir);
+            $daysPassed = $now->diffInDays($end, false);
+
+            // Jika sudah lewat 37 hari (3 tenggang + 30 terlambat + 7 pengosongan - 3 buffer)
+            if ($daysPassed < -37 && $transaction->rak) {
+                $rak = $transaction->rak;
+                
+                // Update status rak menjadi tersedia
+                if (in_array($rak->status, ['terisi', 'pengosongan'])) {
+                    $rak->update(['status' => 'tersedia']);
+                    
+                    Log::info('Rak dikosongkan otomatis setelah 37 hari', [
+                        'rak_id' => $rak->id,
+                        'transaction_id' => $transaction->id,
+                        'days_passed' => abs($daysPassed)
+                    ]);
+                }
+                
+                // Tandai transaksi sebagai sudah dikosongkan
+                if (!$transaction->is_dikosongkan) {
+                    $transaction->update([
+                        'is_dikosongkan' => true,
+                        'dikosongkan_at' => $now
+                    ]);
+                }
+            }
         }
 
-        $rak = $transaction->rak;
-        $rak->transaction = $transaction;
-        $rak->transaction_date = $transaction->created_at;
-        $rak->order_id = $transaction->order_id;
-        $rak->payment_type = $transaction->payment_type;
-        $rak->status_sewa = $transaction->status_sewa;
-        $rak->sisa_hari = $transaction->sisa_hari;
+        $rakIds = $transactions->pluck('rak_id')->unique();
 
-        return view('customer.list-rak.show', compact('rak'));
+        $raks = Rak::whereIn('id', $rakIds)
+            ->with(['gudang', 'fotos'])
+            ->orderBy('created_at', 'desc')
+            ->paginate(9);
+
+        $raks->getCollection()->transform(function ($rak) use ($transactions) {
+            $transaction = $transactions->where('rak_id', $rak->id)->first();
+
+            if ($transaction) {
+                $rak->transaction_date = $transaction->created_at;
+                $rak->order_id = $transaction->order_id;
+                $rak->payment_type = $transaction->payment_type;
+                $rak->transaction_id = $transaction->id;
+
+                // Tambahkan info pengosongan
+                $rak->is_pengosongan = $transaction->is_pengosongan ?? false;
+                $rak->pengosongan_dimulai = $transaction->pengosongan_dimulai ?? null;
+                $rak->pengosongan_berakhir = $transaction->pengosongan_berakhir ?? null;
+                
+                // ✅ Tambahkan info sudah dikosongkan
+                $rak->is_dikosongkan = $transaction->is_dikosongkan ?? false;
+                $rak->dikosongkan_at = $transaction->dikosongkan_at ?? null;
+            }
+
+            return $rak;
+        });
+
+        return view('customer.list-rak.rak', compact('raks'));
+    } catch (\Exception $e) {
+        \Log::error('Error in rakDibeli: ' . $e->getMessage());
+
+        $raks = new \Illuminate\Pagination\LengthAwarePaginator([], 0, 9, 1);
+        return view('customer.list-rak.rak', compact('raks'));
+    }
+}
+
+public function detailRak($id)
+{
+    $user = Auth::user();
+
+    if (!$user) {
+        abort(403, 'User tidak ditemukan.');
     }
 
+    $transaction = Transaction::where('user_id', $user->id)
+        ->where('rak_id', $id)
+        ->whereIn('transaction_status', ['capture', 'settlement'])
+        ->with('rak.gudang', 'rak.fotos')
+        ->first();
+
+    if (!$transaction) {
+        return redirect()->route('customer.list-rak.rak')
+            ->with('error', 'Anda belum membeli rak ini atau transaksi belum berhasil.');
+    }
+
+    // ✅ CEK DAN UPDATE STATUS RAK
+    $currentDbTime = DB::selectOne('SELECT NOW() as db_time')->db_time;
+    $now = \Carbon\Carbon::parse($currentDbTime);
+    $end = \Carbon\Carbon::parse($transaction->sewa_berakhir);
+    $daysPassed = $now->diffInDays($end, false);
+
+    if ($daysPassed < -37) {
+        $rak = $transaction->rak;
+        
+        // Update status rak menjadi tersedia
+        if (in_array($rak->status, ['terisi', 'pengosongan'])) {
+            $rak->update(['status' => 'tersedia']);
+            
+            Log::info('Rak dikosongkan otomatis saat detail view', [
+                'rak_id' => $rak->id,
+                'transaction_id' => $transaction->id,
+                'days_passed' => abs($daysPassed)
+            ]);
+        }
+        
+        // Tandai transaksi sebagai sudah dikosongkan
+        if (!$transaction->is_dikosongkan) {
+            $transaction->update([
+                'is_dikosongkan' => true,
+                'dikosongkan_at' => $now
+            ]);
+        }
+    }
+
+    $rak = $transaction->rak;
+    $rak->transaction = $transaction;
+    $rak->transaction_date = $transaction->created_at;
+    $rak->order_id = $transaction->order_id;
+    $rak->payment_type = $transaction->payment_type;
+    $rak->status_sewa = $transaction->status_sewa;
+    $rak->sisa_hari = $transaction->sisa_hari;
+
+    return view('customer.list-rak.show', compact('rak'));
+}
     private function userMemilikiRak($rakId, $user)
     {
         return Transaction::where('user_id', $user->id)

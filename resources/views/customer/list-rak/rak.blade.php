@@ -297,6 +297,20 @@
         <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 lg:gap-8">
 
             @foreach($raks as $rak)
+
+            
+            @php
+                // Hitung apakah rak sudah dikosongkan
+                $currentDbTime = DB::selectOne('SELECT NOW() as db_time')->db_time;
+                $now = \Carbon\Carbon::parse($currentDbTime);
+                
+                $isDikosongkan = false;
+                if ($rak->transaction && $rak->transaction->sewa_berakhir) {
+                    $end = \Carbon\Carbon::parse($rak->transaction->sewa_berakhir);
+                    $daysPassed = $now->diffInDays($end, false);
+                    $isDikosongkan = $daysPassed < -37 || ($rak->is_dikosongkan ?? false);
+                }
+            @endphp
             <div class="rak-card bg-white rounded-2xl shadow-lg overflow-hidden">
                 
                 <div class="relative">
@@ -401,33 +415,61 @@
                         </div>
 
                         <div class="info-item flex items-center justify-between">
-                            <span class="text-gray-600 text-sm flex items-center">
-                                <i class="fas fa-info-circle text-purple-500 mr-3 w-5 text-center"></i>
-                                Status
-                            </span>
-                            @if ($rak->status === 'tersedia')
-                                <span class="inline-flex items-center px-2 py-1 bg-green-100 text-green-700 rounded-lg text-xs font-semibold">
-                                    <i class="fas fa-check mr-1"></i>
-                                    Tersedia
-                                </span>
-                            @elseif($rak->status === 'terisi')
-                                <span class="inline-flex items-center px-2 py-1 bg-red-100 text-red-700 rounded-lg text-xs font-semibold">
-                                    <i class="fas fa-box mr-1"></i>
-                                    Terisi
-                                </span>
-                            @elseif($rak->status === 'maintenance')
-                                <span class="inline-flex items-center px-2 py-1 bg-yellow-100 text-yellow-700 rounded-lg text-xs font-semibold">
-                                    <i class="fas fa-tools mr-1"></i>
-                                    Maintenance
-                                </span>
-                            @elseif($rak->status === 'pengosongan')
-                                <span class="inline-flex items-center px-2 py-1 bg-purple-100 text-purple-700 rounded-lg text-xs font-semibold">
-                                    <i class="fas fa-box-open mr-1"></i>
-                                    Pengosongan
-                                </span>
-                            @endif
-                        </div>
-                    </div>
+    <span class="text-gray-600 text-sm flex items-center">
+        <i class="fas fa-info-circle text-purple-500 mr-3 w-5 text-center"></i>
+        Status
+    </span>
+    
+    @if ($isDikosongkan)
+        <span class="inline-flex items-center px-2 py-1 bg-blue-100 text-blue-700 rounded-lg text-xs font-semibold">
+            <i class="fas fa-box-open mr-1"></i>
+            Sudah Dikosongkan
+        </span>
+    @elseif ($rak->status === 'tersedia')
+        <span class="inline-flex items-center px-2 py-1 bg-green-100 text-green-700 rounded-lg text-xs font-semibold">
+            <i class="fas fa-check mr-1"></i>
+            Tersedia
+        </span>
+    @elseif($rak->status === 'terisi')
+        <span class="inline-flex items-center px-2 py-1 bg-red-100 text-red-700 rounded-lg text-xs font-semibold">
+            <i class="fas fa-box mr-1"></i>
+            Terisi
+        </span>
+    @elseif($rak->status === 'maintenance')
+        <span class="inline-flex items-center px-2 py-1 bg-yellow-100 text-yellow-700 rounded-lg text-xs font-semibold">
+            <i class="fas fa-tools mr-1"></i>
+            Maintenance
+        </span>
+    @elseif($rak->status === 'pengosongan')
+        <span class="inline-flex items-center px-2 py-1 bg-purple-100 text-purple-700 rounded-lg text-xs font-semibold">
+            <i class="fas fa-box-open mr-1"></i>
+            Pengosongan
+        </span>
+    @endif
+</div>
+
+
+<!-- TAMBAHKAN INFO BOX JIKA DIKOSONGKAN -->
+@if ($isDikosongkan)
+    <div class="mt-4 p-4 bg-blue-50 rounded-lg border border-blue-200">
+        <div class="flex items-start">
+            <i class="fas fa-info-circle text-blue-600 mr-3 mt-1"></i>
+            <div class="flex-1">
+                <p class="text-blue-800 text-sm font-semibold mb-1">
+                    Rak Telah Dikosongkan
+                </p>
+                <p class="text-blue-700 text-xs leading-relaxed">
+                    Masa sewa telah berakhir lebih dari 37 hari. Rak telah dikosongkan dan kembali tersedia.
+                </p>
+                @if ($rak->dikosongkan_at)
+                    <p class="text-blue-600 text-xs mt-2">
+                        Dikosongkan: {{ \Carbon\Carbon::parse($rak->dikosongkan_at)->format('d M Y') }}
+                    </p>
+                @endif
+            </div>
+        </div>
+    </div>
+@endif
 
                     <div class="duration-gradient p-4 rounded-xl">
                         <p class="text-amber-700 text-sm font-medium mb-1 flex items-center">
@@ -453,11 +495,18 @@
                         </p>
                     </div>
 
-                    <div class="flex space-x-3">
-                        <a href="{{ route('customer.list-rak.detail', $rak->id) }}" 
-                           class="flex-1 action-btn btn-detail text-center py-3 px-4 rounded-lg font-semibold text-sm">
-                            <i class="fas fa-eye mr-2"></i> Detail Rak
-                        </a>
+                  <div class="flex space-x-3">
+                        @if ($isDikosongkan)
+                            <a href="{{ route('customer.list-rak.list-rak') }}" 
+                            class="flex-1 action-btn bg-gradient-to-r from-blue-600 to-purple-600 text-white text-center py-3 px-4 rounded-lg font-semibold text-sm">
+                                <i class="fas fa-shopping-cart mr-2"></i> Sewa Rak Lagi
+                            </a>
+                        @else
+                            <a href="{{ route('customer.list-rak.detail', $rak->id) }}" 
+                            class="flex-1 action-btn btn-detail text-center py-3 px-4 rounded-lg font-semibold text-sm">
+                                <i class="fas fa-eye mr-2"></i> Detail Rak
+                            </a>
+                        @endif
                     </div>
                 </div>
             </div>
