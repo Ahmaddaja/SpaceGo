@@ -43,3 +43,9 @@ Schedule::call(function () {
 })
 ->dailyAt('00:00')
 ->name('auto-check-expired-rentals');
+
+//rak update status schedule
+Schedule::command('rak:update-status')
+    ->hourly()
+    ->withoutOverlapping()
+    ->runInBackground();

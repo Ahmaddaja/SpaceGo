@@ -6,6 +6,7 @@ use App\Models\Rak;
 use App\Models\Gudang;
 use App\Models\Transaction;
 use App\Models\FotoRak;
+use App\Models\Tagihan;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
@@ -18,7 +19,20 @@ class RakController extends Controller
     // Konstanta untuk maksimal foto
     const MAX_PHOTOS = 4;
 
-   public function rakDibeli()
+    private function autoUpdateRakStatuses($userId)
+    {
+        // Ambil semua tagihan settlement milik user
+        $tagihans = Tagihan::where('user_id', $userId)
+            ->where('status', 'settlement')
+            ->whereNotNull('sewa_berakhir')
+            ->get();
+
+        foreach ($tagihans as $tagihan) {
+            $tagihan->updateStatusRak();
+        }
+    }
+
+    public function rakDibeli()
     {
         try {
             $user = Auth::user();
@@ -27,49 +41,15 @@ class RakController extends Controller
                 abort(403, 'User tidak ditemukan.');
             }
 
-            // ✅ EAGER LOAD tagihan untuk akses sewa_berakhir
+            // Auto-update semua status rak
+            $this->autoUpdateRakStatuses($user->id);
+
+            // Ambil transactions dengan relasi tagihan
             $transactions = Transaction::where('user_id', $user->id)
                 ->whereIn('transaction_status', ['capture', 'settlement'])
-                ->with(['rak.gudang', 'rak.fotos', 'tagihan']) // TAMBAHKAN tagihan
+                ->with(['rak.gudang', 'rak.fotos', 'tagihan'])
                 ->orderBy('created_at', 'desc')
                 ->get();
-
-            $currentDbTime = DB::selectOne('SELECT NOW() as db_time')->db_time;
-            $now = \Carbon\Carbon::parse($currentDbTime);
-
-            foreach ($transactions as $transaction) {
-                // ✅ AKSES sewa_berakhir dari tagihan, BUKAN dari transaction
-                if (!$transaction->tagihan || !$transaction->tagihan->sewa_berakhir) {
-                    continue; // Skip jika tidak ada tagihan atau sewa_berakhir
-                }
-
-                $end = \Carbon\Carbon::parse($transaction->tagihan->sewa_berakhir);
-                $daysPassed = $now->diffInDays($end, false);
-
-                // Jika sudah lewat 37 hari
-                if ($daysPassed < -37 && $transaction->rak) {
-                    $rak = $transaction->rak;
-
-                    // Update status rak menjadi tersedia
-                    if (in_array($rak->status, ['terisi', 'pengosongan'])) {
-                        $rak->update(['status' => 'tersedia']);
-
-                        Log::info('Rak dikosongkan otomatis setelah 37 hari', [
-                            'rak_id' => $rak->id,
-                            'transaction_id' => $transaction->id,
-                            'days_passed' => abs($daysPassed)
-                        ]);
-                    }
-
-                    // Tandai transaksi sebagai sudah dikosongkan
-                    if (!$transaction->tagihan->is_dikosongkan) {
-                        $transaction->tagihan->update([
-                            'is_dikosongkan' => true,
-                            'dikosongkan_at' => $now
-                        ]);
-                    }
-                }
-            }
 
             $rakIds = $transactions->pluck('rak_id')->unique();
 
@@ -81,20 +61,24 @@ class RakController extends Controller
             $raks->getCollection()->transform(function ($rak) use ($transactions) {
                 $transaction = $transactions->where('rak_id', $rak->id)->first();
 
-                if ($transaction) {
+                if ($transaction && $transaction->tagihan) {
+                    $tagihan = $transaction->tagihan;
+                    
                     $rak->transaction_date = $transaction->created_at;
                     $rak->order_id = $transaction->order_id;
                     $rak->payment_type = $transaction->payment_type;
                     $rak->transaction_id = $transaction->id;
 
-                    // ✅ Ambil info dari tagihan
-                    if ($transaction->tagihan) {
-                        $rak->is_pengosongan = $transaction->tagihan->is_pengosongan ?? false;
-                        $rak->pengosongan_dimulai = $transaction->tagihan->pengosongan_dimulai ?? null;
-                        $rak->pengosongan_berakhir = $transaction->tagihan->pengosongan_berakhir ?? null;
-                        $rak->is_dikosongkan = $transaction->tagihan->is_dikosongkan ?? false;
-                        $rak->dikosongkan_at = $transaction->tagihan->dikosongkan_at ?? null;
-                    }
+                    // Status rak dari tagihan
+                    $rak->status_rak_sewa = $tagihan->status_rak;
+                    $rak->status_rak_info = $tagihan->getStatusRakInfo();
+                    
+                    // Info pengosongan
+                    $rak->is_pengosongan = $tagihan->is_pengosongan ?? false;
+                    $rak->pengosongan_dimulai = $tagihan->pengosongan_dimulai ?? null;
+                    $rak->pengosongan_berakhir = $tagihan->pengosongan_berakhir ?? null;
+                    $rak->is_dikosongkan = $tagihan->is_dikosongkan ?? false;
+                    $rak->dikosongkan_at = $tagihan->dikosongkan_at ?? null;
                 }
 
                 return $rak;
@@ -117,47 +101,18 @@ class RakController extends Controller
             abort(403, 'User tidak ditemukan.');
         }
 
-        // ✅ EAGER LOAD tagihan
+        // Update status sebelum menampilkan detail
+        $this->autoUpdateRakStatuses($user->id);
+
         $transaction = Transaction::where('user_id', $user->id)
             ->where('rak_id', $id)
             ->whereIn('transaction_status', ['capture', 'settlement'])
-            ->with(['rak.gudang', 'rak.fotos', 'tagihan']) // TAMBAHKAN tagihan
+            ->with(['rak.gudang', 'rak.fotos', 'tagihan'])
             ->first();
 
         if (!$transaction) {
             return redirect()->route('customer.list-rak.rak')
                 ->with('error', 'Anda belum membeli rak ini atau transaksi belum berhasil.');
-        }
-
-        // ✅ CEK DAN UPDATE STATUS RAK dengan data dari tagihan
-        if ($transaction->tagihan && $transaction->tagihan->sewa_berakhir) {
-            $currentDbTime = DB::selectOne('SELECT NOW() as db_time')->db_time;
-            $now = \Carbon\Carbon::parse($currentDbTime);
-            $end = \Carbon\Carbon::parse($transaction->tagihan->sewa_berakhir);
-            $daysPassed = $now->diffInDays($end, false);
-
-            if ($daysPassed < -37) {
-                $rak = $transaction->rak;
-
-                // Update status rak menjadi tersedia
-                if (in_array($rak->status, ['terisi', 'pengosongan'])) {
-                    $rak->update(['status' => 'tersedia']);
-
-                    Log::info('Rak dikosongkan otomatis saat detail view', [
-                        'rak_id' => $rak->id,
-                        'transaction_id' => $transaction->id,
-                        'days_passed' => abs($daysPassed)
-                    ]);
-                }
-
-                // Tandai transaksi sebagai sudah dikosongkan
-                if (!$transaction->tagihan->is_dikosongkan) {
-                    $transaction->tagihan->update([
-                        'is_dikosongkan' => true,
-                        'dikosongkan_at' => $now
-                    ]);
-                }
-            }
         }
 
         $rak = $transaction->rak;
@@ -166,14 +121,17 @@ class RakController extends Controller
         $rak->order_id = $transaction->order_id;
         $rak->payment_type = $transaction->payment_type;
         
-        // ✅ Ambil status_sewa dan sisa_hari dari tagihan
+        // Status dari tagihan
         if ($transaction->tagihan) {
-            $rak->status_sewa = $transaction->tagihan->status;
+            $tagihan = $transaction->tagihan;
+            $rak->status_sewa = $tagihan->status;
+            $rak->status_rak_sewa = $tagihan->status_rak;
+            $rak->status_rak_info = $tagihan->getStatusRakInfo();
             
-            // Hitung sisa hari dari tagihan
-            if ($transaction->tagihan->sewa_berakhir) {
+            // Hitung sisa hari
+            if ($tagihan->sewa_berakhir) {
                 $now = now();
-                $end = \Carbon\Carbon::parse($transaction->tagihan->sewa_berakhir);
+                $end = \Carbon\Carbon::parse($tagihan->sewa_berakhir);
                 $rak->sisa_hari = $now->diffInDays($end, false);
             }
         }
@@ -181,8 +139,7 @@ class RakController extends Controller
         return view('customer.list-rak.show', compact('rak'));
     }
 
-    // ... rest of your methods remain the same ...
-    
+    // Rest of your existing methods...
     private function userMemilikiRak($rakId, $user)
     {
         return Transaction::where('user_id', $user->id)
@@ -197,7 +154,7 @@ class RakController extends Controller
 
         $transactions = Transaction::where('user_id', $user->id)
             ->where('rak_id', $id)
-            ->with(['rak', 'tagihan']) // TAMBAHKAN tagihan
+            ->with(['rak', 'tagihan'])
             ->orderBy('created_at', 'desc')
             ->get();
 
