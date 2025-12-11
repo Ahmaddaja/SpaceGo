@@ -16,18 +16,35 @@ class Tagihan extends Model
         'transaction_id',
         'user_id',
         'rak_id',
+
+        // Detail Tagihan
         'harga_sewa',
         'penalty_amount',
         'total_tagihan',
+
+        // Status & Type
         'status',
         'type',
         'is_renewal',
+
+        // Waktu
         'created_at_db',
         'expired_at',
         'paid_at',
         'cancelled_at',
+
+        // Info Sewa
         'sewa_mulai',
         'sewa_berakhir',
+
+        // Pengosongan Rak
+        'is_pengosongan',
+        'pengosongan_dimulai',
+        'pengosongan_berakhir',
+        'is_dikosongkan',
+        'dikosongkan_at',
+
+        // Parent tagihan (renewal)
         'parent_tagihan_id',
     ];
 
@@ -35,16 +52,29 @@ class Tagihan extends Model
         'harga_sewa' => 'decimal:2',
         'penalty_amount' => 'decimal:2',
         'total_tagihan' => 'decimal:2',
+
+        // boolean flags
         'is_renewal' => 'boolean',
+        'is_pengosongan' => 'boolean',
+        'is_dikosongkan' => 'boolean',
+
+        // timestamps
         'created_at_db' => 'datetime',
         'expired_at' => 'datetime',
         'paid_at' => 'datetime',
         'cancelled_at' => 'datetime',
-        'sewa_mulai' => 'date',
-        'sewa_berakhir' => 'date',
+
+        // sewa info (datetime in migration)
+        'sewa_mulai' => 'datetime',
+        'sewa_berakhir' => 'datetime',
+
+        // pengosongan (new)
+        'pengosongan_dimulai' => 'datetime',
+        'pengosongan_berakhir' => 'datetime',
+        'dikosongkan_at' => 'datetime',
     ];
 
-    // Boot method untuk auto-generate tagihan_code dan expired_at
+    // Auto generate kode + expired_at
     protected static function boot()
     {
         parent::boot();
@@ -53,13 +83,13 @@ class Tagihan extends Model
             if (empty($tagihan->tagihan_code)) {
                 $tagihan->tagihan_code = 'BILL-' . strtoupper(uniqid());
             }
-            
-            // Set created_at_db dari database timestamp
+
+            // Set created_at_db otomatis
             if (empty($tagihan->created_at_db)) {
                 $tagihan->created_at_db = now();
             }
-            
-            // Set expired_at 24 jam dari created_at_db
+
+            // Expired 24 jam hanya bila pending
             if (empty($tagihan->expired_at) && $tagihan->status === 'pending') {
                 $tagihan->expired_at = Carbon::parse($tagihan->created_at_db)->addHours(24);
             }
@@ -69,7 +99,7 @@ class Tagihan extends Model
     // Relations
     public function transaction(): BelongsTo
     {
-        return $this->belongsTo(Transaction::class, 'transaction_id');
+        return $this->belongsTo(Transaction::class);
     }
 
     public function user(): BelongsTo
@@ -93,39 +123,18 @@ class Tagihan extends Model
     }
 
     // Scopes
-    public function scopePending($query)
-    {
-        return $query->where('status', 'pending');
-    }
+    public function scopePending($q) { return $q->where('status', 'pending'); }
+    public function scopeSettlement($q) { return $q->where('status', 'settlement'); }
+    public function scopeExpired($q) { return $q->where('status', 'expired'); }
+    public function scopeOverdue($q) { return $q->where('status', 'overdue'); }
+    public function scopeForUser($q, $userId) { return $q->where('user_id', $userId); }
 
-    public function scopeSettlement($query)
-    {
-        return $query->where('status', 'settlement');
-    }
-
-    public function scopeExpired($query)
-    {
-        return $query->where('status', 'expired');
-    }
-
-    public function scopeOverdue($query)
-    {
-        return $query->where('status', 'overdue');
-    }
-
-    public function scopeForUser($query, $userId)
-    {
-        return $query->where('user_id', $userId);
-    }
-
-    // Helper Methods
+    // Helpers
     public function isExpired(): bool
     {
-        if ($this->status !== 'pending') {
-            return false;
-        }
-
-        return $this->expired_at && now()->isAfter($this->expired_at);
+        return $this->status === 'pending'
+            && $this->expired_at
+            && now()->isAfter($this->expired_at);
     }
 
     public function markAsPaid(): void
@@ -144,13 +153,6 @@ class Tagihan extends Model
         ]);
     }
 
-    public function markAsOverdue(): void
-    {
-        $this->update([
-            'status' => 'overdue',
-        ]);
-    }
-
     public function getRemainingTimeAttribute(): ?string
     {
         if ($this->status !== 'pending' || !$this->expired_at) {
@@ -158,12 +160,12 @@ class Tagihan extends Model
         }
 
         $now = now();
-        $expiredAt = Carbon::parse($this->expired_at);
+        $expired = Carbon::parse($this->expired_at);
 
-        if ($now->isAfter($expiredAt)) {
+        if ($now->isAfter($expired)) {
             return 'Kadaluarsa';
         }
 
-        return $now->diffForHumans($expiredAt, true);
+        return $now->diffForHumans($expired, true);
     }
 }

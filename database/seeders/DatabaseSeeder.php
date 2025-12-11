@@ -113,7 +113,73 @@ class DatabaseSeeder extends Seeder
             'status' => 'tersedia',
         ]);
 
-        // Seed transactions
-        $this->call(TransactionSeeder::class);
+        // =========================================
+// TRANSAKSI CUSTOMER UNTUK RAK 2
+// =========================================
+
+$customer = User::where('role', 'customer')->first();
+$rak2 = Rak::find(2); // Rak-006
+
+if ($customer && $rak2) {
+
+    $transaction = Transaction::create([
+        'order_id' => 'ORDER-' . now()->format('YmdHis') . '-R2',
+        'user_id' => $customer->id,
+        'rak_id' => $rak2->id,
+        'amount' => $rak2->harga_sewa_perbulan,
+        'transaction_status' => 'settlement',
+        'snap_token' => 'snap_test_rak2',
+        'payment_type' => 'bank_transfer',
+        'transaction_time' => now(),
+        'fraud_status' => 'accept',
+        'is_renewal' => false,
+        'penalty_amount' => 0,
+    ]);
+
+    // ============================
+    // AUTO GENERATE TAGIHAN RAK 2
+    // ============================
+
+    $tagihanCode = 'BILL-' . strtoupper(uniqid());
+
+    \App\Models\Tagihan::create([
+        'tagihan_code' => $tagihanCode,
+        'transaction_id' => $transaction->id,
+        'user_id' => $customer->id,
+        'rak_id' => $rak2->id,
+
+        // Detail
+        'harga_sewa' => $rak2->harga_sewa_perbulan,
+        'penalty_amount' => 0,
+        'total_tagihan' => $rak2->harga_sewa_perbulan,
+
+        // Status
+        'status' => 'settlement',
+        'type' => 'sewa_baru',
+        'is_renewal' => false,
+
+        // Waktu
+        'created_at_db' => now(),
+        'expired_at' => now()->addHours(24),
+        'paid_at' => now(),
+
+        // Info Sewa
+        'sewa_mulai' => now(),
+        'sewa_berakhir' => now()->addDays($rak2->durasi_sewa_hari ?? 30),
+
+        // Pengosongan default
+        'is_pengosongan' => false,
+        'pengosongan_dimulai' => null,
+        'pengosongan_berakhir' => null,
+        'is_dikosongkan' => false,
+        'dikosongkan_at' => null,
+
+        'parent_tagihan_id' => null,
+    ]);
+
+    echo "✅ Seeder transaksi pembeli untuk Rak 2 berhasil dibuat.\n";
+}
+
+
     }
 }

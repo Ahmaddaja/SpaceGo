@@ -3,7 +3,7 @@
 namespace App\Console\Commands;
 
 use Illuminate\Console\Command;
-use App\Models\Transaction;
+use App\Models\Tagihan;
 use App\Models\Rak;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Log;
@@ -12,92 +12,112 @@ use Illuminate\Support\Facades\DB;
 class CheckPengosonganStatus extends Command
 {
     protected $signature = 'rak:check-pengosongan';
-    protected $description = 'Check dan update status rak untuk pengosongan dan kembali tersedia';
+    protected $description = 'Check dan update status rak untuk pengosongan berdasarkan tagihan settlement';
 
     public function handle()
     {
-        $this->info('Memulai pengecekan status pengosongan...');
+        $this->info('🔍 Memulai pengecekan status pengosongan berbasis Tagihan...');
 
         DB::beginTransaction();
         try {
-            // Konstanta
+            // Konfigurasi
             $gracePeriodDays = 3;
-            $maxLateDays = 30; // Setelah 30 hari lewat grace period = pengosongan
-            $pengosonganDuration = 7; // Durasi pengosongan 7 hari
+            $maxLateDays = 30;
+            $pengosonganDuration = 7;
 
-            // 1. CEK TRANSAKSI YANG HARUS MASUK PENGOSONGAN
-            $transactions = Transaction::whereIn('transaction_status', ['settlement', 'capture'])
+            /*
+            |--------------------------------------------------------------------------
+            | 1. CEK TAGIHAN YANG HARUS MASUK PENGOSONGAN
+            |--------------------------------------------------------------------------
+            */
+            $tagihans = Tagihan::where('status', 'settlement')
                 ->where('is_pengosongan', false)
                 ->whereNotNull('sewa_berakhir')
                 ->get();
 
-            $pengosonganCount = 0;
+            $masukPengosongan = 0;
 
-            foreach ($transactions as $transaction) {
+            foreach ($tagihans as $tagihan) {
+
                 $now = Carbon::now()->startOfDay();
-                $end = Carbon::parse($transaction->sewa_berakhir)->startOfDay();
+                $end = Carbon::parse($tagihan->sewa_berakhir)->startOfDay();
+
+                // Diff dalam hari (negatif = sudah lewat)
                 $daysDiff = $now->diffInDays($end, false);
 
-                // Jika sudah lewat grace period + 30 hari
-                $totalLateDays = abs($daysDiff) - $gracePeriodDays;
+                // Lewat masa sewa
+                if ($daysDiff < 0) {
+                    $totalLate = abs($daysDiff) - $gracePeriodDays;
 
-                if ($daysDiff < 0 && $totalLateDays >= $maxLateDays) {
-                    // Masuk masa pengosongan
-                    $rak = Rak::find($transaction->rak_id);
-                    
-                    if ($rak && $rak->status !== 'pengosongan') {
-                        $pengosonganMulai = $now;
-                        $pengosonganBerakhir = $now->copy()->addDays($pengosonganDuration);
+                    // Jika total keterlambatan melebihi 30 hari
+                    if ($totalLate >= $maxLateDays) {
+                        $rak = Rak::find($tagihan->rak_id);
 
-                        $transaction->update([
-                            'is_pengosongan' => true,
-                            'pengosongan_dimulai' => $pengosonganMulai,
-                            'pengosongan_berakhir' => $pengosonganBerakhir,
-                        ]);
+                        if ($rak && $rak->status !== 'pengosongan') {
 
-                        $rak->update(['status' => 'pengosongan']);
+                            $mulai = $now;
+                            $selesai = $now->copy()->addDays($pengosonganDuration);
 
-                        $pengosonganCount++;
+                            $tagihan->update([
+                                'is_pengosongan' => true,
+                                'pengosongan_dimulai' => $mulai,
+                                'pengosongan_berakhir' => $selesai,
+                            ]);
 
-                        Log::info('Rak masuk masa pengosongan', [
-                            'rak_id' => $rak->id,
-                            'kode_rak' => $rak->kode_rak,
-                            'transaction_id' => $transaction->id,
-                            'pengosongan_mulai' => $pengosonganMulai,
-                            'pengosongan_berakhir' => $pengosonganBerakhir,
-                            'days_late' => $totalLateDays
-                        ]);
+                            $rak->update(['status' => 'pengosongan']);
 
-                        $this->info("✓ Rak {$rak->kode_rak} masuk masa pengosongan");
+                            $masukPengosongan++;
+
+                            Log::info("Rak masuk pengosongan via Tagihan", [
+                                'tagihan_id' => $tagihan->id,
+                                'rak_id' => $rak->id,
+                                'mulai' => $mulai,
+                                'selesai' => $selesai,
+                                'telat' => $totalLate
+                            ]);
+
+                            $this->info("✓ Rak {$rak->kode_rak} masuk masa pengosongan");
+                        }
                     }
                 }
             }
 
-            // 2. CEK RAK YANG MASA PENGOSONGANNYA SUDAH BERAKHIR
-            $pengosonganTransactions = Transaction::where('is_pengosongan', true)
+            /*
+            |--------------------------------------------------------------------------
+            | 2. CEK TAGIHAN YANG MASA PENGOSONGANNYA SUDAH HABIS
+            |--------------------------------------------------------------------------
+            */
+            $ongoing = Tagihan::where('is_pengosongan', true)
                 ->whereNotNull('pengosongan_berakhir')
                 ->get();
 
-            $tersediaCount = 0;
+            $selesaiPengosongan = 0;
 
-            foreach ($pengosonganTransactions as $transaction) {
+            foreach ($ongoing as $tagihan) {
+
                 $now = Carbon::now();
-                $pengosonganEnd = Carbon::parse($transaction->pengosongan_berakhir);
+                $pengosonganEnd = Carbon::parse($tagihan->pengosongan_berakhir);
 
-                // Jika masa pengosongan sudah lewat
                 if ($now->greaterThanOrEqualTo($pengosonganEnd)) {
-                    $rak = Rak::find($transaction->rak_id);
-                    
+
+                    $rak = Rak::find($tagihan->rak_id);
+
                     if ($rak && $rak->status === 'pengosongan') {
+
                         $rak->update(['status' => 'tersedia']);
 
-                        $tersediaCount++;
+                        // Tandai finalisasi
+                        $tagihan->update([
+                            'is_dikosongkan' => true,
+                            'dikosongkan_at' => now(),
+                        ]);
 
-                        Log::info('Rak kembali tersedia setelah pengosongan', [
+                        $selesaiPengosongan++;
+
+                        Log::info("Rak kembali tersedia setelah pengosongan", [
+                            'tagihan_id' => $tagihan->id,
                             'rak_id' => $rak->id,
-                            'kode_rak' => $rak->kode_rak,
-                            'transaction_id' => $transaction->id,
-                            'pengosongan_berakhir' => $pengosonganEnd
+                            'pengosongan_berakhir' => $pengosonganEnd,
                         ]);
 
                         $this->info("✓ Rak {$rak->kode_rak} kembali tersedia");
@@ -107,19 +127,27 @@ class CheckPengosonganStatus extends Command
 
             DB::commit();
 
+            /*
+            |--------------------------------------------------------------------------
+            | RINGKASAN
+            |--------------------------------------------------------------------------
+            */
             $this->info("\n=== RINGKASAN ===");
-            $this->info("Rak masuk pengosongan: {$pengosonganCount}");
-            $this->info("Rak kembali tersedia: {$tersediaCount}");
+            $this->info("Rak masuk masa pengosongan : {$masukPengosongan}");
+            $this->info("Rak kembali tersedia       : {$selesaiPengosongan}");
             $this->info("Pengecekan selesai!");
 
             return 0;
 
         } catch (\Exception $e) {
+
             DB::rollBack();
-            Log::error('Error checking pengosongan status: ' . $e->getMessage());
-            Log::error('Stack trace: ' . $e->getTraceAsString());
-            
-            $this->error('Terjadi kesalahan: ' . $e->getMessage());
+
+            Log::error("CheckPengosonganStatus Error: {$e->getMessage()}");
+            Log::error($e->getTraceAsString());
+
+            $this->error("❌ Terjadi kesalahan: {$e->getMessage()}");
+
             return 1;
         }
     }

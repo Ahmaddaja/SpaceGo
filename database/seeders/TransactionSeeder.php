@@ -6,14 +6,10 @@ use App\Models\Transaction;
 use App\Models\Rak;
 use App\Models\User;
 use Illuminate\Database\Seeder;
-use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
 
 class TransactionSeeder extends Seeder
 {
-    /**
-     * Run the database seeds.
-     */
     public function run(): void
     {
         $raks = Rak::all();
@@ -22,184 +18,57 @@ class TransactionSeeder extends Seeder
         $transactionStatuses = ['capture', 'settlement', 'pending', 'deny', 'expire', 'cancel'];
         $paymentTypes = ['credit_card', 'bank_transfer', 'gopay', 'shopeepay', 'ovo', 'dana'];
 
-        echo "🗓️  Generating dummy data only for July to December (2025)\n";
-        echo "📊  This will generate approximately 60-120 transactions for 6 months\n";
+        echo "🗓️  Generating dummy data for July–December 2025\n";
 
-        // Generate transactions for July to December 2025
         $startMonth = 7;
         $endMonth = 12;
         $year = 2025;
 
         for ($month = $startMonth; $month <= $endMonth; $month++) {
-            $transactionCountForMonth = rand(8, 20); // 8-20 transactions per month
-            $successfulCount = 0;
+
+            $transactionCountForMonth = rand(8, 20);
+
+            // 70% probabilitas sukses
+            $statusWeights = [35, 35, 15, 5, 5, 5];
 
             for ($i = 0; $i < $transactionCountForMonth; $i++) {
+
                 $customer = $customers->random();
                 $rak = $raks->random();
 
-                // Bias towards successful transactions (70% success rate)
-                $statusWeights = [
-                    35, // capture
-                    35, // settlement
-                    15, // pending
-                    5,  // deny
-                    5,  // expire
-                    5   // cancel
-                ];
-
+                // Weighted status
                 $status = $this->weightedRandom($transactionStatuses, $statusWeights);
 
-                // Generate random date within the month
+                // Random tanggal transaksi
                 $daysInMonth = Carbon::create($year, $month, 1)->daysInMonth;
                 $day = rand(1, $daysInMonth);
-                $hour = rand(8, 22);
-                $minute = rand(0, 59);
-                $second = rand(0, 59);
 
-                $transactionDate = Carbon::create($year, $month, $day, $hour, $minute, $second);
+                $transactionDate = Carbon::create($year, $month, $day, rand(8, 22), rand(0, 59), rand(0, 59));
 
                 $amount = $rak->harga_sewa_perbulan;
-                $durasi = $rak->durasi_sewa_hari ?? 30;
 
-                // Set rental period if transaction is successful
-                $sewaMulai = null;
-                $sewaBerakhir = null;
-
-                if (in_array($status, ['capture', 'settlement'])) {
-                    $successfulCount++;
-                    $sewaMulai = $transactionDate;
-                    $sewaBerakhir = $transactionDate->copy()->addDays($durasi);
-
-                    // Occasionally create expired rentals (for historical data)
-                    if (rand(1, 10) <= 2) { // 20% chance
-                        $extraDays = rand(5, 30);
-                        $sewaBerakhir = $sewaBerakhir->subDays($extraDays);
-
-                        // Some expired rentals get penalty
-                        if (rand(1, 3) == 1) { // 33% chance
-                            $penaltyAmount = $amount * 0.1; // 10% penalty
-                        }
-                    }
-
-                    // Mark rak as occupied for successful transactions (won't affect much since historical)
-                    // Commented out to avoid issues with historical data
-                    // if ($sewaBerakhir->isFuture() && $rak->status === 'tersedia') {
-                    //     $rak->update(['status' => 'terisi']);
-                    // }
-                }
-
-                // Generate unique order ID
-                $orderId = 'ORDER-' . $transactionDate->format('YmdHis') . $rak->id . $customer->id . '-' . str_pad($i + 1, 3, '0', STR_PAD_LEFT);
+                // Unique Order ID
+                $orderId = 'ORDER-' . $transactionDate->format('YmdHis') . '-' . $rak->id . '-' . $customer->id;
 
                 Transaction::create([
-                    'order_id' => $orderId,
-                    'user_id' => $customer->id,
-                    'rak_id' => $rak->id,
-                    'amount' => $amount,
+                    'order_id'           => $orderId,
+                    'user_id'            => $customer->id,
+                    'rak_id'             => $rak->id,
+                    'amount'             => $amount,
                     'transaction_status' => $status,
-                    'snap_token' => 'snap_' . $orderId,
-                    'payment_type' => collect($paymentTypes)->random(),
-                    'transaction_time' => $transactionDate,
-                    'fraud_status' => rand(1, 10) <= 9 ? 'accept' : 'challenge', // 90% accept
-                    'sewa_mulai' => $sewaMulai,
-                    'sewa_berakhir' => $sewaBerakhir,
-                    'is_renewal' => false,
-                    'penalty_amount' => $penaltyAmount ?? 0,
-                    'is_pengosongan' => false,
-                    'pengosongan_dimulai' => null,
-                    'pengosongan_berakhir' => null,
+                    'payment_type'       => collect($paymentTypes)->random(),
+                    'snap_token'         => 'snap_' . $orderId,
+                    'fraud_status'       => rand(1, 10) <= 9 ? 'accept' : 'challenge',
+                    'transaction_time'   => $transactionDate,
+                    'midtrans_response'  => null,
                 ]);
-            }
-
-            // Add some renewal transactions (10-20% of successful transactions)
-            $renewalCount = rand(1, max(1, intval($successfulCount * 0.15)));
-            for ($j = 0; $j < $renewalCount; $j++) {
-                $successfulTransactions = Transaction::whereYear('transaction_time', $year)
-                    ->whereMonth('transaction_time', $month)
-                    ->whereIn('transaction_status', ['capture', 'settlement'])
-                    ->get();
-
-                if ($successfulTransactions->count() > 0) {
-                    $originalTransaction = $successfulTransactions->random();
-
-                    // Skip if sewa_berakhir is null
-                    if (!$originalTransaction->sewa_berakhir) {
-                        continue;
-                    }
-
-                    $renewalDate = $originalTransaction->sewa_berakhir->copy()->subDays(rand(1, 5));
-
-                    $renewalOrderId = 'RENEWAL-' . $renewalDate->format('YmdHis') . $originalTransaction->id . '-' . str_pad($j + 1, 2, '0', STR_PAD_LEFT);
-
-                    Transaction::create([
-                        'order_id' => $renewalOrderId,
-                        'user_id' => $originalTransaction->user_id,
-                        'rak_id' => $originalTransaction->rak_id,
-                        'amount' => $originalTransaction->amount,
-                        'transaction_status' => 'settlement',
-                        'snap_token' => 'snap_' . $renewalOrderId,
-                        'payment_type' => collect($paymentTypes)->random(),
-                        'transaction_time' => $renewalDate,
-                        'fraud_status' => 'accept',
-                        'sewa_mulai' => $originalTransaction->sewa_berakhir,
-                        'sewa_berakhir' => $originalTransaction->sewa_berakhir->copy()->addDays($durasi),
-                        'is_renewal' => true,
-                        'penalty_amount' => 0,
-                        'is_pengosongan' => false,
-                        'pengosongan_dimulai' => null,
-                        'pengosongan_berakhir' => null,
-                    ]);
-                }
-            }
-
-            // Add some clearance transactions (pengosongan) for expired rentals
-            $clearanceCount = rand(0, 2); // 0-2 clearance transactions per month
-            for ($k = 0; $k < $clearanceCount; $k++) {
-                $expiredTransactions = Transaction::whereYear('transaction_time', $year)
-                    ->whereMonth('transaction_time', $month)
-                    ->whereIn('transaction_status', ['capture', 'settlement'])
-                    ->whereNotNull('sewa_berakhir')
-                    ->where('sewa_berakhir', '<', Carbon::create($year, $month, 28)->endOfMonth()) // Assume expired for clearance
-                    ->get();
-
-                if ($expiredTransactions->count() > 0) {
-                    $originalTransaction = $expiredTransactions->random();
-
-                    $clearanceStart = $originalTransaction->sewa_berakhir->copy()->addDays(rand(30, 60));
-                    $clearanceEnd = $clearanceStart->copy()->addDays(7); // 7-day clearance period
-
-                    $clearanceOrderId = 'CLEARANCE-' . $clearanceStart->format('YmdHis') . '-' . str_pad($k + 1, 2, '0', STR_PAD_LEFT);
-
-                    Transaction::create([
-                        'order_id' => $clearanceOrderId,
-                        'user_id' => $originalTransaction->user_id,
-                        'rak_id' => $originalTransaction->rak_id,
-                        'amount' => 0,
-                        'transaction_status' => 'settlement',
-                        'snap_token' => 'snap_' . $clearanceOrderId,
-                        'payment_type' => 'free',
-                        'transaction_time' => $clearanceStart,
-                        'fraud_status' => 'accept',
-                        'sewa_mulai' => null,
-                        'sewa_berakhir' => null,
-                        'is_renewal' => false,
-                        'penalty_amount' => 0,
-                        'is_pengosongan' => true,
-                        'pengosongan_dimulai' => $clearanceStart,
-                        'pengosongan_berakhir' => $clearanceEnd,
-                    ]);
-                }
             }
         }
 
-        echo "✅ Transaction seeding for July-December 2025 completed.\n";
+        echo "✅ Transaction seeding completed.\n";
     }
 
-    /**
-     * Get random element with weighted probability
-     */
-    private function weightedRandom(array $items, array $weights): mixed
+    private function weightedRandom(array $items, array $weights)
     {
         $totalWeight = array_sum($weights);
         $rand = rand(1, $totalWeight);

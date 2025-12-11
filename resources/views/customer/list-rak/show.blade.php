@@ -244,65 +244,67 @@
             </div>
 
             <!-- RENTAL INFO (Jika user sudah menyewa) -->
-            @php
-                $activeRental = null;
-                $hasPendingRenewal = false;
+           @php
+    $activeRental = null;
+    $hasPendingRenewal = false;
 
-                if (Auth::check()) {
-                    $activeRental = \App\Models\Transaction::where('user_id', Auth::id())
-                        ->where('rak_id', $rak->id)
-                        ->whereIn('transaction_status', ['settlement', 'capture'])
-                        ->orderBy('sewa_berakhir', 'desc')
-                        ->first();
+    if (Auth::check()) {
 
-                    if ($activeRental) {
-                        $hasPendingRenewal = \App\Models\Transaction::where('user_id', Auth::id())
-                            ->where('rak_id', $rak->id)
-                            ->where('order_id', 'LIKE', '%RENEWAL%')
-                            ->whereIn('transaction_status', ['pending', 'settlement', 'capture'])
-                            ->where('created_at', '>', $activeRental->created_at)
-                            ->exists();
-                    }
-                }
-            @endphp
+        // Ambil tagihan terakhir yang sudah dibayar
+        $activeRental = \App\Models\Tagihan::where('user_id', Auth::id())
+            ->where('rak_id', $rak->id)
+            ->whereIn('status', ['settlement']) // hanya settlement yang pasti paid
+            ->orderBy('sewa_berakhir', 'desc')
+            ->first();
+
+        // Jika ada sewa aktif → cek apakah ada renewal pending
+        if ($activeRental) {
+            $hasPendingRenewal = \App\Models\Tagihan::where('user_id', Auth::id())
+                ->where('rak_id', $rak->id)
+                ->where('type', 'renewal')
+                ->whereIn('status', ['pending', 'settlement']) 
+                ->where('created_at', '>', $activeRental->created_at)
+                ->exists();
+        }
+    }
+@endphp
+
 
             @if ($activeRental)
                 @php
-                    // Gunakan waktu database untuk konsistensi
-                    $currentDbTime = DB::selectOne('SELECT NOW() as db_time')->db_time;
-                    $now = \Carbon\Carbon::parse($currentDbTime);
-                    $end = \Carbon\Carbon::parse($activeRental->sewa_berakhir);
-                    
-                    // Hitung selisih dalam berbagai unit
-                    $totalMinutesRemaining = $now->diffInMinutes($end, false);
-                    $totalHoursRemaining = $now->diffInHours($end, false);
-                    $daysRemaining = $now->diffInDays($end, false);
-                    
-                    // Tentukan format tampilan berdasarkan waktu tersisa
-                    if ($totalMinutesRemaining > 0 && $totalMinutesRemaining < 60) {
-                        // Kurang dari 1 jam: tampilkan menit
-                        $timeRemainingDisplay = floor($totalMinutesRemaining) . ' Menit Tersisa';
-                        $showTenMinuteAlert = $totalMinutesRemaining <= 10;
-                    } elseif ($totalHoursRemaining > 0 && $totalHoursRemaining < 24) {
-                        // Kurang dari 1 hari: tampilkan jam dan menit
-                        $hours = floor($totalHoursRemaining);
-                        $minutes = floor($totalMinutesRemaining - ($hours * 60));
-                        if ($minutes > 0) {
-                            $timeRemainingDisplay = $hours . ' Jam ' . $minutes . ' Menit Tersisa';
-                        } else {
-                            $timeRemainingDisplay = $hours . ' Jam Tersisa';
-                        }
-                        $showTenMinuteAlert = $totalMinutesRemaining <= 10;
-                    } else {
-                        // Lebih dari 1 hari: tampilkan hari
-                        $timeRemainingDisplay = abs($daysRemaining) . ' Hari Tersisa';
-                        $showTenMinuteAlert = false;
-                    }
+    // Gunakan waktu database untuk konsistensi
+    $currentDbTime = DB::selectOne('SELECT NOW() as db_time')->db_time;
+    $now = \Carbon\Carbon::parse($currentDbTime);
+    $end = \Carbon\Carbon::parse($activeRental->sewa_berakhir);
 
-                    // CEK APAKAH RAK SUDAH DIKOSONGKAN (37 HARI)
-                    $daysPassed = $now->diffInDays($end, false);
-                    $isDikosongkan = $daysPassed < -37 || $activeRental->is_dikosongkan;
-                @endphp
+    // Hitung total menit selisih (boleh negatif)
+    $totalMinutes = $now->diffInMinutes($end, false);
+
+    // Ambil nilai absolut untuk perhitungan visual
+    $absMinutes = abs($totalMinutes);
+
+    // Hitung Hari-Jam-Menit
+    $days = floor($absMinutes / 1440);                 // 1 hari = 1440 menit
+    $hours = floor(($absMinutes % 1440) / 60);         // sisa jam
+    $minutes = $absMinutes % 60;                       // sisa menit
+
+    // Buat tampilan sesuai format
+    if ($totalMinutes >= 0) {
+        // Masih ada sisa waktu
+        $timeRemainingDisplay = "{$days} Hari {$hours} Jam {$minutes} Menit Tersisa";
+    } else {
+        // Sudah lewat waktu → tanpa minus
+        $timeRemainingDisplay = "Lewat {$days} Hari {$hours} Jam {$minutes} Menit";
+    }
+
+    // Alert 10 menit terakhir
+    $showTenMinuteAlert = ($totalMinutes > 0 && $totalMinutes <= 10);
+
+    // CEK APAKAH RAK SUDAH DIKOSONGKAN (37 HARI)
+    $daysPassed = $now->diffInDays($end, false);
+    $isDikosongkan = $daysPassed < -37 || $activeRental->is_dikosongkan;
+@endphp
+
 
                 <!-- ALERT RAK SUDAH DIKOSONGKAN -->
                 @if ($isDikosongkan)
@@ -635,7 +637,7 @@
                                     </div>
                                 </div>
 
-                                <a href="{{ route('customer.payment.renewal-checkout', ['transaction_id' => $activeRental->id]) }}"
+                              <a href="{{ route('customer.payment.renewal-checkout', ['transaction_id' => $activeRental->transaction_id]) }}"
                                    class="mt-4 w-full flex items-center justify-center space-x-3 px-6 py-4
                                           bg-white text-orange-600 rounded-xl hover:bg-orange-50
                                           transition-all duration-300 font-bold shadow-lg hover:shadow-xl">
@@ -769,40 +771,60 @@
                                 // BADGE TEKS WAKTU
                                 let displayText = '';
 
-                                if (days > 0) {
-                                    displayText = days + ' Hari Tersisa';
-                                } else if (hours > 0) {
-                                    displayText = hours + ' Jam';
-                                    if (minutes > 0) displayText += ' ' + minutes + ' Menit';
-                                    displayText += ' Tersisa';
+                            if (secondsTotal >= 0) {
+    // Masih tersisa → tampilkan Tersisa
+    if (days > 0) {
+        displayText = days + ' Hari ' + hours + ' Jam ' + minutes + ' Menit Tersisa';
+    } else if (hours > 0) {
+        displayText = hours + ' Jam';
+        if (minutes > 0) displayText += ' ' + minutes + ' Menit';
+        displayText += ' Tersisa';
 
-                                    if (timeRemainingBadge) {
-                                        if (hours < 3) {
-                                            timeRemainingBadge.style.background = 'rgba(239, 68, 68, 0.3)';
-                                        } else if (hours < 6) {
-                                            timeRemainingBadge.style.background = 'rgba(251, 191, 36, 0.3)';
-                                        }
-                                    }
-                                } else if (minutes > 0) {
-                                    displayText = minutes + ' Menit Tersisa';
-                                    if (timeRemainingBadge) {
-                                        timeRemainingBadge.style.background = 'rgba(239, 68, 68, 0.3)';
-                                    }
-                                } else {
-                                    displayText = seconds + ' Detik Tersisa';
-                                    if (timeRemainingBadge) {
-                                        timeRemainingBadge.style.background = 'rgba(220, 38, 38, 0.4)';
-                                    }
-                                }
+        if (timeRemainingBadge) {
+            if (hours < 3) {
+                timeRemainingBadge.style.background = 'rgba(239, 68, 68, 0.3)';
+            } else if (hours < 6) {
+                timeRemainingBadge.style.background = 'rgba(251, 191, 36, 0.3)';
+            }
+        }
+    } else if (minutes > 0) {
+        displayText = minutes + ' Menit Tersisa';
+        if (timeRemainingBadge) {
+            timeRemainingBadge.style.background = 'rgba(239, 68, 68, 0.3)';
+        }
+    } else {
+        displayText = seconds + ' Detik Tersisa';
+        if (timeRemainingBadge) {
+            timeRemainingBadge.style.background = 'rgba(220, 38, 38, 0.4)';
+        }
+    }
 
-                                if (timeRemainingText) timeRemainingText.textContent = displayText;
+    // Status aktif
+    if (statusLabel) statusLabel.textContent = 'Aktif';
 
-                                if (statusLabel) {
-                                    if (hours > 0 || days > 0 || minutes > 0) {
-                                        statusLabel.textContent = 'Aktif';
-                                    }
-                                }
-                            }
+} else {
+    // WAKTU LEWAT (expired) → tampilkan LEWAT tanpa minus
+
+    const lateDays = Math.abs(days);
+    const lateHours = Math.abs(hours);
+    const lateMinutes = Math.abs(minutes);
+
+    displayText =
+        'Lewat ' +
+        lateDays + ' Hari ' +
+        lateHours + ' Jam ' +
+        lateMinutes + ' Menit';
+
+    if (timeRemainingBadge) {
+        timeRemainingBadge.style.background = 'rgba(239, 68, 68, 0.4)';
+    }
+
+    if (statusLabel) statusLabel.textContent = 'Terlambat';
+}
+
+// Apply ke HTML
+if (timeRemainingText) timeRemainingText.textContent = displayText;
+
 
                             updateCountdown();
                             setInterval(updateCountdown, 1000);

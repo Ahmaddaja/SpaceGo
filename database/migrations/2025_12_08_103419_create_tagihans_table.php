@@ -35,8 +35,15 @@ return new class extends Migration
             $table->timestamp('cancelled_at')->nullable();
             
             // Info Sewa
-            $table->date('sewa_mulai')->nullable();
-            $table->date('sewa_berakhir')->nullable();
+            $table->datetime('sewa_mulai')->nullable();
+            $table->datetime('sewa_berakhir')->nullable();
+
+             $table->boolean('is_pengosongan')->default(false);
+                $table->timestamp('pengosongan_dimulai')->nullable();
+                $table->timestamp('pengosongan_berakhir')->nullable();
+                $table->boolean('is_dikosongkan')->default(false);
+                $table->timestamp('dikosongkan_at')->nullable();
+
             
             // Parent untuk renewal
             $table->foreignId('parent_tagihan_id')->nullable()->constrained('tagihans')->nullOnDelete();
