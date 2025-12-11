@@ -152,43 +152,67 @@
             <p class="text-gray-600">Lanjutkan masa sewa rak Anda</p>
         </div>
 
-        @php
-            // LOGIKA MASA TENGGANG DAN DENDA
-            $gracePeriodDays = $gracePeriodDays ?? 3;
-            $dendaPerHari = 50000;
-            
-            // daysDiff dari controller:
-            // positif (+) = masih ada sisa hari
-            // nol (0) = hari terakhir
-            // negatif (-) = sudah lewat
-            
-            $isOverdue = false;
-            $isInGracePeriod = false;
+@php
+    // ✅ FIX: Ambil sewa_berakhir dari tagihan atau transaction
+    $sewaBerahir = isset($tagihan->sewa_berakhir) 
+        ? $tagihan->sewa_berakhir 
+        : $transaction->sewa_berakhir;
+
+    // Hitung selisih hari secara akurat (integer)
+    $daysDiff = isset($daysDiff) 
+        ? $daysDiff 
+        : (int) (
+            \Carbon\Carbon::parse($sewaBerahir)
+                ->startOfDay()
+                ->diffInDays(now()->startOfDay(), false)
+        );
+
+    // LOGIKA MASA TENGGANG DAN DENDA
+    $gracePeriodDays = $gracePeriodDays ?? 3; 
+    $dendaPerHari = 50000;
+
+    $isOverdue = false;
+    $isInGracePeriod = false;
+    $latenessDays = 0;
+    $calculatedDenda = 0;
+
+    // Jika daysDiff negatif, berarti sudah lewat tanggal berakhir
+    if ($daysDiff < 0) {
+        $daysLate = abs($daysDiff);
+
+        if ($daysLate <= $gracePeriodDays) {
+            // Masih dalam masa tenggang, tidak ada denda
+            $isInGracePeriod = true;
             $latenessDays = 0;
             $calculatedDenda = 0;
-            
-            // Jika daysDiff negatif, berarti sudah lewat tanggal berakhir
-            if ($daysDiff < 0) {
-                $daysLate = abs($daysDiff);
-                
-                // Cek apakah masih dalam masa tenggang atau sudah overdue
-                if ($daysLate <= $gracePeriodDays) {
-                    // Masih dalam masa tenggang, tidak ada denda
-                    $isInGracePeriod = true;
-                    $latenessDays = 0;
-                    $calculatedDenda = 0;
-                } else {
-                    // Sudah melewati masa tenggang, ada denda
-                    $isOverdue = true;
-                    // Hitung hari keterlambatan setelah masa tenggang
-                    $latenessDays = $daysLate - $gracePeriodDays;
-                    $calculatedDenda = $latenessDays * $dendaPerHari;
-                }
+        } else {
+            // Sudah melewati masa tenggang, ada denda
+            $isOverdue = true;
+            $latenessDays = $daysLate - $gracePeriodDays;
+            $calculatedDenda = $latenessDays * $dendaPerHari;
+        }
+    }
+
+    // Total bayar
+    $totalPembayaran = $hargaSewa + $calculatedDenda;
+
+    // ✅ FIX: Format waktu yang lebih user-friendly
+    $timeBeforeExpiry = '';
+    if ($daysDiff > 0) {
+        // Masih ada waktu sebelum berakhir
+        if ($daysDiff >= 1) {
+            $timeBeforeExpiry = abs($daysDiff) . ' hari';
+        } else {
+            // Jika kurang dari 1 hari, hitung dalam jam
+            $hoursDiff = \Carbon\Carbon::parse($sewaBerahir)->diffInHours(now());
+            if ($hoursDiff >= 1) {
+                $timeBeforeExpiry = abs($hoursDiff) . ' jam';
+            } else {
+                $timeBeforeExpiry = 'beberapa saat';
             }
-            
-            // Hitung total pembayaran
-            $totalPembayaran = $hargaSewa + $calculatedDenda;
-        @endphp
+        }
+    }
+@endphp
 
         <!-- Payment Card -->
         <div class="payment-card mb-6">
@@ -234,7 +258,7 @@
                     <div class="detail-row">
                         <span class="text-gray-600">Tanggal Berakhir</span>
                         <span class="font-semibold text-gray-800">
-                            {{ \Carbon\Carbon::parse($transaction->sewa_berakhir)->format('d M Y') }}
+                            {{ \Carbon\Carbon::parse($sewaBerahir)->format('d M Y') }}
                         </span>
                     </div>
                     
@@ -287,26 +311,25 @@
                         </div>
                     </div>
                 </div>
-                @else
-                <div class="info-box" style="background: #d1fae5; border-left-color: #10b981;">
-                    <div class="flex items-start">
-                        <i class="fas fa-check-circle text-green-600 text-xl mr-3 mt-1"></i>
-                        <div>
-                            <p class="font-semibold text-gray-800 mb-1">✅ Perpanjangan Tepat Waktu</p>
-                            <p class="text-sm text-gray-700">
-                                Anda melakukan perpanjangan 
-                                @if($daysDiff == 0)
-                                    pada hari terakhir masa sewa.
-                                @else
-                                    <strong>{{ $daysDiff }} hari sebelum</strong> masa sewa berakhir.
-                                @endif
-                                <br><br>
-                                ✅ <strong>Tidak ada denda</strong> yang dikenakan.
-                            </p>
-                        </div>
-                    </div>
-                </div>
+            @else
+<div class="info-box" style="background: #d1fae5; border-left-color: #10b981;">
+    <div class="flex items-start">
+        <i class="fas fa-check-circle text-green-600 text-xl mr-3 mt-1"></i>
+        <div>
+            <p class="font-semibold text-gray-800 mb-1">✅ Perpanjangan Tepat Waktu</p>
+            <p class="text-sm text-gray-700">
+                @if($daysDiff == 0)
+                    Anda melakukan perpanjangan pada hari terakhir masa sewa.
+                @elseif($daysDiff > 0)
+                    Anda melakukan perpanjangan <strong>{{ $timeBeforeExpiry }} sebelum</strong> masa sewa berakhir.
                 @endif
+                <br><br>
+                ✅ <strong>Tidak ada denda</strong> yang dikenakan.
+            </p>
+        </div>
+    </div>
+</div>
+@endif
 
                 <!-- Rincian Pembayaran -->
                 <div class="mt-6">
@@ -420,7 +443,6 @@ document.getElementById('pay-button').addEventListener('click', function () {
         onSuccess: function(result) {
             console.log('Payment Success:', result);
             
-            // Update status dulu
             fetch('{{ route("payment.update-status") }}', {
                 method: 'POST',
                 headers: {
@@ -436,13 +458,10 @@ document.getElementById('pay-button').addEventListener('click', function () {
             .then(response => response.json())
             .then(data => {
                 console.log('Status Update Response:', data);
-                
-                // Langsung redirect ke list rak tanpa alert
                 window.location.href = '{{ route("customer.list-rak.rak") }}';
             })
             .catch(error => {
                 console.error('Error:', error);
-                // Tetap redirect meskipun error update status
                 window.location.href = '{{ route("customer.list-rak.rak") }}';
             });
         },
@@ -477,40 +496,6 @@ document.getElementById('pay-button').addEventListener('click', function () {
         }
     });
 });
-
-function updateTransactionStatus(orderId, status, paymentType) {
-    fetch('{{ route("payment.update-status") }}', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            'X-CSRF-TOKEN': '{{ csrf_token() }}'
-        },
-        body: JSON.stringify({
-            order_id: orderId,
-            transaction_status: status,
-            payment_type: paymentType
-        })
-    })
-    .then(response => response.json())
-    .then(data => {
-        console.log('Status Update Response:', data);
-        if (data.success) {
-            if (status === 'settlement' || status === 'capture') {
-                alert('Pembayaran berhasil! Masa sewa Anda telah diperpanjang.');
-                window.location.href = '{{ route("customer.tagihan") }}';
-            } else if (status === 'pending') {
-                alert('Pembayaran sedang diproses. Silakan cek status pembayaran Anda.');
-                window.location.href = '{{ route("customer.tagihan") }}';
-            }
-        } else {
-            alert('Gagal memperbarui status: ' + data.message);
-        }
-    })
-    .catch(error => {
-        console.error('Error:', error);
-        alert('Terjadi kesalahan saat memperbarui status pembayaran.');
-    });
-}
 </script>
 @endpush
 @endsection
