@@ -138,6 +138,10 @@ Route::middleware(['auth', 'role:admin'])->group(function () {
     Route::post('/raks/{id}/upload-photos', [RakController::class, 'uploadMultiplePhotos'])->name('raks.photos.upload-multiple');
     Route::delete('/raks/photos/{id}', [RakController::class, 'deletePhoto'])->name('raks.photos.delete');
 
+    // ✅ TAMBAHKAN INI untuk temporary upload (before save)
+    Route::post('/raks/temp-upload', [RakController::class, 'tempUpload'])->name('raks.photos.temp-upload');
+    Route::delete('/raks/temp-delete/{filename}', [RakController::class, 'tempDelete'])->name('raks.photos.temp-delete');
+
     // Customers
     Route::get('/customers', [CustomerController::class, 'index'])->name('admin.pelanggan.pelanggan');
 

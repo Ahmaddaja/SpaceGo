@@ -194,10 +194,14 @@
                             if (section && section.style.display === 'none') {
                                 section.style.display = 'block';
                             }
-
+                            // GANTI MENJADI:
                             if (Array.isArray(data.fotos) && data.fotos.length > 0) {
                                 data.fotos.forEach(foto => {
                                     addPhotoToContainer(foto);
+                                    // ✅ TRACK foto yang baru diupload
+                                    if (typeof uploadedPhotosInSession !== 'undefined') {
+                                        uploadedPhotosInSession.push(foto.id);
+                                    }
                                 });
                             }
 
@@ -228,7 +232,7 @@
                     } catch (e) {
                         if (xhr.status === 419) {
                             errorMessage =
-                            'Token Keamanan (CSRF) Kedaluwarsa. Mohon refresh halaman dan coba lagi.';
+                                'Token Keamanan (CSRF) Kedaluwarsa. Mohon refresh halaman dan coba lagi.';
                         } else if (xhr.status === 422) {
                             errorMessage = 'Validasi server gagal. Kemungkinan batasan PHP/server tidak sesuai.';
                         } else {
@@ -325,13 +329,22 @@
                 })
                 .then(response => response.json())
                 .then(data => {
+                    // GANTI MENJADI:
                     if (data.success) {
                         setTimeout(() => {
                             if (photoItem) {
                                 photoItem.remove();
                             }
-                            updatePhotoCounters(data.total_photos);
 
+                            // ✅ HAPUS dari tracking jika foto dihapus manual
+                            if (typeof uploadedPhotosInSession !== 'undefined') {
+                                const index = uploadedPhotosInSession.indexOf(fotoId);
+                                if (index > -1) {
+                                    uploadedPhotosInSession.splice(index, 1);
+                                }
+                            }
+
+                            updatePhotoCounters(data.total_photos);
                             // Sembunyikan section jika tidak ada foto
                             if (data.total_photos === 0) {
                                 const section = document.getElementById('existing-photos-section');
@@ -495,5 +508,3 @@
         }
     </style>
 @endpush
-
-
