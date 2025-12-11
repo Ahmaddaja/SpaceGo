@@ -26,26 +26,41 @@ class PaymentController extends Controller
         Config::$is3ds = true;
     }
 
+    // app/Http/Controllers/PaymentController.php
+
     public function bayar($id)
     {
         try {
             $rak = Rak::findOrFail($id);
             $userId = Auth::id();
 
-            $existingPendingTagihan = Tagihan::where('user_id', $userId)
+            // Cek transaksi pending untuk rak ini (dari user manapun)
+            $existingPendingTransaction = Transaction::where('rak_id', $rak->id)
+                ->where('transaction_status', 'pending')
+                ->exists();
+
+            if ($existingPendingTransaction) {
+                return redirect()->route('customer.list-rak.list-rak')
+                    ->with('error', 'Rak ini sedang dalam proses pembayaran oleh user lain. Silakan pilih rak lain.');
+            }
+
+            // Cek apakah user sudah punya pending untuk rak ini
+            $userPendingTagihan = Tagihan::where('user_id', $userId)
                 ->where('rak_id', $rak->id)
                 ->where('status', 'pending')
                 ->first();
 
-            if ($existingPendingTagihan) {
+            if ($userPendingTagihan) {
                 return redirect()->route('customer.tagihan')
-                    ->with('info', 'Anda sudah memiliki tagihan pending untuk rak ini. Silakan selesaikan pembayaran di halaman Tagihan.');
+                    ->with('info', 'Anda sudah memiliki tagihan pending untuk rak ini.');
             }
 
             if ($rak->status !== 'tersedia') {
                 return redirect()->route('customer.list-rak.list-rak')
                     ->with('error', 'Rak tidak tersedia untuk disewa.');
             }
+
+            // ... kode selanjutnya tetap sama
 
             $orderId = 'ORDER-' . time() . '-' . $rak->id;
 
@@ -131,7 +146,7 @@ class PaymentController extends Controller
             // ✅ FIX: Ambil data rak untuk durasi sewa
             $rak = Rak::findOrFail($rakId);
             $durasi = $rak->durasi_sewa_hari ?? 30;
-            
+
             // ✅ FIX: Hitung sewa_mulai dan sewa_berakhir
             $sewaMulai = now();
             $sewaBerakhir = now()->addDays($durasi);
@@ -239,7 +254,7 @@ class PaymentController extends Controller
                     'transaction_id' => $transactionId,
                     'user_id' => Auth::id()
                 ]);
-                
+
                 return response()->json([
                     'success' => false,
                     'message' => 'Transaksi tidak ditemukan'
@@ -271,7 +286,7 @@ class PaymentController extends Controller
                     'status' => $transactionStatus,
                     'paid_at' => in_array($transactionStatus, ['capture', 'settlement']) ? now() : null
                 ]);
-                
+
                 Log::info('Tagihan synced', [
                     'tagihan_id' => $tagihan->id,
                     'status' => $transactionStatus
@@ -302,24 +317,22 @@ class PaymentController extends Controller
                     'updated_at' => $transaction->updated_at
                 ]
             ]);
-
         } catch (\Illuminate\Validation\ValidationException $e) {
             Log::error('Validation Error', [
                 'errors' => $e->errors()
             ]);
-            
+
             return response()->json([
                 'success' => false,
                 'message' => 'Validation error',
                 'errors' => $e->errors()
             ], 422);
-            
         } catch (\Exception $e) {
             Log::error('Update Status Error', [
                 'message' => $e->getMessage(),
                 'trace' => $e->getTraceAsString()
             ]);
-            
+
             return response()->json([
                 'success' => false,
                 'message' => 'Gagal update status: ' . $e->getMessage()
@@ -464,7 +477,7 @@ class PaymentController extends Controller
             // ✅ FIX: Ambil data rak untuk durasi sewa
             $rak = Rak::findOrFail($pendingData['rak_id']);
             $durasi = $rak->durasi_sewa_hari ?? 30;
-            
+
             // ✅ FIX: Hitung sewa_mulai dan sewa_berakhir
             $sewaMulai = now();
             $sewaBerakhir = now()->addDays($durasi);
@@ -533,11 +546,11 @@ class PaymentController extends Controller
             $currentDbTime = DB::selectOne('SELECT NOW() as db_time')->db_time;
             $now = \Carbon\Carbon::parse($currentDbTime);
             $end = \Carbon\Carbon::parse($transaction->sewa_berakhir);
-            
+
             // Hitung dalam menit untuk akurasi lebih tinggi
             $minutesDiff = $now->diffInMinutes($end, false);
             $daysDiff = $now->diffInDays($end, false);
-            
+
             $gracePeriodDays = 3;
             $maxLateDays = 30;
 
@@ -563,7 +576,7 @@ class PaymentController extends Controller
 
             $dendaPerHari = 50000;
             $totalDenda = 0;
-            
+
             if ($daysDiff < 0 && abs($daysDiff) > $gracePeriodDays) {
                 $latenessDays = abs($daysDiff) - $gracePeriodDays;
                 $totalDenda = $latenessDays * $dendaPerHari;
@@ -618,7 +631,7 @@ class PaymentController extends Controller
 
             // ✅ FIX: Ambil atau buat tagihan terkait
             $tagihan = Tagihan::where('transaction_id', $transaction->id)->first();
-            
+
             // Jika tidak ada tagihan (misal dari transaksi lama), buat data sementara untuk view
             if (!$tagihan) {
                 $tagihan = (object) [
@@ -658,7 +671,7 @@ class PaymentController extends Controller
         }
     }
 
-private function handleSuccessPayment($transaction)
+    private function handleSuccessPayment($transaction)
     {
         $rak = Rak::find($transaction->rak_id);
 
@@ -901,22 +914,22 @@ private function handleSuccessPayment($transaction)
                 // Jika sudah lewat 37 hari
                 if ($daysPassed < -37) {
                     DB::beginTransaction();
-                    
+
                     try {
                         $rak = Rak::find($transaction->rak_id);
-                        
+
                         if ($rak && in_array($rak->status, ['terisi', 'pengosongan'])) {
                             // Update status rak menjadi tersedia
                             $rak->update(['status' => 'tersedia']);
-                            
+
                             // Tandai transaksi sebagai sudah dikosongkan
                             $transaction->update([
                                 'is_dikosongkan' => true,
                                 'dikosongkan_at' => $now
                             ]);
-                            
+
                             $updatedCount++;
-                            
+
                             Log::info('Auto-check: Rak dikosongkan otomatis', [
                                 'rak_id' => $rak->id,
                                 'rak_name' => $rak->nama_rak,
@@ -924,7 +937,7 @@ private function handleSuccessPayment($transaction)
                                 'days_passed' => abs($daysPassed),
                                 'user_id' => $transaction->user_id
                             ]);
-                            
+
                             // Optional: Log ke history
                             try {
                                 HistoryService::logRakEmptied(
@@ -937,7 +950,7 @@ private function handleSuccessPayment($transaction)
                                 Log::error('Failed to log rak emptied history: ' . $historyError->getMessage());
                             }
                         }
-                        
+
                         DB::commit();
                     } catch (\Exception $e) {
                         DB::rollBack();
@@ -960,10 +973,9 @@ private function handleSuccessPayment($transaction)
                 'checked' => $expiredTransactions->count(),
                 'updated' => $updatedCount
             ]);
-            
         } catch (\Exception $e) {
             Log::error('Auto-check expired rentals error: ' . $e->getMessage());
-            
+
             return response()->json([
                 'success' => false,
                 'message' => 'Error during auto-check: ' . $e->getMessage()
