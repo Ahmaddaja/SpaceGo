@@ -453,42 +453,50 @@
                             </span>
                         </div>
 
+                        <!-- BAGIAN STATUS SEWA YANG BARU (MENGGANTIKAN KODE LAMA) -->
                         <div class="info-item flex items-center justify-between">
                             <span class="text-gray-600 text-sm flex items-center">
                                 <i class="fas fa-info-circle text-purple-500 mr-3 w-5 text-center"></i>
-                                Status
+                                Status Sewa
                             </span>
                             
-                            @if($isDikosongkan)
-                                <span class="inline-flex items-center px-3 py-1 bg-blue-100 text-blue-700 rounded-lg text-xs font-semibold">
-                                    <i class="fas fa-box-open mr-1"></i>
-                                    Sudah Dikosongkan
-                                </span>
-                            @elseif($rak->status === 'tersedia')
-                                <span class="inline-flex items-center px-3 py-1 bg-green-100 text-green-700 rounded-lg text-xs font-semibold">
-                                    <i class="fas fa-check mr-1"></i>
-                                    Tersedia
-                                </span>
-                            @elseif($rak->status === 'terisi')
-                                <span class="inline-flex items-center px-3 py-1 bg-red-100 text-red-700 rounded-lg text-xs font-semibold">
-                                    <i class="fas fa-box mr-1"></i>
-                                    Terisi
-                                </span>
-                            @elseif($rak->status === 'maintenance')
-                                <span class="inline-flex items-center px-3 py-1 bg-yellow-100 text-yellow-700 rounded-lg text-xs font-semibold">
-                                    <i class="fas fa-tools mr-1"></i>
-                                    Maintenance
-                                </span>
-                            @else
-                                <span class="inline-flex items-center px-3 py-1 bg-gray-100 text-gray-700 rounded-lg text-xs font-semibold">
-                                    <i class="fas fa-question-circle mr-1"></i>
-                                    {{ $rak->status }}
-                                </span>
-                            @endif
+                            @php
+                                // Ambil status info dari tagihan
+                                $statusInfo = $rak->status_rak_info ?? null;
+                                
+                                // Jika tidak ada, gunakan status rak default
+                                if (!$statusInfo) {
+                                    $statusInfo = [
+                                        'status' => $rak->status ?? 'tersedia',
+                                        'label' => ucfirst($rak->status ?? 'Tersedia'),
+                                        'color' => 'gray',
+                                        'icon' => 'fa-cube',
+                                        'description' => ''
+                                    ];
+                                }
+                                
+                                // Mapping warna untuk background
+                                $colorMap = [
+                                    'green' => ['bg' => 'bg-green-100', 'text' => 'text-green-700', 'icon' => 'text-green-600'],
+                                    'yellow' => ['bg' => 'bg-yellow-100', 'text' => 'text-yellow-700', 'icon' => 'text-yellow-600'],
+                                    'orange' => ['bg' => 'bg-orange-100', 'text' => 'text-orange-700', 'icon' => 'text-orange-600'],
+                                    'purple' => ['bg' => 'bg-purple-100', 'text' => 'text-purple-700', 'icon' => 'text-purple-600'],
+                                    'blue' => ['bg' => 'bg-blue-100', 'text' => 'text-blue-700', 'icon' => 'text-blue-600'],
+                                    'red' => ['bg' => 'bg-red-100', 'text' => 'text-red-700', 'icon' => 'text-red-600'],
+                                    'gray' => ['bg' => 'bg-gray-100', 'text' => 'text-gray-700', 'icon' => 'text-gray-600'],
+                                ];
+                                
+                                $colors = $colorMap[$statusInfo['color']] ?? $colorMap['gray'];
+                            @endphp
+                            
+                            <span class="inline-flex items-center px-3 py-1 {{ $colors['bg'] }} {{ $colors['text'] }} rounded-lg text-xs font-semibold">
+                                <i class="fas {{ $statusInfo['icon'] }} {{ $colors['icon'] }} mr-1"></i>
+                                {{ $statusInfo['label'] }}
+                            </span>
                         </div>
 
-                        <!-- Info Box jika dikosongkan -->
-                        @if($isDikosongkan && $dikosongkanAt)
+                        <!-- Info Box berdasarkan status -->
+                        @if($statusInfo['status'] === 'dikosongkan' && $rak->dikosongkan_at)
                             <div class="mt-4 p-4 bg-blue-50 rounded-lg border border-blue-200">
                                 <div class="flex items-start">
                                     <i class="fas fa-info-circle text-blue-600 mr-3 mt-1"></i>
@@ -497,15 +505,92 @@
                                             Rak Telah Dikosongkan
                                         </p>
                                         <p class="text-blue-700 text-xs leading-relaxed">
-                                            Masa sewa telah berakhir. Rak telah dikosongkan dan kembali tersedia.
+                                            {{ $statusInfo['description'] }}
                                         </p>
                                         <p class="text-blue-600 text-xs mt-2">
-                                            Dikosongkan: {{ \Carbon\Carbon::parse($dikosongkanAt)->format('d M Y') }}
+                                            Dikosongkan: {{ \Carbon\Carbon::parse($rak->dikosongkan_at)->format('d M Y H:i') }}
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+
+                        @elseif($statusInfo['status'] === 'pengosongan')
+                            <div class="mt-4 p-4 bg-purple-50 rounded-lg border border-purple-200">
+                                <div class="flex items-start">
+                                    <i class="fas fa-exclamation-triangle text-purple-600 mr-3 mt-1"></i>
+                                    <div class="flex-1">
+                                        <p class="text-purple-800 text-sm font-semibold mb-1">
+                                            🚨 Masa Pengosongan Aktif
+                                        </p>
+                                        <p class="text-purple-700 text-xs leading-relaxed mb-2">
+                                            {{ $statusInfo['description'] }}
+                                        </p>
+                                        @if($rak->pengosongan_dimulai && $rak->pengosongan_berakhir)
+                                            <div class="grid grid-cols-2 gap-2 text-xs">
+                                                <div class="bg-white bg-opacity-50 rounded p-2">
+                                                    <p class="text-purple-600 font-medium">Dimulai:</p>
+                                                    <p class="text-purple-800 font-semibold">
+                                                        {{ \Carbon\Carbon::parse($rak->pengosongan_dimulai)->format('d M Y') }}
+                                                    </p>
+                                                </div>
+                                                <div class="bg-white bg-opacity-50 rounded p-2">
+                                                    <p class="text-purple-600 font-medium">Berakhir:</p>
+                                                    <p class="text-purple-800 font-semibold">
+                                                        {{ \Carbon\Carbon::parse($rak->pengosongan_berakhir)->format('d M Y') }}
+                                                    </p>
+                                                </div>
+                                            </div>
+                                        @endif
+                                    </div>
+                                </div>
+                            </div>
+
+                        @elseif($statusInfo['status'] === 'terlambat')
+                            <div class="mt-4 p-4 bg-orange-50 rounded-lg border border-orange-200">
+                                <div class="flex items-start">
+                                    <i class="fas fa-exclamation-circle text-orange-600 mr-3 mt-1"></i>
+                                    <div class="flex-1">
+                                        <p class="text-orange-800 text-sm font-semibold mb-1">
+                                            ⚠️ Terlambat Pembayaran
+                                        </p>
+                                        <p class="text-orange-700 text-xs leading-relaxed">
+                                            {{ $statusInfo['description'] }}. Segera perpanjang untuk menghindari masa pengosongan.
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+
+                        @elseif($statusInfo['status'] === 'masa_tenggang')
+                            <div class="mt-4 p-4 bg-yellow-50 rounded-lg border border-yellow-200">
+                                <div class="flex items-start">
+                                    <i class="fas fa-clock text-yellow-600 mr-3 mt-1"></i>
+                                    <div class="flex-1">
+                                        <p class="text-yellow-800 text-sm font-semibold mb-1">
+                                            🕐 Masa Tenggang
+                                        </p>
+                                        <p class="text-yellow-700 text-xs leading-relaxed">
+                                            {{ $statusInfo['description'] }}. Perpanjang sekarang untuk menghindari denda.
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+
+                        @elseif($statusInfo['status'] === 'terisi')
+                            <div class="mt-4 p-4 bg-green-50 rounded-lg border border-green-200">
+                                <div class="flex items-start">
+                                    <i class="fas fa-check-circle text-green-600 mr-3 mt-1"></i>
+                                    <div class="flex-1">
+                                        <p class="text-green-800 text-sm font-semibold mb-1">
+                                            ✅ Sedang Aktif
+                                        </p>
+                                        <p class="text-green-700 text-xs leading-relaxed">
+                                            {{ $statusInfo['description'] }}. Nikmati layanan penyimpanan Anda.
                                         </p>
                                     </div>
                                 </div>
                             </div>
                         @endif
+                        <!-- AKHIR BAGIAN STATUS SEWA YANG BARU -->
 
                         @if($rak->durasi_sewa_hari)
                         <div class="duration-gradient p-4 rounded-xl">
