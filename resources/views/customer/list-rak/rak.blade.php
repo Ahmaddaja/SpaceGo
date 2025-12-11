@@ -337,24 +337,24 @@
                                 ->exists();
 
                             $isLocked = $rak->status !== 'tersedia' || $hasPendingTransaction;
-                        @endphp
-                        // Cek apakah rak sudah dikosongkan
-                        $isDikosongkan = false;
-                        $dikosongkanAt = null;
 
-                        if ($rak->transaction) {
-                        // Logika dari model Transaction
-                        $isDikosongkan = $rak->transaction->is_dikosongkan ?? false;
-                        $dikosongkanAt = $rak->transaction->dikosongkan_at ?? null;
-                        }
+                            // Cek apakah rak sudah dikosongkan
+                            $isDikosongkan = false;
+                            $dikosongkanAt = null;
 
-                        // Kumpulkan semua foto
-                        $photos = [];
-                        if ($rak->fotos && $rak->fotos->isNotEmpty()) {
-                        $photos = $rak->fotos->pluck('path')->toArray();
-                        } elseif ($rak->foto) {
-                        $photos = [$rak->foto];
-                        }
+                            if ($rak->transaction) {
+                                // Logika dari model Transaction
+                                $isDikosongkan = $rak->transaction->is_dikosongkan ?? false;
+                                $dikosongkanAt = $rak->transaction->dikosongkan_at ?? null;
+                            }
+
+                            // Kumpulkan semua foto - PERBAIKAN DI SINI
+                            $rakPhotos = [];
+                            if (isset($rak->fotos) && $rak->fotos && $rak->fotos->isNotEmpty()) {
+                                $rakPhotos = $rak->fotos->pluck('path')->toArray();
+                            } elseif (isset($rak->foto) && $rak->foto) {
+                                $rakPhotos = [$rak->foto];
+                            }
                         @endphp
 
                         <div class="rak-card bg-white rounded-2xl shadow-lg overflow-hidden">
@@ -362,8 +362,8 @@
                             <!-- Header dengan foto -->
                             <div class="relative">
                                 <div class="photo-carousel-container">
-                                    @if (count($photos) > 0)
-                                        @foreach ($photos as $index => $photo)
+                                    @if (!empty($rakPhotos) && count($rakPhotos) > 0)
+                                        @foreach ($rakPhotos as $index => $photo)
                                             <div class="carousel-slide {{ $index === 0 ? 'active' : '' }}"
                                                 data-slide-index="{{ $index }}">
                                                 <img src="{{ asset('storage/' . $photo) }}" class="image-hover"
@@ -372,7 +372,7 @@
                                             </div>
                                         @endforeach
 
-                                        @if (count($photos) > 1)
+                                        @if (count($rakPhotos) > 1)
                                             <button class="carousel-btn carousel-prev" onclick="changeSlide(this, -1)">
                                                 <i class="fas fa-chevron-left"></i>
                                             </button>
@@ -381,7 +381,7 @@
                                             </button>
 
                                             <div class="carousel-indicators">
-                                                @foreach ($photos as $idx => $photo)
+                                                @foreach ($rakPhotos as $idx => $photo)
                                                     <button class="indicator {{ $idx === 0 ? 'active' : '' }}"
                                                         onclick="goToSlide(this, {{ $idx }})">
                                                     </button>
@@ -391,7 +391,7 @@
                                             <div class="photo-counter-badge">
                                                 <i class="fas fa-images"></i>
                                                 <span class="current-photo">1</span>/<span
-                                                    class="total-photos">{{ count($photos) }}</span>
+                                                    class="total-photos">{{ count($rakPhotos) }}</span>
                                             </div>
                                         @endif
                                     @else
@@ -405,7 +405,7 @@
                                         <div class="status-badge bg-blue-600 text-white">
                                             <i class="fas fa-box-open mr-1"></i> Dikosongkan
                                         </div>
-                                    @elseif($rak->status === 'terisi')
+                                    @elseif(isset($rak->status) && $rak->status === 'terisi')
                                         <div class="status-badge bg-red-600 text-white">
                                             <i class="fas fa-box mr-1"></i> Terisi
                                         </div>
@@ -417,11 +417,11 @@
                             <div class="p-6 space-y-5">
 
                                 <div class="space-y-3">
-                                    <h3 class="text-xl font-bold text-gray-900 leading-tight">{{ $rak->nama_rak }}</h3>
+                                    <h3 class="text-xl font-bold text-gray-900 leading-tight">{{ $rak->nama_rak ?? 'Nama Rak Tidak Tersedia' }}</h3>
                                     <div class="code-gradient px-4 py-3 rounded-xl">
                                         <p class="text-blue-700 text-sm font-semibold flex items-center">
                                             <i class="fas fa-barcode mr-2"></i>
-                                            Kode: {{ $rak->kode_rak }}
+                                            Kode: {{ $rak->kode_rak ?? 'N/A' }}
                                         </p>
                                     </div>
                                 </div>
@@ -442,7 +442,7 @@
                                             <i class="fas fa-layer-group text-green-500 mr-3 w-5 text-center"></i>
                                             Jenis
                                         </span>
-                                        <span class="text-gray-900 font-semibold text-sm">{{ $rak->jenis_rak }}</span>
+                                        <span class="text-gray-900 font-semibold text-sm">{{ $rak->jenis_rak ?? 'N/A' }}</span>
                                     </div>
 
                                     <div class="info-item flex items-center justify-between">
@@ -537,7 +537,7 @@
                                     </div>
 
                                     <!-- Info Box berdasarkan status -->
-                                    @if ($statusInfo['status'] === 'dikosongkan' && $rak->dikosongkan_at)
+                                    @if ($statusInfo['status'] === 'dikosongkan' && isset($rak->dikosongkan_at))
                                         <div class="mt-4 p-4 bg-blue-50 rounded-lg border border-blue-200">
                                             <div class="flex items-start">
                                                 <i class="fas fa-info-circle text-blue-600 mr-3 mt-1"></i>
@@ -566,7 +566,7 @@
                                                     <p class="text-purple-700 text-xs leading-relaxed mb-2">
                                                         {{ $statusInfo['description'] }}
                                                     </p>
-                                                    @if ($rak->pengosongan_dimulai && $rak->pengosongan_berakhir)
+                                                    @if (isset($rak->pengosongan_dimulai) && isset($rak->pengosongan_berakhir))
                                                         <div class="grid grid-cols-2 gap-2 text-xs">
                                                             <div class="bg-white bg-opacity-50 rounded p-2">
                                                                 <p class="text-purple-600 font-medium">Dimulai:</p>
@@ -632,7 +632,7 @@
                                     @endif
                                     <!-- AKHIR BAGIAN STATUS SEWA YANG BARU -->
 
-                                    @if ($rak->durasi_sewa_hari)
+                                    @if (isset($rak->durasi_sewa_hari) && $rak->durasi_sewa_hari)
                                         <div class="duration-gradient p-4 rounded-xl">
                                             <p class="text-amber-700 text-sm font-medium mb-1 flex items-center">
                                                 <i class="fas fa-calendar-alt mr-2"></i>
@@ -647,7 +647,7 @@
                                         </div>
                                     @endif
 
-                                    @if ($rak->harga_sewa_perbulan)
+                                    @if (isset($rak->harga_sewa_perbulan) && $rak->harga_sewa_perbulan)
                                         <div class="price-gradient p-4 rounded-xl">
                                             <p class="text-green-700 text-sm font-medium mb-1 flex items-center">
                                                 <i class="fas fa-money-bill-wave mr-2"></i>
