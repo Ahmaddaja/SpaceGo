@@ -107,7 +107,7 @@
         <div class="max-w-6xl mx-auto grid grid-cols-2 md:grid-cols-4 gap-8 text-center">
             <div>
                 <div class="text-4xl font-bold text-blue-600 mb-2">500+</div>
-                <div class="text-gray-600">Klien Aktif</div>
+                <div class="text-gray-600">Client Aktif</div>
             </div>
             <div>
                 <div class="text-4xl font-bold text-blue-600 mb-2">25+</div>
