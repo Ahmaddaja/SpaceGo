@@ -191,6 +191,10 @@ class PaymentController extends Controller
     public function updateStatus(Request $request)
     {
         try {
+            Log::info('Update Status Request Received', [
+                'request_data' => $request->all()
+            ]);
+
             $request->validate([
                 'order_id' => 'required|string',
                 'transaction_status' => 'required|string',
@@ -203,6 +207,7 @@ class PaymentController extends Controller
             $paymentType = $request->payment_type ?? null;
             $transactionId = $request->transaction_id;
 
+            // Cari transaction
             $transaction = null;
             if ($transactionId) {
                 $transaction = Transaction::where('id', $transactionId)
@@ -217,37 +222,95 @@ class PaymentController extends Controller
             }
 
             if (!$transaction) {
-                Log::error('Transaction not found for update', ['order_id' => $orderId]);
+                Log::error('Transaction not found', [
+                    'order_id' => $orderId,
+                    'transaction_id' => $transactionId,
+                    'user_id' => Auth::id()
+                ]);
+                
                 return response()->json([
                     'success' => false,
                     'message' => 'Transaksi tidak ditemukan'
                 ], 404);
             }
 
+            Log::info('Transaction found, updating...', [
+                'transaction_id' => $transaction->id,
+                'old_status' => $transaction->transaction_status,
+                'new_status' => $transactionStatus
+            ]);
+
+            // Update transaction
             $transaction->update([
                 'transaction_status' => $transactionStatus,
                 'payment_type' => $paymentType,
                 'transaction_time' => now()
             ]);
 
-            Log::info('Transaction & Tagihan Status Updated', [
+            Log::info('Transaction updated successfully', [
                 'transaction_id' => $transaction->id,
-                'status' => $transactionStatus
+                'new_status' => $transaction->transaction_status
             ]);
 
+            // ✅ SYNC KE TAGIHAN (LOGIC BARU - PENTING!)
+            $tagihan = \App\Models\Tagihan::where('transaction_id', $transaction->id)->first();
+            if ($tagihan) {
+                $tagihan->update([
+                    'status' => $transactionStatus,
+                    'paid_at' => in_array($transactionStatus, ['capture', 'settlement']) ? now() : null
+                ]);
+                
+                Log::info('Tagihan synced', [
+                    'tagihan_id' => $tagihan->id,
+                    'status' => $transactionStatus
+                ]);
+            } else {
+                Log::warning('Tagihan not found for transaction', [
+                    'transaction_id' => $transaction->id
+                ]);
+            }
+
+            // Handle success payment (update rak status, sewa dates, etc)
             if (in_array($transactionStatus, ['capture', 'settlement'])) {
+                Log::info('Handling success payment...');
                 $this->handleSuccessPayment($transaction);
             }
 
+            Log::info('Update Status Complete', [
+                'transaction_id' => $transaction->id,
+                'final_status' => $transaction->transaction_status
+            ]);
+
             return response()->json([
                 'success' => true,
-                'message' => 'Status berhasil diupdate'
+                'message' => 'Status berhasil diupdate',
+                'data' => [
+                    'transaction_id' => $transaction->id,
+                    'status' => $transaction->transaction_status,
+                    'updated_at' => $transaction->updated_at
+                ]
             ]);
-        } catch (\Exception $e) {
-            Log::error('Update Status Error: ' . $e->getMessage());
+
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            Log::error('Validation Error', [
+                'errors' => $e->errors()
+            ]);
+            
             return response()->json([
                 'success' => false,
-                'message' => 'Gagal update status'
+                'message' => 'Validation error',
+                'errors' => $e->errors()
+            ], 422);
+            
+        } catch (\Exception $e) {
+            Log::error('Update Status Error', [
+                'message' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            
+            return response()->json([
+                'success' => false,
+                'message' => 'Gagal update status: ' . $e->getMessage()
             ], 500);
         }
     }
