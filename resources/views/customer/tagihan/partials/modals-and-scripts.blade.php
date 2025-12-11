@@ -145,42 +145,50 @@
         const loadingOverlay = document.getElementById('loading-overlay');
         if (loadingOverlay) loadingOverlay.classList.remove('hidden');
 
-        if (typeof snap === 'undefined') {
-            showAlert('Sistem pembayaran sedang loading. Coba beberapa saat lagi.', 'warning');
-            if (loadingOverlay) loadingOverlay.classList.add('hidden');
-            isPaymentProcessing = false;
-            return;
-        }
-
-        console.log('💳 Opening Midtrans Snap...');
-
-        snap.pay(snapToken, {
-            onSuccess: function(result) {
-                console.log('✅ Payment Success:', result);
-                if (loadingOverlay) loadingOverlay.classList.add('hidden');
+        // Tunggu hingga Snap tersedia
+        const checkSnapLoaded = setInterval(() => {
+            if (typeof snap !== 'undefined') {
+                clearInterval(checkSnapLoaded);
+                console.log('💳 Opening Midtrans Snap...');
                 
-                // GUNAKAN LOGIC KODE LAMA - Update status pakai fetch
-                updateTransactionStatus(result.order_id, 'settlement', result.payment_type, transactionId);
-            },
-            onPending: function(result) {
-                console.log('⏳ Payment Pending:', result);
-                if (loadingOverlay) loadingOverlay.classList.add('hidden');
-                isPaymentProcessing = false;
-                showAlert('Pembayaran Anda dalam proses pending. Mohon selesaikan pembayaran dalam waktu 24 jam.', 'warning', true, "{{ route('customer.tagihan') }}");
-            },
-            onError: function(result) {
-                console.error('❌ Payment Error:', result);
-                if (loadingOverlay) loadingOverlay.classList.add('hidden');
-                isPaymentProcessing = false;
-                showAlert('Pembayaran gagal! Silakan coba lagi atau hubungi customer service.', 'error');
-            },
-            onClose: function() {
-                console.log('🚪 Payment popup closed');
-                if (loadingOverlay) loadingOverlay.classList.add('hidden');
-                isPaymentProcessing = false;
-                showAlert('Anda menutup popup pembayaran. Silakan klik "Bayar Sekarang" lagi untuk melanjutkan.', 'info');
+                snap.pay(snapToken, {
+                    onSuccess: function(result) {
+                        console.log('✅ Payment Success:', result);
+                        if (loadingOverlay) loadingOverlay.classList.add('hidden');
+                        // GUNAKAN LOGIC KODE LAMA - Update status pakai fetch
+                        updateTransactionStatus(result.order_id, 'settlement', result.payment_type, transactionId);
+                    },
+                    onPending: function(result) {
+                        console.log('⏳ Payment Pending:', result);
+                        if (loadingOverlay) loadingOverlay.classList.add('hidden');
+                        isPaymentProcessing = false;
+                        showAlert('Pembayaran Anda dalam proses pending. Mohon selesaikan pembayaran dalam waktu 24 jam.', 'warning', true, "{{ route('customer.tagihan') }}");
+                    },
+                    onError: function(result) {
+                        console.error('❌ Payment Error:', result);
+                        if (loadingOverlay) loadingOverlay.classList.add('hidden');
+                        isPaymentProcessing = false;
+                        showAlert('Pembayaran gagal! Silakan coba lagi atau hubungi customer service.', 'error');
+                    },
+                    onClose: function() {
+                        console.log('🚪 Payment popup closed');
+                        if (loadingOverlay) loadingOverlay.classList.add('hidden');
+                        isPaymentProcessing = false;
+                        showAlert('Anda menutup popup pembayaran. Silakan klik "Bayar Sekarang" lagi untuk melanjutkan.', 'info');
+                    }
+                });
             }
-        });
+        }, 100);
+
+        // Timeout jika Snap tidak load
+        setTimeout(() => {
+            if (typeof snap === 'undefined') {
+                clearInterval(checkSnapLoaded);
+                showAlert('Sistem pembayaran sedang loading. Coba beberapa saat lagi.', 'warning');
+                if (loadingOverlay) loadingOverlay.classList.add('hidden');
+                isPaymentProcessing = false;
+            }
+        }, 5000);
     }
 
     // FUNCTION DARI KODE LAMA - YANG BEKERJA DENGAN BAIK
@@ -541,126 +549,6 @@
         });
     }
 
-    // FUNGSI: Lihat Detail Tagihan Expired
-    function viewExpiredDetail(tagihanId) {
-        console.log('View Expired Detail clicked, ID:', tagihanId);
-        
-        Swal.fire({
-            title: '<div class="flex flex-col items-center">' +
-                '<div class="relative w-20 h-20 mb-4">' +
-                '<div class="absolute inset-0 rounded-full border-4 border-red-200"></div>' +
-                '<div class="absolute inset-2 rounded-full border-4 border-red-500 animate-spin border-t-transparent"></div>' +
-                '</div>' +
-                '<h3 class="text-xl font-semibold text-gray-800">Memuat Detail</h3>' +
-                '</div>',
-            html: '<p class="text-gray-600 mt-2">Mengambil data tagihan kadaluarsa...</p>',
-            allowOutsideClick: false,
-            showConfirmButton: false
-        });
-
-        fetch(`/customer/tagihan/${tagihanId}/detail`, {
-            method: 'GET',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
-            }
-        })
-        .then(response => response.json())
-        .then(data => {
-            Swal.close();
-            
-            if (data.success) {
-                const tagihan = data.tagihan;
-                
-                Swal.fire({
-                    title: '<div class="flex items-center gap-4 pb-3 border-b border-red-100">' +
-                        '<div class="w-16 h-16 rounded-xl bg-gradient-to-br from-red-500 to-red-600 flex items-center justify-center shadow-lg relative">' +
-                        '<i class="fas fa-hourglass-end text-white text-2xl"></i>' +
-                        '</div>' +
-                        '<div class="text-left">' +
-                        '<h2 class="text-2xl font-bold text-gray-800">Tagihan Kadaluarsa</h2>' +
-                        '<p class="text-gray-600 text-sm mt-1">Tagihan ini telah melewati batas waktu</p>' +
-                        '</div>' +
-                        '</div>',
-                    html: `
-                        <div class="text-left space-y-5 mt-6">
-                            <div class="bg-gradient-to-r from-red-50 to-orange-50 rounded-xl p-5 border border-red-200">
-                                <div class="flex items-start gap-4">
-                                    <div class="w-12 h-12 rounded-full bg-red-100 flex items-center justify-center flex-shrink-0">
-                                        <i class="fas fa-exclamation-triangle text-red-600 text-xl"></i>
-                                    </div>
-                                    <div>
-                                        <h3 class="text-lg font-bold text-red-800 mb-1">Tagihan Telah Kadaluarsa</h3>
-                                        <p class="text-red-700 text-sm">
-                                            Pembayaran tidak dapat dilakukan. Rak tersedia untuk disewa oleh pengguna lain.
-                                        </p>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div class="bg-white rounded-xl p-5 border border-gray-200">
-                                <div class="grid grid-cols-2 gap-4">
-                                    <div>
-                                        <p class="text-xs text-gray-500">Kode Tagihan</p>
-                                        <p class="font-bold text-gray-800 font-mono">${tagihan.tagihan_code}</p>
-                                    </div>
-                                    <div class="text-right">
-                                        <p class="text-xs text-gray-500">Status</p>
-                                        <span class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-red-100 text-red-800 font-bold text-sm">
-                                            <i class="fas fa-hourglass-end"></i>
-                                            KADALUARSA
-                                        </span>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div class="bg-gray-50 rounded-xl p-5 border border-gray-200">
-                                <h3 class="font-semibold text-gray-800 mb-3">Informasi Rak</h3>
-                                <div class="space-y-2">
-                                    <div class="flex justify-between">
-                                        <span class="text-gray-600">Nama Rak</span>
-                                        <span class="font-semibold">${tagihan.rak_nama}</span>
-                                    </div>
-                                    <div class="flex justify-between">
-                                        <span class="text-gray-600">Total Tagihan</span>
-                                        <span class="font-bold text-red-600">${tagihan.total_tagihan}</span>
-                                    </div>
-                                    <div class="flex justify-between">
-                                        <span class="text-gray-600">Kadaluarsa</span>
-                                        <span class="text-red-600">${tagihan.expired_at}</span>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    `,
-                    width: 700,
-                    showConfirmButton: false,
-                    showCloseButton: true,
-                    customClass: {
-                        popup: 'rounded-2xl shadow-2xl border border-red-100'
-                    }
-                });
-            } else {
-                Swal.fire({
-                    icon: 'error',
-                    title: 'Gagal Memuat',
-                    text: data.message || 'Tidak dapat memuat detail',
-                    confirmButtonColor: '#dc2626'
-                });
-            }
-        })
-        .catch(error => {
-            console.error('Error:', error);
-            Swal.close();
-            Swal.fire({
-                icon: 'error',
-                title: 'Koneksi Error',
-                text: 'Gagal terhubung ke server',
-                confirmButtonColor: '#dc2626'
-            });
-        });
-    }
-
     // FUNGSI: Batalkan Tagihan
     function cancelPayment(tagihanId, tagihanCode) {
         Swal.fire({
@@ -839,10 +727,11 @@
             }
         });
     }
+
     // =========================================
-    // ======= DETAILS EXPIRED FUNCTIONS =======
+    // ======= DETAILS EXPIRED FUNCTIONS (Single Version) =======
     // =========================================
-        function viewExpiredDetail(tagihanId) {
+    function viewExpiredDetail(tagihanId) {
         console.log('View Expired Detail clicked, ID:', tagihanId);
         
         // Show elegant loading animation
@@ -1142,6 +1031,7 @@
             });
         });
     }
+
     // Debug log on page load
     console.log('🚀 Tagihan script loaded successfully');
 </script>
