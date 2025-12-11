@@ -348,40 +348,46 @@
                     </div>
                 @else
                     <!-- ALERT 10 MENIT -->
-                    @if ($showTenMinuteAlert)
-                        <div class="alert-10-minutes" id="tenMinuteAlert">
-                            <div class="flex items-start mb-4">
-                                <div class="alert-icon-wrapper mr-4">
-                                    <i class="fas fa-exclamation-triangle"></i>
-                                </div>
-                                <div class="flex-1">
-                                    <h3 class="text-2xl font-bold mb-2">⚠️ PERINGATAN WAKTU SEWA HAMPIR HABIS!</h3>
-                                    <p class="text-lg opacity-95 mb-3">
-                                        Masa sewa Anda akan berakhir dalam <strong id="minutesLeft">{{ floor($totalMinutesRemaining) }}</strong> menit lagi!
-                                    </p>
-                                    <p class="text-sm opacity-90">
-                                        Segera perpanjang masa sewa Anda untuk menghindari denda keterlambatan dan masa pengosongan.
-                                    </p>
-                                </div>
-                            </div>
+                  @if ($showTenMinuteAlert)
+    @php
+        // Hitung sisa waktu dalam menit untuk alert 10 menit
+        $totalMinutesRemaining = $totalMinutes; // Menggunakan $totalMinutes yang sudah dihitung sebelumnya
+        $remainingSeconds = ($totalMinutesRemaining - floor($totalMinutesRemaining)) * 60;
+    @endphp
+    
+    <div class="alert-10-minutes" id="tenMinuteAlert">
+        <div class="flex items-start mb-4">
+            <div class="alert-icon-wrapper mr-4">
+                <i class="fas fa-exclamation-triangle"></i>
+            </div>
+            <div class="flex-1">
+                <h3 class="text-2xl font-bold mb-2">⚠️ PERINGATAN WAKTU SEWA HAMPIR HABIS!</h3>
+                <p class="text-lg opacity-95 mb-3">
+                    Masa sewa Anda akan berakhir dalam <strong id="minutesLeft">{{ floor($totalMinutesRemaining) }}</strong> menit lagi!
+                </p>
+                <p class="text-sm opacity-90">
+                    Segera perpanjang masa sewa Anda untuk menghindari denda keterlambatan dan masa pengosongan.
+                </p>
+            </div>
+        </div>
 
-                            <div class="countdown-timer">
-                                <p class="text-sm opacity-90 mb-2">Waktu Tersisa:</p>
-                                <div class="timer-digit" id="countdownDisplay">
-                                    {{ sprintf('%02d:%02d', floor($totalMinutesRemaining), ($totalMinutesRemaining - floor($totalMinutesRemaining)) * 60) }}
-                                </div>
-                                <p class="text-xs opacity-80 mt-2">Menit : Detik</p>
-                            </div>
+        <div class="countdown-timer">
+            <p class="text-sm opacity-90 mb-2">Waktu Tersisa:</p>
+            <div class="timer-digit" id="countdownDisplay">
+                {{ sprintf('%02d:%02d', floor($totalMinutesRemaining), $remainingSeconds) }}
+            </div>
+            <p class="text-xs opacity-80 mt-2">Menit : Detik</p>
+        </div>
 
-                            <div class="mt-4 text-center">
-                                <a href="{{ route('customer.payment.renewal-checkout', ['transaction_id' => $activeRental->id]) }}"
-                                    class="inline-flex items-center justify-center space-x-3 px-8 py-3 bg-white text-red-600 rounded-xl hover:bg-red-50 transition-all duration-300 font-bold shadow-lg hover:shadow-xl">
-                                    <i class="fas fa-bolt"></i>
-                                    <span>PERPANJANG SEKARANG</span>
-                                </a>
-                            </div>
-                        </div>
-                    @endif
+        <div class="mt-4 text-center">
+            <a href="{{ route('customer.payment.renewal-checkout', ['transaction_id' => $activeRental->transaction_id]) }}"
+                class="inline-flex items-center justify-center space-x-3 px-8 py-3 bg-white text-red-600 rounded-xl hover:bg-red-50 transition-all duration-300 font-bold shadow-lg hover:shadow-xl">
+                <i class="fas fa-bolt"></i>
+                <span>PERPANJANG SEKARANG</span>
+            </a>
+        </div>
+    </div>
+@endif
 
                     <div class="mb-8 rental-info-card">
                         <div class="flex items-center mb-4">
