@@ -85,10 +85,17 @@ class TagihanController extends Controller
             ->whereNotIn('rak_id', $rakIdsWithRenewal)
             ->where(function ($query) use ($now, $oneDayFromNow) {
                 $query->whereDate('sewa_berakhir', '<', $now)
-                      ->orWhere(function ($q) use ($now, $oneDayFromNow) {
-                          $q->whereDate('sewa_berakhir', '>=', $now)
+                    ->orWhere(function ($q) use ($now, $oneDayFromNow) {
+                        $q->whereDate('sewa_berakhir', '>=', $now)
                             ->whereDate('sewa_berakhir', '<=', $oneDayFromNow);
-                      });
+                    });
+            })
+            // TAMBAHAN: Filter out rak yang sudah dikosongkan
+            ->whereHas('transaction', function ($query) {
+                $query->where(function ($q) {
+                    $q->whereNull('is_dikosongkan')
+                    ->orWhere('is_dikosongkan', false);
+                });
             })
             ->orderBy('sewa_berakhir', 'asc')
             ->get();
