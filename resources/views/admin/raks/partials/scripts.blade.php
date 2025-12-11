@@ -1,24 +1,30 @@
 <script>
+    // ==============================
+    // CONFIGURATION & INITIALIZATION
+    // ==============================
+    const isEditMode = {{ isset($rak) && $rak->id ? 'true' : 'false' }};
     const rakId = {{ isset($rak) ? $rak->id : 'null' }};
     const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+
+    let uploadedPhotosInSession = [];
+
+    console.log('Photo Upload Mode:', isEditMode ? 'EDIT' : 'CREATE');
+    console.log('Rak ID:', rakId);
 
     // ==============================
     // MODERN TOAST NOTIFICATION SYSTEM
     // ==============================
     function showAlert(message, type) {
-        // Hapus toast lama jika terlalu banyak
         const existingToasts = document.querySelectorAll('.modern-toast');
         if (existingToasts.length > 3) {
             existingToasts[0].remove();
         }
 
-        // Buat elemen toast
         const toast = document.createElement('div');
         toast.className = 'modern-toast';
-        
-        // Konfigurasi berdasarkan tipe
+
         let icon, bgColor, iconColor, progressColor, titleText;
-        switch(type) {
+        switch (type) {
             case 'success':
                 icon = 'check-circle';
                 bgColor = 'linear-gradient(135deg, #10b981, #059669)';
@@ -48,7 +54,6 @@
                 titleText = 'Informasi';
         }
 
-        // Styling toast
         toast.style.cssText = `
             position: fixed;
             top: 24px;
@@ -71,7 +76,6 @@
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
         `;
 
-        // Ikon container
         const iconContainer = document.createElement('div');
         iconContainer.style.cssText = `
             width: 44px;
@@ -84,19 +88,11 @@
             flex-shrink: 0;
             animation: pulse 2s infinite;
         `;
+        iconContainer.innerHTML = `<i class="fas fa-${icon}" style="font-size: 20px; color: white;"></i>`;
 
-        iconContainer.innerHTML = `
-            <i class="fas fa-${icon}" style="font-size: 20px; color: white;"></i>
-        `;
-
-        // Konten container
         const contentContainer = document.createElement('div');
-        contentContainer.style.cssText = `
-            flex: 1;
-            min-width: 0;
-        `;
+        contentContainer.style.cssText = 'flex: 1; min-width: 0;';
 
-        // Judul
         const title = document.createElement('div');
         title.style.cssText = `
             font-weight: 600;
@@ -111,7 +107,6 @@
         const titleSpan = document.createElement('span');
         titleSpan.textContent = titleText;
 
-        // Tombol close
         const closeBtn = document.createElement('button');
         closeBtn.style.cssText = `
             background: none;
@@ -137,7 +132,6 @@
         title.appendChild(titleSpan);
         title.appendChild(closeBtn);
 
-        // Pesan
         const messageEl = document.createElement('div');
         messageEl.style.cssText = `
             font-size: 14px;
@@ -150,7 +144,6 @@
         contentContainer.appendChild(title);
         contentContainer.appendChild(messageEl);
 
-        // Progress bar
         const progressBar = document.createElement('div');
         progressBar.style.cssText = `
             position: absolute;
@@ -174,7 +167,6 @@
 
         progressBar.appendChild(progressFill);
 
-        // Tambahkan animasi CSS jika belum ada
         if (!document.getElementById('toast-styles')) {
             const style = document.createElement('style');
             style.id = 'toast-styles';
@@ -183,13 +175,11 @@
                     from { transform: scaleX(1); }
                     to { transform: scaleX(0); }
                 }
-                
                 @keyframes pulse {
                     0% { transform: scale(1); }
                     50% { transform: scale(1.05); }
                     100% { transform: scale(1); }
                 }
-                
                 .modern-toast:hover {
                     transform: translateX(0) scale(1.02) !important;
                     box-shadow: 0 15px 30px rgba(0, 0, 0, 0.15), 0 25px 50px rgba(0, 0, 0, 0.1) !important;
@@ -198,45 +188,39 @@
             document.head.appendChild(style);
         }
 
-        // Gabungkan semua elemen
         toast.appendChild(iconContainer);
         toast.appendChild(contentContainer);
         toast.appendChild(progressBar);
         document.body.appendChild(toast);
 
-        // Animasikan masuk
         requestAnimationFrame(() => {
             toast.style.transform = 'translateX(0)';
             toast.style.opacity = '1';
         });
 
-        // Auto-hide setelah 5 detik
-        const autoHideTimer = setTimeout(() => {
-            hideToast(toast);
-        }, 1000);
+        toast._createdAt = Date.now();
+        let autoHideTimer = setTimeout(() => hideToast(toast), 5000);
 
-        // Hentikan auto-hide saat hover
         toast.addEventListener('mouseenter', () => {
             clearTimeout(autoHideTimer);
             progressFill.style.animationPlayState = 'paused';
         });
 
         toast.addEventListener('mouseleave', () => {
-            const remainingTime = 1000 - (Date.now() - toast._createdAt);
+            const elapsed = Date.now() - toast._createdAt;
+            const remainingTime = 5000 - elapsed;
             if (remainingTime > 0) {
                 progressFill.style.animationPlayState = 'running';
-                setTimeout(() => hideToast(toast), remainingTime);
+                autoHideTimer = setTimeout(() => hideToast(toast), remainingTime);
+            } else {
+                hideToast(toast);
             }
         });
-
-        // Simpan waktu pembuatan
-        toast._createdAt = Date.now();
     }
 
     function hideToast(toast) {
         toast.style.transform = 'translateX(150%)';
         toast.style.opacity = '0';
-        
         setTimeout(() => {
             if (toast.parentNode) {
                 toast.parentNode.removeChild(toast);
@@ -248,7 +232,6 @@
     // MODERN CONFIRM DIALOG
     // ==============================
     function showConfirm(message, onConfirm, onCancel = null) {
-        // Buat overlay
         const overlay = document.createElement('div');
         overlay.style.cssText = `
             position: fixed;
@@ -264,7 +247,6 @@
             animation: fadeIn 0.3s ease;
         `;
 
-        // Buat dialog
         const dialog = document.createElement('div');
         dialog.style.cssText = `
             background: white;
@@ -278,7 +260,6 @@
             animation: scaleIn 0.3s ease forwards;
         `;
 
-        // Ikon dialog
         const icon = document.createElement('div');
         icon.style.cssText = `
             width: 64px;
@@ -292,7 +273,6 @@
         `;
         icon.innerHTML = '<i class="fas fa-exclamation-triangle" style="font-size: 28px; color: white;"></i>';
 
-        // Pesan
         const messageEl = document.createElement('div');
         messageEl.style.cssText = `
             text-align: center;
@@ -304,15 +284,9 @@
         `;
         messageEl.textContent = message;
 
-        // Tombol container
         const buttonContainer = document.createElement('div');
-        buttonContainer.style.cssText = `
-            display: flex;
-            gap: 12px;
-            justify-content: center;
-        `;
+        buttonContainer.style.cssText = 'display: flex; gap: 12px; justify-content: center;';
 
-        // Tombol Batal
         const cancelBtn = document.createElement('button');
         cancelBtn.style.cssText = `
             padding: 10px 24px;
@@ -330,7 +304,6 @@
         cancelBtn.onmouseover = () => cancelBtn.style.background = '#e5e7eb';
         cancelBtn.onmouseout = () => cancelBtn.style.background = '#f3f4f6';
 
-        // Tombol Konfirmasi
         const confirmBtn = document.createElement('button');
         confirmBtn.style.cssText = `
             padding: 10px 24px;
@@ -348,7 +321,6 @@
         confirmBtn.onmouseover = () => confirmBtn.style.opacity = '0.9';
         confirmBtn.onmouseout = () => confirmBtn.style.opacity = '1';
 
-        // Event handlers
         cancelBtn.onclick = () => {
             if (onCancel) onCancel();
             document.body.removeChild(overlay);
@@ -359,7 +331,6 @@
             document.body.removeChild(overlay);
         };
 
-        // Gabungkan elemen
         buttonContainer.appendChild(cancelBtn);
         buttonContainer.appendChild(confirmBtn);
 
@@ -369,7 +340,6 @@
         overlay.appendChild(dialog);
         document.body.appendChild(overlay);
 
-        // Tambahkan animasi jika belum ada
         if (!document.getElementById('dialog-styles')) {
             const style = document.createElement('style');
             style.id = 'dialog-styles';
@@ -378,7 +348,6 @@
                     from { opacity: 0; }
                     to { opacity: 1; }
                 }
-                
                 @keyframes scaleIn {
                     from { transform: scale(0.9); opacity: 0; }
                     to { transform: scale(1); opacity: 1; }
@@ -387,7 +356,6 @@
             document.head.appendChild(style);
         }
 
-        // Tutup saat klik overlay
         overlay.onclick = (e) => {
             if (e.target === overlay) {
                 if (onCancel) onCancel();
@@ -397,11 +365,13 @@
     }
 
     // ==============================
-    // MAIN FUNCTIONS (DENGAN ALERT MODERN)
+    // UPLOAD PHOTOS (UNIFIED)
     // ==============================
     function uploadPhotosInstant(event) {
         const files = Array.from(event.target.files);
-        const existingPhotos = document.querySelectorAll('.existing-photo-item').length;
+        if (!files.length) return;
+
+        const existingPhotos = document.querySelectorAll('.existing-photo-item, .temp-photo-item').length;
         const maxAllowed = 4 - existingPhotos;
 
         if (existingPhotos >= 4) {
@@ -437,8 +407,10 @@
             return;
         }
 
-        if (rakId) {
-            uploadToServer(validFiles);
+        if (isEditMode && rakId) {
+            uploadToServerInstant(validFiles);
+        } else if (!isEditMode) {
+            uploadToServerTemp(validFiles);
         } else {
             showAlert('Simpan rak terlebih dahulu sebelum upload foto', 'warning');
         }
@@ -446,21 +418,14 @@
         event.target.value = '';
     }
 
-    function uploadToServer(files) {
+    // ==============================
+    // UPLOAD TO SERVER (EDIT MODE)
+    // ==============================
+    function uploadToServerInstant(files) {
         const formData = new FormData();
-        files.forEach((file) => {
-            formData.append('fotos[]', file);
-        });
+        files.forEach((file) => formData.append('fotos[]', file));
 
-        const loadingDiv = document.getElementById('upload-loading');
-        loadingDiv.style.display = 'block';
-        loadingDiv.innerHTML = `
-            <div class="spinner-border text-primary" role="status">
-                <span class="sr-only">Uploading...</span>
-            </div>
-            <p class="mt-2 text-muted">Mengupload ${files.length} foto... <span id="upload-progress">0%</span></p>
-        `;
-        document.getElementById('fotos').disabled = true;
+        showLoading(`Mengupload ${files.length} foto...`);
 
         const xhr = new XMLHttpRequest();
 
@@ -468,15 +433,12 @@
             if (e.lengthComputable) {
                 const percentComplete = Math.round((e.loaded / e.total) * 100);
                 const progressEl = document.getElementById('upload-progress');
-                if (progressEl) {
-                    progressEl.textContent = percentComplete + '%';
-                }
+                if (progressEl) progressEl.textContent = percentComplete + '%';
             }
         });
 
         xhr.addEventListener('load', function() {
-            loadingDiv.style.display = 'none';
-            document.getElementById('fotos').disabled = false;
+            hideLoading();
 
             if (xhr.status === 200) {
                 try {
@@ -489,13 +451,11 @@
                         if (section && section.style.display === 'none') {
                             section.style.display = 'block';
                         }
-                        
+
                         if (Array.isArray(data.fotos) && data.fotos.length > 0) {
                             data.fotos.forEach(foto => {
-                                addPhotoToContainer(foto);
-                                if (typeof uploadedPhotosInSession !== 'undefined') {
-                                    uploadedPhotosInSession.push(foto.id);
-                                }
+                                addPhotoToContainer(foto, true);
+                                uploadedPhotosInSession.push(foto.id);
                             });
                         }
 
@@ -512,40 +472,17 @@
                     showAlert('Terjadi kesalahan saat memproses respons', 'error');
                 }
             } else {
-                let errorMessage = `Upload gagal. Status: ${xhr.status}.`;
-
-                try {
-                    const errorData = JSON.parse(xhr.responseText);
-
-                    if (xhr.status === 422 && errorData.errors) {
-                        const firstErrorKey = Object.keys(errorData.errors)[0];
-                        errorMessage = errorData.errors[firstErrorKey][0];
-                    } else if (errorData.message) {
-                        errorMessage = errorData.message;
-                    }
-                } catch (e) {
-                    if (xhr.status === 419) {
-                        errorMessage = 'Token Keamanan (CSRF) Kedaluwarsa. Mohon refresh halaman dan coba lagi.';
-                    } else if (xhr.status === 422) {
-                        errorMessage = 'Validasi server gagal. Kemungkinan batasan PHP/server tidak sesuai.';
-                    } else {
-                        errorMessage = `Upload gagal (Server Error ${xhr.status}).`;
-                    }
-                }
-
-                showAlert(errorMessage, 'error');
+                handleUploadError(xhr);
             }
         });
 
-        xhr.addEventListener('error', function() {
-            loadingDiv.style.display = 'none';
-            document.getElementById('fotos').disabled = false;
+        xhr.addEventListener('error', () => {
+            hideLoading();
             showAlert('Terjadi kesalahan saat upload. Periksa koneksi internet Anda.', 'error');
         });
 
-        xhr.addEventListener('timeout', function() {
-            loadingDiv.style.display = 'none';
-            document.getElementById('fotos').disabled = false;
+        xhr.addEventListener('timeout', () => {
+            hideLoading();
             showAlert('Upload timeout. Coba lagi atau pilih file yang lebih kecil.', 'error');
         });
 
@@ -556,7 +493,53 @@
         xhr.send(formData);
     }
 
-    function addPhotoToContainer(foto) {
+    // ==============================
+    // UPLOAD TO SERVER (CREATE MODE - TEMP)
+    // ==============================
+    function uploadToServerTemp(files) {
+        const formData = new FormData();
+        files.forEach((file) => formData.append('fotos[]', file));
+
+        showLoading(`Mengupload ${files.length} foto...`);
+
+        fetch('{{ route('raks.photos.temp-upload') }}', {
+                method: 'POST',
+                headers: {
+                    'X-CSRF-TOKEN': csrfToken,
+                    'Accept': 'application/json'
+                },
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                hideLoading();
+
+                if (data.success) {
+                    showAlert(data.message, 'success');
+
+                    const section = document.getElementById('existing-photos-section');
+                    if (section) section.style.display = 'block';
+
+                    data.fotos.forEach(foto => {
+                        addPhotoToContainer(foto, false);
+                    });
+
+                    updatePhotoCounters(data.total_photos);
+                } else {
+                    showAlert(data.message, 'error');
+                }
+            })
+            .catch(error => {
+                hideLoading();
+                console.error('Error:', error);
+                showAlert('Terjadi kesalahan saat mengupload foto', 'error');
+            });
+    }
+
+    // ==============================
+    // ADD PHOTO TO CONTAINER (UNIFIED)
+    // ==============================
+    function addPhotoToContainer(foto, isPermanent) {
         let container = document.getElementById('existing-photos-container');
 
         if (!container) {
@@ -573,16 +556,30 @@
         }
 
         const col = document.createElement('div');
-        col.className = 'col-6 col-md-3 mb-3 existing-photo-item';
-        col.setAttribute('data-foto-id', foto.id);
+        col.className = `col-6 col-md-3 mb-3 ${isPermanent ? 'existing-photo-item' : 'temp-photo-item'}`;
+
+        if (isPermanent) {
+            col.setAttribute('data-foto-id', foto.id);
+        } else {
+            col.setAttribute('data-filename', foto.filename);
+        }
+
         col.style.opacity = '0';
         col.style.transform = 'scale(0.8)';
+
+        const deleteHandler = isPermanent ?
+            `deletePhotoInstant(${foto.id})` :
+            `deleteTempPhoto('${foto.filename}')`;
+
+        const dataAttr = isPermanent ?
+            `data-foto-id="${foto.id}"` :
+            `data-filename="${foto.filename}"`;
 
         col.innerHTML = `
             <div class="photo-wrapper position-relative square-photo-container">
                 <img src="${foto.url}" class="square-photo-img" alt="Foto Rak">
                 <button type="button" class="btn-remove-photo position-absolute"
-                    data-foto-id="${foto.id}" onclick="deletePhotoInstant(${foto.id})"
+                    ${dataAttr} onclick="${deleteHandler}"
                     title="Hapus foto"
                     style="top: 8px; right: 8px; width: 28px; height: 28px; border-radius: 50%; border: none; background: rgba(239, 68, 68, 0.95); color: white; cursor: pointer; z-index: 10; opacity: 0; transition: all 0.2s ease;">
                     <i class="fas fa-times"></i>
@@ -599,11 +596,12 @@
         }, 10);
     }
 
+    // ==============================
+    // DELETE PHOTO (EDIT MODE - INSTANT)
+    // ==============================
     function deletePhotoInstant(fotoId) {
-        // Ganti confirm dengan modal modern
-        showConfirm('Apakah Anda yakin ingin menghapus foto ini?', 
+        showConfirm('Apakah Anda yakin ingin menghapus foto ini?',
             () => {
-                // Konfirmasi dihapus
                 const photoItem = document.querySelector(`.existing-photo-item[data-foto-id="${fotoId}"]`);
 
                 if (photoItem) {
@@ -624,18 +622,15 @@
                     .then(data => {
                         if (data.success) {
                             setTimeout(() => {
-                                if (photoItem) {
-                                    photoItem.remove();
-                                }
+                                if (photoItem) photoItem.remove();
 
-                                if (typeof uploadedPhotosInSession !== 'undefined') {
-                                    const index = uploadedPhotosInSession.indexOf(fotoId);
-                                    if (index > -1) {
-                                        uploadedPhotosInSession.splice(index, 1);
-                                    }
+                                const index = uploadedPhotosInSession.indexOf(fotoId);
+                                if (index > -1) {
+                                    uploadedPhotosInSession.splice(index, 1);
                                 }
 
                                 updatePhotoCounters(data.total_photos);
+
                                 if (data.total_photos === 0) {
                                     const section = document.getElementById('existing-photos-section');
                                     if (section) section.style.display = 'none';
@@ -665,14 +660,75 @@
                         }
                         showAlert('Terjadi kesalahan', 'error');
                     });
-            },
-            () => {
-                // Batal
-                console.log('Penghapusan dibatalkan');
             }
         );
     }
 
+    // ==============================
+    // DELETE TEMP PHOTO (CREATE MODE)
+    // ==============================
+    function deleteTempPhoto(filename) {
+        showConfirm('Apakah Anda yakin ingin menghapus foto ini?',
+            () => {
+                const photoItem = document.querySelector(`.temp-photo-item[data-filename="${filename}"]`);
+
+                if (photoItem) {
+                    photoItem.style.transition = 'all 0.3s ease';
+                    photoItem.style.opacity = '0';
+                    photoItem.style.transform = 'scale(0.8)';
+                }
+
+                fetch(`/raks/temp-delete/${filename}`, {
+                        method: 'DELETE',
+                        headers: {
+                            'X-CSRF-TOKEN': csrfToken,
+                            'Accept': 'application/json'
+                        }
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            setTimeout(() => {
+                                if (photoItem) photoItem.remove();
+
+                                updatePhotoCounters(data.total_photos);
+
+                                if (data.total_photos === 0) {
+                                    const section = document.getElementById('existing-photos-section');
+                                    if (section) section.style.display = 'none';
+                                }
+
+                                if (data.total_photos < 4) {
+                                    document.getElementById('fotos').disabled = false;
+                                    document.querySelector('.custom-file-label').textContent =
+                                        'Pilih foto (maksimal 4)';
+                                }
+                            }, 300);
+
+                            showAlert('Foto berhasil dihapus', 'success');
+                        } else {
+                            if (photoItem) {
+                                photoItem.style.opacity = '1';
+                                photoItem.style.transform = 'scale(1)';
+                            }
+                            showAlert(data.message, 'error');
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                        if (photoItem) {
+                            photoItem.style.opacity = '1';
+                            photoItem.style.transform = 'scale(1)';
+                        }
+                        showAlert('Terjadi kesalahan', 'error');
+                    });
+            }
+        );
+    }
+
+    // ==============================
+    // UPDATE PHOTO COUNTERS
+    // ==============================
     function updatePhotoCounters(totalPhotos) {
         const existingCount = document.getElementById('existing-photos-count');
         const remainingSlots = document.getElementById('remaining-slots');
@@ -693,6 +749,191 @@
         }
     }
 
+    // ==============================
+    // LOADING HELPERS
+    // ==============================
+    function showLoading(message = 'Memproses...') {
+        const loadingDiv = document.getElementById('upload-loading');
+        if (loadingDiv) {
+            loadingDiv.style.display = 'block';
+            loadingDiv.innerHTML = `
+                <div class="spinner-border text-primary" role="status">
+                    <span class="sr-only">Loading...</span>
+                </div>
+                <p class="mt-2 text-muted">${message} <span id="upload-progress">0%</span></p>
+            `;
+        }
+
+        const fileInput = document.getElementById('fotos');
+        if (fileInput) fileInput.disabled = true;
+    }
+
+    function hideLoading() {
+        const loadingDiv = document.getElementById('upload-loading');
+        if (loadingDiv) loadingDiv.style.display = 'none';
+
+        const fileInput = document.getElementById('fotos');
+        if (fileInput) {
+            const totalPhotos = document.querySelectorAll('.existing-photo-item, .temp-photo-item').length;
+            fileInput.disabled = totalPhotos >= 4;
+        }
+    }
+
+    // ==============================
+    // ERROR HANDLER
+    // ==============================
+    function handleUploadError(xhr) {
+        let errorMessage = `Upload gagal. Status: ${xhr.status}.`;
+
+        try {
+            const errorData = JSON.parse(xhr.responseText);
+
+            if (xhr.status === 422 && errorData.errors) {
+                const firstErrorKey = Object.keys(errorData.errors)[0];
+                errorMessage = errorData.errors[firstErrorKey][0];
+            } else if (errorData.message) {
+                errorMessage = errorData.message;
+            }
+        } catch (e) {
+            if (xhr.status === 419) {
+                errorMessage = 'Token Keamanan (CSRF) Kedaluwarsa. Mohon refresh halaman dan coba lagi.';
+            } else if (xhr.status === 422) {
+                errorMessage = 'Validasi server gagal. Kemungkinan batasan PHP/server tidak sesuai.';
+            } else {
+                errorMessage = `Upload gagal (Server Error ${xhr.status}).`;
+            }
+        }
+
+        showAlert(errorMessage, 'error');
+    }
+
+    // ==============================
+    // CANCEL WITH CLEANUP
+    // ==============================
+    async function handleCancelWithCleanup() {
+        if (isEditMode) {
+            // EDIT MODE: Cleanup uploaded photos in session
+            if (uploadedPhotosInSession.length === 0) {
+                window.location.href = "{{ route('raks.index') }}";
+                return;
+            }
+
+            showConfirm(
+                `Anda telah mengupload ${uploadedPhotosInSession.length} foto. Batalkan dan hapus foto yang sudah diupload?`,
+                async () => {
+                    showAlert('Menghapus foto yang diupload...', 'warning');
+
+                    const cancelBtn = document.getElementById('cancel-button');
+                    const originalText = cancelBtn.innerHTML;
+                    cancelBtn.disabled = true;
+                    cancelBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Membatalkan...';
+
+                    try {
+                        const deletePromises = uploadedPhotosInSession.map(fotoId => {
+                            return fetch(`/raks/photos/${fotoId}`, {
+                                method: 'DELETE',
+                                headers: {
+                                    'Content-Type': 'application/json',
+                                    'X-CSRF-TOKEN': csrfToken,
+                                    'Accept': 'application/json'
+                                }
+                            });
+                        });
+
+                        await Promise.all(deletePromises);
+
+                        showAlert('Foto berhasil dihapus. Mengalihkan...', 'success');
+
+                        setTimeout(() => {
+                            window.location.href = "{{ route('raks.index') }}";
+                        }, 1000);
+
+                    } catch (error) {
+                        console.error('Error cleaning up photos:', error);
+                        cancelBtn.disabled = false;
+                        cancelBtn.innerHTML = originalText;
+                        showAlert('Gagal menghapus foto. Silakan coba lagi.', 'error');
+                    }
+                }
+            );
+        } else {
+            // CREATE MODE: Cleanup temp photos
+            const tempPhotos = document.querySelectorAll('.temp-photo-item');
+
+            if (tempPhotos.length === 0) {
+                window.location.href = "{{ route('raks.index') }}";
+                return;
+            }
+
+            showConfirm(
+                `Ada ${tempPhotos.length} foto yang belum tersimpan. Yakin ingin membatalkan?`,
+                async () => {
+                    showAlert('Menghapus foto sementara...', 'warning');
+
+                    const deletePromises = [];
+                    tempPhotos.forEach(photo => {
+                        const filename = photo.dataset.filename;
+                        if (filename) {
+                            deletePromises.push(
+                                fetch(`/raks/temp-delete/${filename}`, {
+                                    method: 'DELETE',
+                                    headers: {
+                                        'X-CSRF-TOKEN': csrfToken,
+                                        'Accept': 'application/json'
+                                    }
+                                })
+                            );
+                        }
+                    });
+
+                    try {
+                        await Promise.all(deletePromises);
+                        showAlert('Foto berhasil dihapus. Mengalihkan...', 'success');
+
+                        setTimeout(() => {
+                            window.location.href = "{{ route('raks.index') }}";
+                        }, 1000);
+                    } catch (error) {
+                        console.error('Error:', error);
+                        showAlert('Gagal menghapus beberapa foto', 'error');
+                        setTimeout(() => {
+                            window.location.href = "{{ route('raks.index') }}";
+                        }, 1500);
+                    }
+                }
+            );
+        }
+    }
+
+    // ==============================
+    // BEFOREUNLOAD WARNING
+    // ==============================
+    window.addEventListener('beforeunload', function(e) {
+        const hasUnsavedPhotos = isEditMode ?
+            uploadedPhotosInSession.length > 0 :
+            document.querySelectorAll('.temp-photo-item').length > 0;
+
+        if (hasUnsavedPhotos) {
+            const message = 'Anda memiliki foto yang belum disimpan. Yakin ingin meninggalkan halaman?';
+            e.returnValue = message;
+            return message;
+        }
+    });
+
+    // ==============================
+    // FORM SUBMIT - RESET TRACKING
+    // ==============================
+    const mainForm = document.querySelector('form[action*="raks"]');
+    if (mainForm) {
+        mainForm.addEventListener('submit', function() {
+            uploadedPhotosInSession = [];
+            window.onbeforeunload = null;
+        });
+    }
+
+    // ==============================
+    // HOVER EFFECTS FOR DELETE BUTTONS
+    // ==============================
     document.addEventListener('mouseenter', function(e) {
         if (e.target.closest('.photo-wrapper')) {
             const btn = e.target.closest('.photo-wrapper').querySelector('.btn-remove-photo');
@@ -707,78 +948,44 @@
         }
     }, true);
 
-    // ✅ Track foto yang baru diupload dalam session ini
-    let uploadedPhotosInSession = [];
+    // ==============================
+    // DOM READY - SETUP
+    // ==============================
+    document.addEventListener('DOMContentLoaded', function() {
+        console.log('Photo upload system initialized');
+        console.log('Mode:', isEditMode ? 'EDIT' : 'CREATE');
 
-    // ✅ Fungsi untuk handle tombol Batal dengan cleanup (MODERN)
-    async function handleCancelWithCleanup() {
-        if (uploadedPhotosInSession.length === 0) {
-            window.location.href = "{{ route('raks.index') }}";
-            return;
+        // Setup hover effects
+        const setupHoverEffects = () => {
+            document.querySelectorAll('.photo-wrapper').forEach(wrapper => {
+                const removeBtn = wrapper.querySelector('.btn-remove-photo');
+                if (!removeBtn) return;
+
+                wrapper.addEventListener('mouseenter', () => {
+                    removeBtn.style.opacity = '1';
+                });
+
+                wrapper.addEventListener('mouseleave', () => {
+                    removeBtn.style.opacity = '0';
+                });
+            });
+        };
+
+        setupHoverEffects();
+
+        // Re-apply hover effects after dynamic content
+        const observer = new MutationObserver(setupHoverEffects);
+        const container = document.getElementById('existing-photos-container');
+        if (container) {
+            observer.observe(container, {
+                childList: true,
+                subtree: true
+            });
         }
 
-        showConfirm(
-            `Anda telah mengupload ${uploadedPhotosInSession.length} foto. Batalkan dan hapus foto yang sudah diupload?`,
-            async () => {
-                // Show loading dengan toast
-                showAlert('Menghapus foto yang diupload...', 'warning');
-
-                const cancelBtn = document.getElementById('cancel-button');
-                const originalText = cancelBtn.innerHTML;
-                cancelBtn.disabled = true;
-                cancelBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Membatalkan...';
-
-                try {
-                    const deletePromises = uploadedPhotosInSession.map(fotoId => {
-                        return fetch(`/raks/photos/${fotoId}`, {
-                            method: 'DELETE',
-                            headers: {
-                                'Content-Type': 'application/json',
-                                'X-CSRF-TOKEN': csrfToken,
-                                'Accept': 'application/json'
-                            }
-                        });
-                    });
-
-                    await Promise.all(deletePromises);
-                    
-                    // Tampilkan notifikasi sukses sebelum redirect
-                    showAlert('Foto berhasil dihapus. Mengalihkan...', 'success');
-                    
-                    setTimeout(() => {
-                        window.location.href = "{{ route('raks.index') }}";
-                    }, 1000);
-                    
-                } catch (error) {
-                    console.error('Error cleaning up photos:', error);
-                    cancelBtn.disabled = false;
-                    cancelBtn.innerHTML = originalText;
-                    showAlert('Gagal menghapus foto. Silakan coba lagi.', 'error');
-                }
-            },
-            () => {
-                // Batal - tidak melakukan apa-apa
-                console.log('Pembatalan dibatalkan');
-            }
-        );
-    }
-
-    // ✅ Peringatan jika user close tab/window (MODERN)
-    window.addEventListener('beforeunload', function(e) {
-        if (uploadedPhotosInSession.length > 0) {
-            // Tidak mengubah pesan untuk beforeunload karena browser membatasi
-            const message = 'Anda memiliki foto yang belum disimpan. Yakin ingin meninggalkan halaman?';
-            e.returnValue = message;
-            return message;
-        }
-    });
-
-    // ✅ Reset tracking saat form berhasil disubmit
-    const mainForm = document.querySelector('form');
-    if (mainForm) {
-        mainForm.addEventListener('submit', function() {
-            uploadedPhotosInSession = [];
-            window.onbeforeunload = null;
+        // Cleanup observer on page unload
+        window.addEventListener('unload', () => {
+            if (observer) observer.disconnect();
         });
-    }
+    });
 </script>
