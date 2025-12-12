@@ -88,5 +88,8 @@ class DatabaseSeeder extends Seeder
             'harga_sewa_perbulan' => 350000,
             'status' => 'tersedia',
         ]);
+
+        // Seed transactions
+        $this->call(TransactionSeeder::class);
     }
 }

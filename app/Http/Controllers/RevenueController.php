@@ -171,7 +171,17 @@ class RevenueController extends Controller
             'yearlyTotal',
             'yearlyTransactions',
             'availableYears',
-            'chartData'
+            'chartData',
+            'transaksiLabels',
+            'transaksiData',
+            'pendapatanLabels',
+            'pendapatanData',
+            'rakTerisi',
+            'rakMaintenance',
+            'rakTersedia',
+            'statusSuccess',
+            'statusPending',
+            'statusFailed'
         ));
     }
 
