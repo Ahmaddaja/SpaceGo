@@ -1,4 +1,4 @@
-<nav class="bg-white/90 backdrop-blur-md shadow-lg sticky top-0 z-50 border-b border-gray-200">
+<nav class="bg-white/90 backdrop-blur-md shadow-lg sticky top-0 z-50 border-b border-gray-200" style="position: sticky !important;">
     <div class="max-w-7xl mx-auto px-6 py-2.5">
         <div class="flex items-center justify-between">
             <div class="flex items-center space-x-3">
@@ -39,9 +39,9 @@
                 <!-- Rak Anda -->
                 <a href="{{ route('customer.list-rak.rak') }}" 
                    class="flex flex-col items-center group transition-all duration-300 relative
-                   {{ request()->routeIs('customer.list-rak.rak') ? 'text-blue-600' : 'text-gray-600 hover:text-blue-600' }}">
+                   {{ request()->routeIs('customer.list-rak.rak*') ? 'text-blue-600' : 'text-gray-600 hover:text-blue-600' }}">
                     <div class="p-2 rounded-lg shadow-sm transition-all duration-300 transform 
-                        {{ request()->routeIs('customer.list-rak.rak') ? 'bg-blue-100 shadow-md scale-110' : 'bg-gray-100 group-hover:bg-blue-100 group-hover:shadow-md group-hover:scale-110' }}">
+                        {{ request()->routeIs('customer.list-rak.rak*') ? 'bg-blue-100 shadow-md scale-110' : 'bg-gray-100 group-hover:bg-blue-100 group-hover:shadow-md group-hover:scale-110' }}">
                         <i class="fas fa-th-large text-sm"></i>
                     </div>
                     <span class="text-[10px] mt-1 font-medium">Rak Anda</span>
@@ -101,7 +101,8 @@
                     @if($totalNotif > 0)
                         <div class="absolute -top-1 -right-1 flex items-center justify-center">
                             <span class="animate-ping absolute inline-flex h-3 w-3 rounded-full bg-red-400 opacity-75"></span>
-                            <span class="relative inline-flex h-2.5 w-2.5 rounded-full bg-red-500 text-[8px] text-white font-bold items-center justify-center">
+                            <span class="relative inline-flex rounded-full bg-red-500 text-[8px] text-white font-bold items-center justify-center
+                                {{ $totalNotif > 10 ? 'px-1.5 py-0.5 min-w-[20px] h-4' : 'h-2.5 w-2.5' }}">
                                 {{ $totalNotif > 10 ? '10+' : $totalNotif }}
                             </span>
                         </div>
@@ -119,18 +120,19 @@
                     <span class="text-[10px] mt-1 font-medium">History</span>
                 </a>
 
-                <!-- Dropdown Profile -->
-                <div class="relative group">
-                    <button class="flex items-center space-x-3 bg-gray-100 hover:bg-gray-200 rounded-xl px-4 py-2 transition-all duration-300 shadow-sm hover:shadow-md transform hover:scale-105">
+                <!-- Dropdown Profile - HYBRID SOLUTION -->
+                <div class="relative group profile-dropdown-container" style="z-index: 9999;">
+                    <button type="button" class="flex items-center space-x-3 bg-gray-100 hover:bg-gray-200 rounded-xl px-4 py-2 transition-all duration-300 shadow-sm hover:shadow-md transform hover:scale-105 relative profile-dropdown-btn">
                         <img src="{{ Auth::user()->foto ? asset('storage/' . Auth::user()->foto) : 'https://ui-avatars.com/api/?name=' . urlencode(Auth::user()->name) . '&size=32&background=4A90E2&color=fff' }}" 
                              alt="Profile" 
                              class="w-8 h-8 rounded-lg object-cover border-2 border-white shadow-sm">
                         <span class="text-sm font-medium text-gray-700 hidden md:block">{{ Auth::user()->name }}</span>
-                        <i class="fas fa-chevron-down text-gray-500 text-xs transition-transform duration-300 group-hover:rotate-180"></i>
+                        <i class="fas fa-chevron-down text-gray-500 text-xs transition-transform duration-300 dropdown-arrow"></i>
                     </button>
                     
                     <!-- Dropdown Menu -->
-                    <div class="absolute right-0 top-full mt-2 w-56 bg-white rounded-xl shadow-xl border border-gray-200 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 transform translate-y-2 group-hover:translate-y-0 z-50">
+                    <div class="absolute right-0 top-full mt-2 w-56 bg-white rounded-xl shadow-xl border border-gray-200 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 transform translate-y-2 group-hover:translate-y-0 z-9999 profile-dropdown-menu"
+                         style="z-index: 9999 !important;">
                         <div class="p-4 border-b border-gray-100">
                             <div class="flex items-center space-x-3">
                                 <img src="{{ Auth::user()->foto ? asset('storage/' . Auth::user()->foto) : 'https://ui-avatars.com/api/?name=' . urlencode(Auth::user()->name) . '&size=40&background=4A90E2&color=fff' }}" 
@@ -170,3 +172,93 @@
 
 <!-- Include AlpineJS if not already included -->
 <script src="//unpkg.com/alpinejs" defer></script>
+
+<script>
+// Hybrid solution: CSS hover works normally, JavaScript fixes issues in detail pages
+document.addEventListener('DOMContentLoaded', function() {
+    const dropdownBtn = document.querySelector('.profile-dropdown-btn');
+    const dropdownMenu = document.querySelector('.profile-dropdown-menu');
+    const dropdownArrow = document.querySelector('.dropdown-arrow');
+    const dropdownContainer = document.querySelector('.profile-dropdown-container');
+    
+    // Check if we're on a detail page (you might need to adjust this condition)
+    const isDetailPage = window.location.pathname.includes('/detail') || 
+                         window.location.pathname.includes('/rak/');
+    
+    if (isDetailPage) {
+        // On detail pages, enhance the dropdown with JavaScript
+        dropdownContainer.classList.remove('group');
+        dropdownMenu.classList.remove('group-hover:opacity-100', 'group-hover:visible', 'group-hover:translate-y-0');
+        
+        // Add click event for detail pages
+        dropdownBtn.addEventListener('click', function(e) {
+            e.stopPropagation();
+            
+            // Toggle dropdown
+            if (dropdownMenu.classList.contains('invisible')) {
+                dropdownMenu.classList.remove('invisible', 'opacity-0', 'translate-y-2');
+                dropdownMenu.classList.add('opacity-100', 'translate-y-0');
+                dropdownArrow.classList.add('rotate-180');
+            } else {
+                dropdownMenu.classList.add('invisible', 'opacity-0', 'translate-y-2');
+                dropdownMenu.classList.remove('opacity-100', 'translate-y-0');
+                dropdownArrow.classList.remove('rotate-180');
+            }
+        });
+        
+        // Close when clicking outside
+        document.addEventListener('click', function(e) {
+            if (!dropdownContainer.contains(e.target)) {
+                dropdownMenu.classList.add('invisible', 'opacity-0', 'translate-y-2');
+                dropdownMenu.classList.remove('opacity-100', 'translate-y-0');
+                dropdownArrow.classList.remove('rotate-180');
+            }
+        });
+        
+        // Close on escape
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                dropdownMenu.classList.add('invisible', 'opacity-0', 'translate-y-2');
+                dropdownMenu.classList.remove('opacity-100', 'translate-y-0');
+                dropdownArrow.classList.remove('rotate-180');
+            }
+        });
+        
+        // Also add hover as backup
+        dropdownBtn.addEventListener('mouseenter', function() {
+            dropdownMenu.classList.remove('invisible', 'opacity-0', 'translate-y-2');
+            dropdownMenu.classList.add('opacity-100', 'translate-y-0');
+            dropdownArrow.classList.add('rotate-180');
+        });
+        
+        dropdownContainer.addEventListener('mouseleave', function() {
+            dropdownMenu.classList.add('invisible', 'opacity-0', 'translate-y-2');
+            dropdownMenu.classList.remove('opacity-100', 'translate-y-0');
+            dropdownArrow.classList.remove('rotate-180');
+        });
+    }
+    // On normal pages, CSS hover will work automatically
+});
+
+// Force z-index and overflow for all pages
+document.addEventListener('DOMContentLoaded', function() {
+    // Add important styles
+    const style = document.createElement('style');
+    style.textContent = `
+        .profile-dropdown-container {
+            overflow: visible !important;
+        }
+        .profile-dropdown-menu {
+            z-index: 9999 !important;
+            position: absolute !important;
+        }
+        nav .relative.group {
+            overflow: visible !important;
+        }
+        .z-9999 {
+            z-index: 9999 !important;
+        }
+    `;
+    document.head.appendChild(style);
+});
+</script>
