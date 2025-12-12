@@ -21,7 +21,7 @@
                 $colorClass = 'red';
             } else {
                 $activityType = 'PAYMENT';
-                $iconClass = 'fa-info-circle';
+                $iconClass = 'fa-hourglass-end';
                 $colorClass = 'gray';
             }
         } else {
@@ -142,30 +142,6 @@
                                 </span>
                             @endif
                             
-                            @if(isset($history->transaction_status))
-                                @if($history->transaction_status === 'settlement')
-                                    <span class="bg-green-100 text-green-800 px-3 py-1 rounded-full text-sm font-medium">
-                                        <i class="fas fa-check-circle mr-1"></i>
-                                        Berhasil
-                                    </span>
-                                @elseif($history->transaction_status === 'pending')
-                                    <span class="bg-yellow-100 text-yellow-800 px-3 py-1 rounded-full text-sm font-medium">
-                                        <i class="fas fa-clock mr-1"></i>
-                                        Pending
-                                    </span>
-                                @elseif(in_array($history->transaction_status, ['expire', 'deny', 'cancel']))
-                                    <span class="bg-red-100 text-red-800 px-3 py-1 rounded-full text-sm font-medium">
-                                        <i class="fas fa-times-circle mr-1"></i>
-                                        Gagal
-                                    </span>
-                                @else
-                                    <span class="bg-gray-100 text-gray-800 px-3 py-1 rounded-full text-sm font-medium">
-                                        <i class="fas fa-info-circle mr-1"></i>
-                                        {{ ucfirst($history->transaction_status) }}
-                                    </span>
-                                @endif
-                            @endif
-                            
                             @if(isset($history->is_renewal) && $history->is_renewal)
                                 <span class="bg-yellow-100 text-yellow-800 px-3 py-1 rounded-full text-sm font-medium">
                                     <i class="fas fa-redo mr-1"></i>
@@ -221,8 +197,8 @@
                         <i class="fas fa-clock mr-1"></i> PENDING
                     @elseif(in_array($history->transaction_status, ['expire', 'deny', 'cancel']))
                         <i class="fas fa-times-circle mr-1"></i> GAGAL
-                    @else
-                        {{ strtoupper($history->transaction_status) }}
+                    @else($history->transaction_status === 'expired')
+                        <i class="fas fa-hourglass-end mr-1"></i> EXPIRED
                     @endif
                 @else
                     {{ $activityType }}

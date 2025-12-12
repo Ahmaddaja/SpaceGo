@@ -219,21 +219,23 @@
             /* RIBBON STYLE */
             .status-ribbon {
                 position: absolute;
-                top: 12px;
-                left: -32px;
-                transform: rotate(-45deg);
-                padding: 8px 40px;
+                top: 0;
+                left: 0;
+                width: 70%;              /* full width */
+                padding: 10px 16px;
                 font-size: 0.75rem;
-                font-weight: 700;
+                font-weight: 800;
                 letter-spacing: 0.5px;
                 text-transform: uppercase;
                 display: flex;
                 align-items: center;
                 gap: 6px;
                 color: white;
-                box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+                background: rgba(0,0,0,0.4); /* nanti ditimpa sama class status */
                 z-index: 30;
                 white-space: nowrap;
+                border-bottom-right-radius: 8px; /* biar cantik */
+                border-bottom-left-radius: 8px;
             }
 
             .ribbon-tersedia {

@@ -852,11 +852,11 @@ if (timeRemainingText) timeRemainingText.textContent = displayText;
 
            <!-- ACTION BUTTONS -->
 <div class="mt-8 flex flex-col sm:flex-row gap-4">
-    <a href="{{ route('customer.list-rak.list-rak') }}"
+    <a href="{{ route('customer.list-rak.rak') }}"
         class="flex items-center justify-center space-x-3 px-8 py-4 bg-gray-200 text-gray-700 rounded-xl
                hover:bg-gray-300 transition-all duration-300 font-semibold shadow-md hover:shadow-lg group action-button">
         <i class="fas fa-arrow-left group-hover:-translate-x-1 transition-transform"></i>
-        <span>Kembali ke Daftar Rak</span>
+        <span>Kembali ke Daftar Rak Anda</span>
     </a>
 
     {{-- ✅ PRIORITAS UTAMA: RAK SUDAH DIKOSONGKAN --}}

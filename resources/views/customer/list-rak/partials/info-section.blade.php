@@ -57,7 +57,7 @@
     <div class="bg-gradient-to-r from-green-50 to-emerald-50 p-6 rounded-2xl border-l-4 border-green-500">
         <p class="text-green-700 text-sm font-medium mb-2 flex items-center">
             <i class="fas fa-money-bill-wave mr-2"></i>
-            Harga Sewa Per Bulan
+            Harga Sewa Per Durasi
         </p>
         <p class="text-green-600 text-2xl font-bold">
                             Rp {{ number_format($rak->harga_sewa_perbulan, 0, ',', '.') }}

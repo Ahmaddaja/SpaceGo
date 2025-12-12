@@ -81,7 +81,7 @@
                                     </span>
                                 @elseif($payment->transaction_status == 'expire')
                                     <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-red-100 text-red-800">
-                                        <i class="fas fa-times-circle mr-1"></i>Kedaluwarsa
+                                        <i class="fas fa-times-circle mr-1"></i>Kadaluarsa
                                     </span>
                                 @else
                                     <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-gray-100 text-gray-800">
