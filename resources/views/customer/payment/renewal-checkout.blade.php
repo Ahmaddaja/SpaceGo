@@ -458,7 +458,7 @@
     .alert-modal-message { font-size: 1rem; color: #4b5563; line-height: 1.5; margin-bottom: 1rem; }
     .alert-countdown { background: #f3f4f6; padding: 0.75rem; border-radius: 8px; font-size: 0.875rem; color: #6b7280; margin-top: 1rem; }
     .countdown-number { font-weight: bold; color: #3b82f6; }
-    .alert-modal-footer { padding: 1.5rem; display: flex; gap: 0.75rem; border-top: 1px solid #e5e7eb; background: #f9fafb; }
+    .alert-modal-footer { padding: 1.5rem; justify-content: center; display: flex; gap: 0.75rem; border-top: 1px solid #e5e7eb; background: #f9fafb; }
     .alert-modal-button { flex: 1; padding: 0.75rem 1.5rem; border-radius: 8px; font-weight: 600; cursor: pointer; transition: all 0.2s ease; border: none; display: flex; align-items: center; justify-content: center; gap: 0.5rem; }
     .alert-modal-button-primary { background: linear-gradient(135deg, #3b82f6, #1d4ed8); color: white; }
     .alert-modal-button-primary:hover { background: linear-gradient(135deg, #2563eb, #1e40af); transform: translateY(-1px); }
@@ -497,11 +497,8 @@
                         ` : ''}
                     </div>
                     <div class="alert-modal-footer">
-                        <button onclick="closeAlert('${alertId}')" class="alert-modal-button alert-modal-button-secondary">
-                            <i class="fas fa-times mr-2"></i>Tutup
-                        </button>
                         <button onclick="handleAlertAction('${alertId}', ${autoRedirect}, '${redirectUrl}')" 
-                                class="alert-modal-button alert-modal-button-primary">
+                                class="alert-modal-button alert-modal-button-primary" style="flex: none; width: auto; min-width: 140px;">
                             <i class="fas fa-check mr-2"></i>${alertConfig.buttonText}
                         </button>
                     </div>
@@ -573,4 +570,4 @@
         showAlert('{{ session("info") }}', 'info');
     @endif
 </script>
-    @endsection
+@endsection
