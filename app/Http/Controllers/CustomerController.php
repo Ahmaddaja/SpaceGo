@@ -22,7 +22,7 @@ class CustomerController extends Controller
         $jenisList = Rak::select('jenis_rak')->distinct()->pluck('jenis_rak');
 
         // Query dasar
-        $query = Rak::with('gudang');
+        $query = Rak::with('gudang')->latest();
 
         // FILTER SEARCH
         if ($request->search) {

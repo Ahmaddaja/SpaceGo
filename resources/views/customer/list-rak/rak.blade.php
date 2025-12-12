@@ -262,16 +262,29 @@
             transform: scale(1.05);
         }
 
-        .status-badge {
+        .status-ribbon {
             position: absolute;
-            top: 12px;
-            left: 12px;
-            z-index: 20;
+            top: 0;
+            left: 0;
+            width: 70%;
+            padding: 8px 16px;
             font-size: 0.75rem;
-            font-weight: 600;
-            padding: 4px 12px;
-            border-radius: 20px;
-            backdrop-filter: blur(10px);
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            color: white;
+            border-bottom-left-radius: 10px;
+            border-bottom-right-radius: 10px;
+            z-index: 30;
+        }
+
+        .ribbon-dikosongkan {
+            background: linear-gradient(135deg, #3b82f6, #2563eb);
+        }
+
+        .ribbon-terisi {
+            background: linear-gradient(135deg, #ef4444, #dc2626);
         }
 
         .no-photo-placeholder {
@@ -402,12 +415,12 @@
 
                                     <!-- Status Badge -->
                                     @if ($isDikosongkan)
-                                        <div class="status-badge bg-blue-600 text-white">
-                                            <i class="fas fa-box-open mr-1"></i> Dikosongkan
+                                        <div class="status-ribbon ribbon-dikosongkan">
+                                            <i class="fas fa-box-open"></i> Dikosongkan
                                         </div>
                                     @elseif(isset($rak->status) && $rak->status === 'terisi')
-                                        <div class="status-badge bg-red-600 text-white">
-                                            <i class="fas fa-box mr-1"></i> Terisi
+                                        <div class="status-ribbon ribbon-terisi">
+                                            <i class="fas fa-box"></i> Terisi
                                         </div>
                                     @endif
                                 </div>

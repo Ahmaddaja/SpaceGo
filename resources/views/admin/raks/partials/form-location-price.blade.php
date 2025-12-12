@@ -23,7 +23,7 @@
 
         <div class="form-group">
             <label for="harga_display">
-                Harga Sewa per Bulan (Rp) <span class="text-danger">*</span>
+                Harga Sewa per Durasi (Rp) <span class="text-danger">*</span>
             </label>
 
             <!-- Input yang user lihat (dengan format rupiah) -->

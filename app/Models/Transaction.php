@@ -64,6 +64,10 @@ class Transaction extends Model
     {
         return $query->whereIn('transaction_status', ['deny', 'expire', 'cancel']);
     }
+    public function getFormattedAmountAttribute()
+    {
+        return 'Rp ' . number_format($this->amount, 0, ',', '.');
+    }
 
     // ====================
     // UI Helpers
@@ -84,7 +88,7 @@ class Transaction extends Model
             'capture', 'settlement' => 'fas fa-check-circle',
             'pending' => 'fas fa-clock',
             'deny', 'expire', 'cancel' => 'fas fa-times-circle',
-            default => 'fas fa-question-circle',
+            default => 'fas fa-hourglass-end',
         };
     }
 }

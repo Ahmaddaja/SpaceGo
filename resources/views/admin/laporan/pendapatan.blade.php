@@ -49,7 +49,7 @@
                             </select>
                         </div>
                         <div class="col-md-3">
-                            <label class="form-label">BUlan Awal</label>
+                            <label class="form-label">Bulan Awal</label>
                             <select name="month_from" class="form-control">
                                 <option value="">Pilih Bulan Awal</option>
                                 @for ($i = 1; $i <= 12; $i++)

@@ -32,7 +32,7 @@
             <div class="mb-0">
                 <label class="text-muted small">Harga Sewa</label>
                 <div class="font-weight-bold text-success">
-                    Rp {{ number_format($transaction->rak->harga_sewa_perbulan, 0, ',', '.') }}/bulan
+                    Rp {{ number_format($transaction->rak->harga_sewa_perbulan, 0, ',', '.') }}/Durasi
                 </div>
             </div>
         @else
