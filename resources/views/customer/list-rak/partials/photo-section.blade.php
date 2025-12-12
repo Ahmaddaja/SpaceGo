@@ -96,19 +96,23 @@
         /* RIBBON STYLE - DIUBAH KE KIRI ATAS */
         .status-ribbon {
             position: absolute;
-            top: 18px;
-            left: -60px;
-            transform: rotate(-45deg);
-            padding: 14px 75px;
-            font-size: 0.85rem;
-            font-weight: 700;
+            top: 0;
+            left: 0;
+            width: 70%;            
+            padding: 10px 16px;
+            font-size: 0.75rem;
+            font-weight: 800;
             letter-spacing: 0.5px;
+            text-transform: uppercase;
             display: flex;
             align-items: center;
-            gap: 8px;
+            gap: 6px;
             color: white;
-            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+            background: rgba(0,0,0,0.4); /* nanti ditimpa sama class status */
             z-index: 30;
+            white-space: nowrap;
+            border-bottom-right-radius: 8px; /* biar cantik */
+            border-bottom-left-radius: 8px;
         }
 
         .ribbon-tersedia {
