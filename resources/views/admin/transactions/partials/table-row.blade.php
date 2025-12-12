@@ -60,7 +60,7 @@
     <td class="align-middle text-center">
         <span class="badge badge-{{ $transaction->getStatusBadgeColor() }}">
             <i class="{{ $transaction->getStatusIcon() }}"></i>
-            {{ strtoupper($transaction->transaction_status) }}
+                {{ $transaction->getStatusName() }}
         </span>
     </td>
     <td class="align-middle">
