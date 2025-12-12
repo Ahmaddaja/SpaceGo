@@ -262,10 +262,11 @@
     // ======= LEPAS RAK FUNCTIONS =======
     // =========================================
     function confirmLepasRak(transactionId) {
-        const alertId = showAlert('Apakah Anda yakin ingin melepas rak ini? Status akan berubah menjadi kadaluarsa.', 'warning');
+        const alertId = showAlert('Apakah Anda yakin ingin melepas rak ini? Data akan dihapus permanent.', 'warning');
         const alertElement = document.getElementById(alertId);
         const primaryButton = alertElement.querySelector('.alert-modal-button-primary');
         const secondaryButton = alertElement.querySelector('.alert-modal-button-secondary');
+        
         if (primaryButton) {
             primaryButton.onclick = () => {
                 closeAlert(alertId);
@@ -273,18 +274,21 @@
             };
             primaryButton.innerHTML = '<i class="fas fa-check mr-2"></i>Ya, Lepas Rak';
         }
+        
         if (secondaryButton) {
             secondaryButton.innerHTML = '<i class="fas fa-times mr-2"></i>Batal';
         }
+        
         alertElement.querySelector('.alert-countdown')?.remove();
     }
 
-    function submitLepasRak(formId, retryCount = 0) {
+    function submitLepasRak(formId) {
         const form = document.getElementById(formId);
         if (!form) {
             showAlert('Form tidak ditemukan. Silakan refresh halaman.', 'error');
             return;
         }
+
         const loadingOverlay = document.getElementById('loading-overlay');
         loadingOverlay?.classList.remove('hidden');
 
@@ -292,23 +296,34 @@
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
-                'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                'Accept': 'application/json'
             },
             body: JSON.stringify(Object.fromEntries(new FormData(form)))
         })
-        .then(response => response.json())
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('HTTP error! status: ' + response.status);
+            }
+            const contentType = response.headers.get('content-type');
+            if (!contentType || !contentType.includes('application/json')) {
+                throw new Error('Response bukan JSON!');
+            }
+            return response.json();
+        })
         .then(data => {
             loadingOverlay?.classList.add('hidden');
+            
             if (data.success) {
-                showAlert('Rak berhasil dilepas dan status diubah menjadi kadaluarsa.', 'success', true, "{{ route('customer.tagihan') }}");
+                showAlert('Rak berhasil dilepas.', 'success', true, "{{ route('customer.tagihan') }}");
             } else {
                 showAlert('Gagal melepas rak: ' + (data.message || 'Terjadi kesalahan'), 'error');
             }
         })
         .catch(error => {
             loadingOverlay?.classList.add('hidden');
-            console.error('Error:', error);
-            showAlert('Terjadi kesalahan jaringan. Silakan coba lagi.', 'error');
+            console.error('Error detail:', error);
+            showAlert('Terjadi kesalahan: ' + error.message, 'error');
         });
     }
 

@@ -34,9 +34,6 @@
                         <i class="fas fa-pallet text-sm"></i>
                     </div>
                     <span class="text-[10px] mt-1 font-medium">Rak</span>
-                    @if(request()->routeIs('customer.list-rak.list-rak'))
-                        <div class="absolute -top-1 -right-1 w-2 h-2 bg-blue-500 rounded-full animate-pulse"></div>
-                    @endif
                 </a>
 
                 <!-- Rak Anda -->
@@ -48,9 +45,6 @@
                         <i class="fas fa-th-large text-sm"></i>
                     </div>
                     <span class="text-[10px] mt-1 font-medium">Rak Anda</span>
-                    @if(request()->routeIs('customer.list-rak.rak'))
-                        <div class="absolute -top-1 -right-1 w-2 h-2 bg-blue-500 rounded-full animate-pulse"></div>
-                    @endif
                 </a>
 
                 <!-- Tagihan -->
@@ -65,33 +59,52 @@
                     
                     <!-- Notification Badge -->
                     @php
-                        use App\Models\Transaction;
+                        use App\Models\Tagihan;
+
                         $userId = Auth::id();
-                        $now = now();
-                        
-                        // Hanya hitung tagihan yang masih aktif (belum expired)
-                        $unpaidCount = Transaction::where('user_id', $userId)
-                            ->where('transaction_status', 'pending')
-                            ->where('created_at', '>=', $now->copy()->subHours(24))
+
+                        $unpaidCount = Tagihan::where('user_id', $userId)
+                            ->where('status', 'pending')
                             ->count();
 
-                        // Tambahkan jika ada session pending_payment (misal: checkout baru dibuat tapi belum ke Midtrans)
                         if (session('pending_payment')) {
                             $unpaidCount++;
                         }
+
+                        $overdueCount = isset($overdueTransactions)
+                            ? $overdueTransactions->count()
+                            : Tagihan::where('user_id', $userId)
+                                ->where('status', 'settlement')
+                                ->whereNotNull('sewa_berakhir')
+                                ->where(function ($query) {
+                                    $now = now();
+                                    $oneDayFromNow = $now->copy()->addDay();
+
+                                    $query->whereDate('sewa_berakhir', '<', $now)
+                                        ->orWhere(function ($q) use ($now, $oneDayFromNow) {
+                                            $q->whereDate('sewa_berakhir', '>=', $now)
+                                                ->whereDate('sewa_berakhir', '<=', $oneDayFromNow);
+                                        });
+                                })
+                                ->whereHas('transaction', function ($query) {
+                                    $query->where(function ($q) {
+                                        $q->whereNull('is_dikosongkan')
+                                        ->orWhere('is_dikosongkan', false);
+                                    });
+                                })
+                                ->count();
+
+                        $totalNotif = $unpaidCount + $overdueCount;
                     @endphp
-                    
-                    @if($unpaidCount > 0)
+
+
+                    @if($totalNotif > 0)
                         <div class="absolute -top-1 -right-1 flex items-center justify-center">
                             <span class="animate-ping absolute inline-flex h-3 w-3 rounded-full bg-red-400 opacity-75"></span>
                             <span class="relative inline-flex h-2.5 w-2.5 rounded-full bg-red-500 text-[8px] text-white font-bold items-center justify-center">
-                                {{ $unpaidCount > 9 ? '9+' : $unpaidCount }}
+                                {{ $totalNotif > 10 ? '10+' : $totalNotif }}
                             </span>
                         </div>
-                    @endif
-                    
-                    @if(request()->routeIs('customer.tagihan*'))
-                        <div class="absolute -top-1 -right-1 w-2 h-2 bg-blue-500 rounded-full animate-pulse"></div>
                     @endif
                 </a>
 
