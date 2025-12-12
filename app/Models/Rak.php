@@ -150,4 +150,19 @@ class Rak extends Model
 
         return $count;
     }
+
+    // app/Models/Rak.php
+
+    public function hasPendingTransaction()
+    {
+        return $this->hasOne(Transaction::class, 'rak_id')
+            ->where('transaction_status', 'pending')
+            ->exists();
+    }
+
+    // Atau buat accessor untuk langsung dipakai di view
+    public function getIsLockedAttribute()
+    {
+        return $this->status !== 'tersedia' || $this->hasPendingTransaction();
+    }
 }

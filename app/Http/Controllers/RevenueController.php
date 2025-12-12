@@ -171,17 +171,7 @@ class RevenueController extends Controller
             'yearlyTotal',
             'yearlyTransactions',
             'availableYears',
-            'chartData',
-            'transaksiLabels',
-            'transaksiData',
-            'pendapatanLabels',
-            'pendapatanData',
-            'rakTerisi',
-            'rakMaintenance',
-            'rakTersedia',
-            'statusSuccess',
-            'statusPending',
-            'statusFailed'
+            'chartData'
         ));
     }
 
@@ -395,7 +385,7 @@ class RevenueController extends Controller
             'chartData'
         ))->setPaper('a4', 'portrait');
 
-        $filename = $month
+        $filename = $month 
             ? "laporan-pendapatan-{$year}-{$month}.pdf"
             : "laporan-pendapatan-{$year}.pdf";
 
@@ -670,7 +660,6 @@ class RevenueController extends Controller
             'totalRepeatCustomers'
         ));
     }
-
     public function sync()
     {
         RevenueService::syncAllRevenues();

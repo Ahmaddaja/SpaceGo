@@ -1,14 +1,17 @@
+{{-- resources/views/admin/raks/partials/form-actions.blade.php --}}
+
 <div class="card border-0 shadow-sm">
     <div class="card-body">
         <button type="submit" class="btn btn-primary btn-block">
             <i class="fas fa-save mr-2"></i>{{ $submitText }}
         </button>
-        <a href="{{ route('raks.index') }}" class="btn btn-secondary btn-block">
+
+        <button type="button" class="btn btn-secondary btn-block" id="cancel-button" onclick="handleCancelWithCleanup()">
             <i class="fas fa-times mr-2"></i>Batal
-        </a>
+        </button>
+
         @if (isset($rak))
             <hr>
-            <!-- PENTING: Tambahkan type="button" untuk mencegah submit form -->
             <button type="button" class="btn btn-danger btn-block" onclick="confirmDelete({{ $rak->id }})">
                 <i class="fas fa-trash mr-2"></i>Hapus Rak
             </button>
@@ -27,3 +30,5 @@
         </script>
     @endpush
 @endif
+
+@include('admin.raks.partials.scripts')

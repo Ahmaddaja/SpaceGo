@@ -145,42 +145,50 @@
         const loadingOverlay = document.getElementById('loading-overlay');
         if (loadingOverlay) loadingOverlay.classList.remove('hidden');
 
-        if (typeof snap === 'undefined') {
-            showAlert('Sistem pembayaran sedang loading. Coba beberapa saat lagi.', 'warning');
-            if (loadingOverlay) loadingOverlay.classList.add('hidden');
-            isPaymentProcessing = false;
-            return;
-        }
-
-        console.log('💳 Opening Midtrans Snap...');
-
-        snap.pay(snapToken, {
-            onSuccess: function(result) {
-                console.log('✅ Payment Success:', result);
-                if (loadingOverlay) loadingOverlay.classList.add('hidden');
+        // Tunggu hingga Snap tersedia
+        const checkSnapLoaded = setInterval(() => {
+            if (typeof snap !== 'undefined') {
+                clearInterval(checkSnapLoaded);
+                console.log('💳 Opening Midtrans Snap...');
                 
-                // GUNAKAN LOGIC KODE LAMA - Update status pakai fetch
-                updateTransactionStatus(result.order_id, 'settlement', result.payment_type, transactionId);
-            },
-            onPending: function(result) {
-                console.log('⏳ Payment Pending:', result);
-                if (loadingOverlay) loadingOverlay.classList.add('hidden');
-                isPaymentProcessing = false;
-                showAlert('Pembayaran Anda dalam proses pending. Mohon selesaikan pembayaran dalam waktu 24 jam.', 'warning', true, "{{ route('customer.tagihan') }}");
-            },
-            onError: function(result) {
-                console.error('❌ Payment Error:', result);
-                if (loadingOverlay) loadingOverlay.classList.add('hidden');
-                isPaymentProcessing = false;
-                showAlert('Pembayaran gagal! Silakan coba lagi atau hubungi customer service.', 'error');
-            },
-            onClose: function() {
-                console.log('🚪 Payment popup closed');
-                if (loadingOverlay) loadingOverlay.classList.add('hidden');
-                isPaymentProcessing = false;
-                showAlert('Anda menutup popup pembayaran. Silakan klik "Bayar Sekarang" lagi untuk melanjutkan.', 'info');
+                snap.pay(snapToken, {
+                    onSuccess: function(result) {
+                        console.log('✅ Payment Success:', result);
+                        if (loadingOverlay) loadingOverlay.classList.add('hidden');
+                        // GUNAKAN LOGIC KODE LAMA - Update status pakai fetch
+                        updateTransactionStatus(result.order_id, 'settlement', result.payment_type, transactionId);
+                    },
+                    onPending: function(result) {
+                        console.log('⏳ Payment Pending:', result);
+                        if (loadingOverlay) loadingOverlay.classList.add('hidden');
+                        isPaymentProcessing = false;
+                        showAlert('Pembayaran Anda dalam proses pending. Mohon selesaikan pembayaran dalam waktu 24 jam.', 'warning', true, "{{ route('customer.tagihan') }}");
+                    },
+                    onError: function(result) {
+                        console.error('❌ Payment Error:', result);
+                        if (loadingOverlay) loadingOverlay.classList.add('hidden');
+                        isPaymentProcessing = false;
+                        showAlert('Pembayaran gagal! Silakan coba lagi atau hubungi customer service.', 'error');
+                    },
+                    onClose: function() {
+                        console.log('🚪 Payment popup closed');
+                        if (loadingOverlay) loadingOverlay.classList.add('hidden');
+                        isPaymentProcessing = false;
+                        showAlert('Anda menutup popup pembayaran. Silakan klik "Bayar Sekarang" lagi untuk melanjutkan.', 'info');
+                    }
+                });
             }
-        });
+        }, 100);
+
+        // Timeout jika Snap tidak load
+        setTimeout(() => {
+            if (typeof snap === 'undefined') {
+                clearInterval(checkSnapLoaded);
+                showAlert('Sistem pembayaran sedang loading. Coba beberapa saat lagi.', 'warning');
+                if (loadingOverlay) loadingOverlay.classList.add('hidden');
+                isPaymentProcessing = false;
+            }
+        }, 5000);
     }
 
     // FUNCTION DARI KODE LAMA - YANG BEKERJA DENGAN BAIK
@@ -336,6 +344,693 @@
     @if (session('info'))
         showAlert('{{ session("info") }}', 'info');
     @endif
+
+    // =========================================
+    // ======= DETAIL TAGIHAN FUNCTIONS =======
+    // =========================================
+    
+    // FUNGSI: Lihat Detail Tagihan (Pending)
+    function viewDetail(tagihanId) {
+        Swal.fire({
+            title: '<div class="flex flex-col items-center">' +
+                '<div class="w-16 h-16 rounded-full border-4 border-blue-200 border-t-blue-600 animate-spin mb-4"></div>' +
+                '<h3 class="text-xl font-semibold text-gray-800">Memuat Detail</h3>' +
+                '</div>',
+            html: '<p class="text-gray-600 mt-2">Sedang mengambil data tagihan...</p>',
+            allowOutsideClick: false,
+            allowEscapeKey: false,
+            showConfirmButton: false,
+            showCancelButton: false,
+            showCloseButton: false
+        });
+
+        fetch(`/customer/tagihan/${tagihanId}/detail`, {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            Swal.close();
+            
+            if (data.success) {
+                const tagihan = data.tagihan;
+                
+                let statusColor = 'gray';
+                let statusIcon = 'fa-clock';
+                if (tagihan.status === 'pending') {
+                    statusColor = 'yellow';
+                    statusIcon = 'fa-clock';
+                } else if (tagihan.status === 'settlement') {
+                    statusColor = 'green';
+                    statusIcon = 'fa-check-circle';
+                } else if (tagihan.status === 'cancel') {
+                    statusColor = 'red';
+                    statusIcon = 'fa-ban';
+                } else if (tagihan.status === 'expired') {
+                    statusColor = 'orange';
+                    statusIcon = 'fa-hourglass-end';
+                }
+                
+                Swal.fire({
+                    title: '<div class="flex items-center gap-4">' +
+                        '<div class="w-14 h-14 rounded-xl bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center shadow-lg">' +
+                        '<i class="fas fa-file-invoice-dollar text-white text-2xl"></i>' +
+                        '</div>' +
+                        '<div class="text-left">' +
+                        '<h2 class="text-2xl font-bold text-gray-800">Detail Tagihan</h2>' +
+                        '<p class="text-gray-600 text-sm mt-1">Informasi lengkap tagihan sewa rak</p>' +
+                        '</div>' +
+                        '</div>',
+                    html: `
+                        <div class="text-left space-y-5 mt-6">
+                            <div class="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl p-5 border border-blue-100">
+                                <div class="flex items-center justify-between">
+                                    <div>
+                                        <p class="text-sm text-gray-600 mb-1">Kode Tagihan</p>
+                                        <p class="text-xl font-bold text-gray-800 font-mono tracking-wider">${tagihan.tagihan_code}</p>
+                                    </div>
+                                    <div class="text-right">
+                                        <p class="text-sm text-gray-600 mb-1">Status</p>
+                                        <span class="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-${statusColor}-100 text-${statusColor}-800 font-semibold text-sm">
+                                            <i class="fas ${statusIcon}"></i>
+                                            ${tagihan.status}
+                                        </span>
+                                    </div>
+                                </div>
+                                ${tagihan.is_renewal ? `
+                                <div class="mt-4 inline-flex items-center gap-2 px-3 py-2 bg-gradient-to-r from-purple-100 to-pink-100 rounded-lg border border-purple-200">
+                                    <i class="fas fa-redo text-purple-600"></i>
+                                    <span class="text-sm font-medium text-purple-700">Tagihan Perpanjangan</span>
+                                </div>
+                                ` : ''}
+                            </div>
+                            
+                            <div class="grid grid-cols-2 gap-4">
+                                <div class="bg-white rounded-xl p-4 border border-gray-200 shadow-sm">
+                                    <div class="flex items-center gap-3">
+                                        <div class="w-10 h-10 rounded-lg bg-blue-100 flex items-center justify-center">
+                                            <i class="fas fa-pallet text-blue-600"></i>
+                                        </div>
+                                        <div>
+                                            <p class="text-sm text-gray-500">Rak</p>
+                                            <p class="font-semibold text-gray-800">${tagihan.rak_nama}</p>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="bg-white rounded-xl p-4 border border-gray-200 shadow-sm">
+                                    <div class="flex items-center gap-3">
+                                        <div class="w-10 h-10 rounded-lg bg-green-100 flex items-center justify-center">
+                                            <i class="fas fa-receipt text-green-600"></i>
+                                        </div>
+                                        <div>
+                                            <p class="text-sm text-gray-500">Order ID</p>
+                                            <p class="font-semibold text-gray-800 font-mono text-xs">${tagihan.order_id}</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="bg-gradient-to-r from-gray-50 to-slate-50 rounded-xl p-5 border border-gray-200">
+                                <h3 class="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
+                                    <i class="fas fa-money-bill-wave text-green-600"></i>
+                                    Rincian Biaya
+                                </h3>
+                                <div class="space-y-3">
+                                    <div class="flex justify-between items-center py-2 border-b border-gray-100">
+                                        <span class="text-gray-600">Harga Sewa</span>
+                                        <span class="font-semibold text-gray-800">${tagihan.harga_sewa}</span>
+                                    </div>
+                                    ${tagihan.penalty_amount > 0 ? `
+                                    <div class="flex justify-between items-center py-2 border-b border-gray-100">
+                                        <span class="text-gray-600 flex items-center gap-2">
+                                            <i class="fas fa-exclamation-circle text-red-500"></i>
+                                            Denda
+                                        </span>
+                                        <span class="font-bold text-red-600">${tagihan.penalty}</span>
+                                    </div>
+                                    ` : ''}
+                                    <div class="flex justify-between items-center pt-3">
+                                        <span class="text-lg font-bold text-gray-800">Total Tagihan</span>
+                                        <span class="text-2xl font-bold text-green-600">${tagihan.total_tagihan}</span>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="bg-gradient-to-r from-amber-50 to-orange-50 rounded-xl p-5 border border-amber-200">
+                                <h3 class="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
+                                    <i class="fas fa-history text-amber-600"></i>
+                                    Timeline
+                                </h3>
+                                <div class="space-y-4">
+                                    <div class="flex items-start gap-3">
+                                        <div class="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center flex-shrink-0 mt-1">
+                                            <i class="fas fa-plus-circle text-blue-600 text-sm"></i>
+                                        </div>
+                                        <div>
+                                            <p class="text-sm text-gray-500">Dibuat</p>
+                                            <p class="font-semibold text-gray-800">${tagihan.created_at}</p>
+                                        </div>
+                                    </div>
+                                    <div class="flex items-start gap-3">
+                                        <div class="w-8 h-8 rounded-full bg-amber-100 flex items-center justify-center flex-shrink-0 mt-1">
+                                            <i class="fas fa-clock text-amber-600 text-sm"></i>
+                                        </div>
+                                        <div>
+                                            <p class="text-sm text-gray-500">Batas Pembayaran</p>
+                                            <p class="font-semibold text-orange-600">${tagihan.expired_at}</p>
+                                            <p class="text-xs text-gray-600 mt-1">
+                                                <i class="fas fa-hourglass-half"></i>
+                                                ${tagihan.remaining_time}
+                                            </p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="flex justify-center mt-6 pt-4 border-t border-gray-100">
+                                <button onclick="Swal.close()" 
+                                        class="group relative px-8 py-3.5 bg-gradient-to-r from-blue-600 to-blue-700 text-white font-medium rounded-xl transition-all duration-300 flex items-center justify-center gap-3 hover:shadow-xl hover:-translate-y-0.5 min-w-[180px]">
+                                    <i class="fas fa-times group-hover:rotate-90 transition-transform duration-300 text-lg"></i>
+                                    <span class="text-base font-semibold">Tutup</span>
+                                </button>
+                            </div>
+                        </div>
+                    `,
+                    width: 700,
+                    showConfirmButton: false,
+                    showCloseButton: true,
+                    customClass: {
+                        popup: 'rounded-2xl shadow-2xl',
+                        closeButton: 'w-10 h-10 rounded-lg hover:bg-gray-100'
+                    }
+                });
+            } else {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Gagal Memuat',
+                    text: data.message || 'Tidak dapat memuat detail tagihan',
+                    confirmButtonColor: '#3b82f6'
+                });
+            }
+        })
+        .catch(error => {
+            console.error('Error fetching detail:', error);
+            Swal.close();
+            Swal.fire({
+                icon: 'error',
+                title: 'Koneksi Error',
+                text: 'Terjadi kesalahan saat memuat detail',
+                confirmButtonColor: '#f59e0b'
+            });
+        });
+    }
+
+    // FUNGSI: Batalkan Tagihan
+    function cancelPayment(tagihanId, tagihanCode) {
+        Swal.fire({
+            title: '<div class="flex items-center gap-3">' +
+                '<div class="w-12 h-12 rounded-full bg-red-100 flex items-center justify-center">' +
+                '<i class="fas fa-ban text-red-600 text-xl"></i>' +
+                '</div>' +
+                '<div class="text-left">' +
+                '<h3 class="text-xl font-bold text-gray-800">Batalkan Tagihan?</h3>' +
+                '<p class="text-gray-600 text-sm mt-1">Anda akan membatalkan tagihan berikut</p>' +
+                '</div>' +
+                '</div>',
+            html: `
+                <div class="text-left space-y-4 mt-4">
+                    <div class="bg-gray-50 rounded-lg p-4">
+                        <div class="flex items-center gap-3">
+                            <div class="w-10 h-10 rounded-lg bg-blue-100 flex items-center justify-center">
+                                <i class="fas fa-file-invoice-dollar text-blue-600"></i>
+                            </div>
+                            <div>
+                                <p class="text-sm text-gray-500">Kode Tagihan</p>
+                                <p class="font-semibold text-gray-800 font-mono">${tagihanCode}</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="bg-red-50 border border-red-100 rounded-lg p-4">
+                        <div class="flex items-start gap-3">
+                            <i class="fas fa-exclamation-circle text-red-600 text-lg mt-0.5"></i>
+                            <div>
+                                <p class="font-medium text-red-800">Perhatian</p>
+                                <p class="text-sm text-red-600 mt-1">
+                                    Tagihan yang dibatalkan tidak dapat dikembalikan. 
+                                    Rak akan tersedia kembali untuk disewa.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `,
+            showCancelButton: true,
+            confirmButtonText: '<i class="fas fa-ban mr-2"></i>Ya, Batalkan',
+            cancelButtonText: '<i class="fas fa-times mr-2"></i>Tidak, Kembali',
+            confirmButtonColor: '#dc2626',
+            cancelButtonColor: '#6b7280',
+            reverseButtons: true
+        }).then((result) => {
+            if (result.isConfirmed) {
+                Swal.fire({
+                    title: 'Memproses...',
+                    html: 'Mohon tunggu sebentar',
+                    allowOutsideClick: false,
+                    showConfirmButton: false,
+                    willOpen: () => Swal.showLoading()
+                });
+
+                fetch(`/customer/tagihan/${tagihanId}/cancel`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+                    }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        // Success dengan animasi
+                        Swal.fire({
+                            title: '<div class="flex flex-col items-center">' +
+                                '<div class="w-20 h-20 rounded-full bg-green-100 flex items-center justify-center mb-4 animate-bounce">' +
+                                '<i class="fas fa-check-circle text-green-600 text-3xl"></i>' +
+                                '</div>' +
+                                '<h3 class="text-2xl font-bold text-gray-800">Berhasil!</h3>' +
+                                '</div>',
+                            html: `
+                                <div class="text-center space-y-3">
+                                    <p class="text-gray-600 text-lg">${data.message || 'Tagihan berhasil dibatalkan'}</p>
+                                    <div class="bg-green-50 rounded-lg p-4 mt-4">
+                                        <p class="text-sm text-green-700">
+                                            <i class="fas fa-info-circle mr-2"></i>
+                                            Halaman akan dimuat ulang dalam <span class="font-bold countdown">3</span> detik
+                                        </p>
+                                    </div>
+                                </div>
+                            `,
+                            showConfirmButton: false,
+                            showCancelButton: false,
+                            timer: 3000,
+                            timerProgressBar: true,
+                            willClose: () => {
+                                window.location.reload();
+                            },
+                            didOpen: () => {
+                                // Countdown timer
+                                const timer = Swal.getPopup().querySelector('.countdown');
+                                let countdown = 3;
+                                const interval = setInterval(() => {
+                                    countdown--;
+                                    timer.textContent = countdown;
+                                    if (countdown <= 0) {
+                                        clearInterval(interval);
+                                    }
+                                }, 1000);
+                            }
+                        });
+                    } else {
+                        // Error dengan desain modern
+                        Swal.fire({
+                            title: '<div class="flex flex-col items-center">' +
+                                '<div class="w-20 h-20 rounded-full bg-red-100 flex items-center justify-center mb-4">' +
+                                '<i class="fas fa-times-circle text-red-600 text-3xl"></i>' +
+                                '</div>' +
+                                '<h3 class="text-2xl font-bold text-gray-800">Gagal</h3>' +
+                                '</div>',
+                            html: `
+                                <div class="text-center space-y-3">
+                                    <p class="text-gray-600 text-lg">${data.message || 'Tidak dapat membatalkan tagihan'}</p>
+                                    <div class="bg-red-50 rounded-lg p-4 mt-4">
+                                        <p class="text-sm text-red-700">
+                                            <i class="fas fa-exclamation-triangle mr-2"></i>
+                                            Silakan coba beberapa saat lagi atau hubungi support
+                                        </p>
+                                    </div>
+                                </div>
+                            `,
+                            confirmButtonText: '<div class="flex items-center justify-center gap-2">' +
+                                            '<i class="fas fa-redo"></i>' +
+                                            '<span>Coba Lagi</span>' +
+                                            '</div>',
+                            confirmButtonColor: '#dc2626',
+                            cancelButtonText: '<div class="flex items-center justify-center gap-2">' +
+                                            '<i class="fas fa-times"></i>' +
+                                            '<span>Tutup</span>' +
+                                            '</div>',
+                            cancelButtonColor: '#6b7280',
+                            showCancelButton: true,
+                            reverseButtons: true
+                        }).then((result) => {
+                            if (result.isConfirmed) {
+                                cancelPayment(tagihanId, tagihanCode);
+                            }
+                        });
+                    }
+                })
+                .catch(error => {
+                    console.error('Error canceling payment:', error);
+                    Swal.fire({
+                        title: '<div class="flex flex-col items-center">' +
+                            '<div class="w-20 h-20 rounded-full bg-yellow-100 flex items-center justify-center mb-4">' +
+                            '<i class="fas fa-wifi-slash text-yellow-600 text-3xl"></i>' +
+                            '</div>' +
+                            '<h3 class="text-2xl font-bold text-gray-800">Koneksi Error</h3>' +
+                            '</div>',
+                        html: `
+                            <div class="text-center space-y-3">
+                                <p class="text-gray-600 text-lg">Terjadi masalah koneksi jaringan</p>
+                                <div class="bg-yellow-50 rounded-lg p-4 mt-4">
+                                    <p class="text-sm text-yellow-700">
+                                        <i class="fas fa-lightbulb mr-2"></i>
+                                        Periksa koneksi internet Anda dan coba lagi
+                                    </p>
+                                </div>
+                            </div>
+                        `,
+                        confirmButtonText: '<div class="flex items-center justify-center gap-2">' +
+                                        '<i class="fas fa-redo"></i>' +
+                                        '<span>Coba Lagi</span>' +
+                                        '</div>',
+                        confirmButtonColor: '#f59e0b'
+                    }).then((result) => {
+                        if (result.isConfirmed) {
+                            cancelPayment(tagihanId, tagihanCode);
+                        }
+                    });
+                });
+            }
+        });
+    }
+
+    // =========================================
+    // ======= DETAILS EXPIRED FUNCTIONS (Single Version) =======
+    // =========================================
+    function viewExpiredDetail(tagihanId) {
+        console.log('View Expired Detail clicked, ID:', tagihanId);
+        
+        // Show elegant loading animation
+        Swal.fire({
+            title: '<div class="flex flex-col items-center">' +
+                '<div class="relative w-20 h-20 mb-4">' +
+                '<div class="absolute inset-0 rounded-full border-4 border-red-200"></div>' +
+                '<div class="absolute inset-2 rounded-full border-4 border-red-500 animate-spin border-t-transparent"></div>' +
+                '<div class="absolute inset-0 flex items-center justify-center">' +
+                '<i class="fas fa-hourglass-end text-red-500 text-xl"></i>' +
+                '</div>' +
+                '</div>' +
+                '<h3 class="text-xl font-semibold text-gray-800">Memuat Detail</h3>' +
+                '</div>',
+            html: '<p class="text-gray-600 mt-2">Mengambil data tagihan kadaluarsa...</p>',
+            allowOutsideClick: false,
+            allowEscapeKey: false,
+            showConfirmButton: false,
+            showCancelButton: false,
+            showCloseButton: false
+        });
+
+        fetch(`/customer/tagihan/${tagihanId}/detail`, {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+            }
+        })
+        .then(response => {
+            console.log('Response status:', response.status);
+            return response.json();
+        })
+        .then(data => {
+            console.log('Response data:', data);
+            Swal.close(); // Close loading dialog
+            
+            if (data.success) {
+                const tagihan = data.tagihan;
+                
+                Swal.fire({
+                    title: '<div class="flex items-center gap-4 pb-3 border-b border-red-100">' +
+                        '<div class="w-16 h-16 rounded-xl bg-gradient-to-br from-red-500 to-red-600 flex items-center justify-center shadow-lg relative">' +
+                        '<i class="fas fa-hourglass-end text-white text-2xl"></i>' +
+                        '<div class="absolute -top-2 -right-2 w-8 h-8 rounded-full bg-white border-2 border-red-500 flex items-center justify-center shadow-lg">' +
+                        '<i class="fas fa-times text-red-600 text-xs"></i>' +
+                        '</div>' +
+                        '</div>' +
+                        '<div class="text-left">' +
+                        '<h2 class="text-2xl font-bold text-gray-800">Tagihan Kadaluarsa</h2>' +
+                        '<p class="text-gray-600 text-sm mt-1">Tagihan ini telah melewati batas waktu pembayaran</p>' +
+                        '</div>' +
+                        '</div>',
+                    html: `
+                        <div class="text-left space-y-5 mt-6">
+                            <!-- Warning Banner -->
+                            <div class="bg-gradient-to-r from-red-50 to-orange-50 rounded-xl p-5 border border-red-200 shadow-sm">
+                                <div class="flex items-start gap-4">
+                                    <div class="w-12 h-12 rounded-full bg-red-100 flex items-center justify-center flex-shrink-0">
+                                        <i class="fas fa-exclamation-triangle text-red-600 text-xl"></i>
+                                    </div>
+                                    <div>
+                                        <h3 class="text-lg font-bold text-red-800 mb-1">Tagihan Telah Kadaluarsa</h3>
+                                        <p class="text-red-700 text-sm">
+                                            Pembayaran tidak dapat dilakukan karena telah melewati batas waktu. 
+                                            Rak telah tersedia kembali untuk disewa oleh pengguna lain.
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- ID Card -->
+                            <div class="bg-gradient-to-r from-gray-50 to-slate-100 rounded-xl p-5 border border-gray-200 shadow-sm">
+                                <div class="grid grid-cols-2 gap-4">
+                                    <div>
+                                        <p class="text-xs text-gray-500 uppercase tracking-wider mb-1">Kode Tagihan</p>
+                                        <p class="text-xl font-bold text-gray-800 font-mono tracking-wider">${tagihan.tagihan_code}</p>
+                                    </div>
+                                    <div class="text-right">
+                                        <p class="text-xs text-gray-500 uppercase tracking-wider mb-1">Status</p>
+                                        <span class="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-red-100 text-red-800 font-bold text-sm shadow-sm">
+                                            <i class="fas fa-hourglass-end"></i>
+                                            KADALUARSA
+                                        </span>
+                                    </div>
+                                </div>
+                                ${tagihan.is_renewal ? `
+                                <div class="mt-4 inline-flex items-center gap-2 px-3 py-2 bg-gradient-to-r from-purple-100 to-pink-100 rounded-lg border border-purple-200">
+                                    <i class="fas fa-redo text-purple-600"></i>
+                                    <span class="text-sm font-medium text-purple-700">Tagihan Perpanjangan</span>
+                                </div>
+                                ` : ''}
+                            </div>
+
+                            <!-- Item Details -->
+                            <div class="bg-white rounded-xl p-5 border border-gray-200 shadow-sm">
+                                <h3 class="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
+                                    <i class="fas fa-info-circle text-blue-600"></i>
+                                    Informasi Rak
+                                </h3>
+                                <div class="grid grid-cols-2 gap-4">
+                                    <div class="space-y-2">
+                                        <div>
+                                            <p class="text-xs text-gray-500">Nama Rak</p>
+                                            <p class="font-semibold text-gray-800">${tagihan.rak_nama}</p>
+                                        </div>
+                                        <div>
+                                            <p class="text-xs text-gray-500">Order ID</p>
+                                            <p class="font-mono text-xs text-gray-600 bg-gray-50 p-2 rounded">${tagihan.order_id}</p>
+                                        </div>
+                                    </div>
+                                    <div class="space-y-2">
+                                        <div>
+                                            <p class="text-xs text-gray-500">Dibuat</p>
+                                            <p class="font-semibold text-gray-800">${tagihan.created_at}</p>
+                                        </div>
+                                        <div>
+                                            <p class="text-xs text-gray-500">Kadaluarsa</p>
+                                            <p class="font-semibold text-red-600">${tagihan.expired_at}</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Pricing Details -->
+                            <div class="bg-gradient-to-r from-gray-50 to-slate-50 rounded-xl p-5 border border-gray-200 shadow-sm">
+                                <h3 class="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
+                                    <i class="fas fa-money-bill-wave text-green-600"></i>
+                                    Ringkasan Pembayaran
+                                </h3>
+                                <div class="space-y-3">
+                                    <div class="flex justify-between items-center py-2 border-b border-gray-100">
+                                        <span class="text-gray-600">Harga Sewa</span>
+                                        <span class="font-semibold text-gray-800">${tagihan.harga_sewa}</span>
+                                    </div>
+                                    ${tagihan.penalty_amount > 0 ? `
+                                    <div class="flex justify-between items-center py-2 border-b border-gray-100">
+                                        <span class="text-gray-600 flex items-center gap-2">
+                                            <i class="fas fa-exclamation-circle text-red-500"></i>
+                                            Denda
+                                        </span>
+                                        <span class="font-bold text-red-600">${tagihan.penalty}</span>
+                                    </div>
+                                    ` : ''}
+                                    <div class="flex justify-between items-center pt-3">
+                                        <span class="text-lg font-bold text-gray-800">Total Tagihan</span>
+                                        <span class="text-2xl font-bold text-red-600">${tagihan.total_tagihan}</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Timeline -->
+                            <div class="relative">
+                                <h3 class="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
+                                    <i class="fas fa-history text-amber-600"></i>
+                                    Timeline
+                                </h3>
+                                <div class="relative">
+                                    <!-- Timeline Line -->
+                                    <div class="absolute left-4 top-0 bottom-0 w-0.5 bg-red-200"></div>
+                                    
+                                    <div class="space-y-6 pl-10">
+                                        <!-- Created -->
+                                        <div class="relative">
+                                            <div class="absolute -left-7 top-1 w-6 h-6 rounded-full bg-blue-100 border-2 border-blue-500 flex items-center justify-center">
+                                                <i class="fas fa-plus text-blue-600 text-xs"></i>
+                                            </div>
+                                            <div>
+                                                <p class="text-xs text-gray-500">Dibuat</p>
+                                                <p class="font-semibold text-gray-800">${tagihan.created_at}</p>
+                                            </div>
+                                        </div>
+                                        
+                                        <!-- Expired -->
+                                        <div class="relative">
+                                            <div class="absolute -left-7 top-1 w-6 h-6 rounded-full bg-red-100 border-2 border-red-500 flex items-center justify-center">
+                                                <i class="fas fa-times text-red-600 text-xs"></i>
+                                            </div>
+                                            <div>
+                                                <p class="text-xs text-gray-500">Kadaluarsa</p>
+                                                <p class="font-semibold text-red-600">${tagihan.expired_at}</p>
+                                                <p class="text-xs text-gray-600 mt-1">
+                                                    <i class="fas fa-clock mr-1"></i>
+                                                    ${tagihan.remaining_time}
+                                                </p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Action Buttons -->
+                            <div class="pt-2">
+                                <div class="flex justify-center">
+                                    <button onclick="Swal.close()" 
+                                            class="w-full max-w-xs py-3 bg-gray-100 hover:bg-gray-200 text-gray-800 font-medium rounded-xl transition-all duration-300 flex items-center justify-center gap-2 hover:shadow-md group">
+                                        <i class="fas fa-times group-hover:rotate-90 transition-transform duration-300"></i>
+                                        Tutup
+                                    </button>
+                                </div>
+                            </div>
+                            
+                            <!-- Note -->
+                            <div class="bg-gray-50 rounded-lg p-4 mt-4 border border-gray-200">
+                                <p class="text-xs text-gray-600 flex items-start gap-2">
+                                    <i class="fas fa-lightbulb text-amber-500 mt-0.5"></i>
+                                    <span>
+                                        <strong>Tips:</strong> Untuk menyewa rak yang sama, silakan buat order baru melalui halaman daftar rak.
+                                        Rak ini sudah tersedia kembali untuk disewa.
+                                    </span>
+                                </p>
+                            </div>
+                        </div>
+                    `,
+                    width: 700,
+                    showConfirmButton: false,
+                    showCancelButton: false,
+                    showCloseButton: true,
+                    customClass: {
+                        popup: 'rounded-2xl shadow-2xl border border-red-100',
+                        closeButton: 'w-10 h-10 rounded-lg hover:bg-red-50 flex items-center justify-center text-xl transition-colors hover:text-red-600'
+                    }
+                });
+            } else {
+                // Error modal
+                Swal.fire({
+                    title: '<div class="flex flex-col items-center">' +
+                        '<div class="w-20 h-20 rounded-full bg-red-100 flex items-center justify-center mb-4 shadow-lg">' +
+                        '<i class="fas fa-exclamation-triangle text-red-600 text-3xl"></i>' +
+                        '</div>' +
+                        '<h3 class="text-2xl font-bold text-gray-800">Gagal Memuat</h3>' +
+                        '</div>',
+                    html: `
+                        <div class="text-center space-y-4">
+                            <p class="text-gray-600 text-lg">${data.message || 'Tidak dapat memuat detail tagihan'}</p>
+                            <div class="bg-gradient-to-r from-red-50 to-orange-50 rounded-xl p-4 border border-red-100">
+                                <p class="text-sm text-red-800">
+                                    <i class="fas fa-info-circle mr-2"></i>
+                                    Pastikan tagihan masih tersedia atau coba beberapa saat lagi
+                                </p>
+                            </div>
+                        </div>
+                    `,
+                    confirmButtonText: '<div class="flex items-center justify-center gap-2">' +
+                                    '<i class="fas fa-redo"></i>' +
+                                    '<span>Coba Lagi</span>' +
+                                    '</div>',
+                    confirmButtonColor: '#dc2626',
+                    showCancelButton: true,
+                    cancelButtonText: '<div class="flex items-center justify-center gap-2">' +
+                                    '<i class="fas fa-times"></i>' +
+                                    '<span>Tutup</span>' +
+                                    '</div>',
+                    cancelButtonColor: '#6b7280',
+                    reverseButtons: true
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        viewExpiredDetail(tagihanId);
+                    }
+                });
+            }
+        })
+        .catch(error => {
+            console.error('Error fetching detail:', error);
+            Swal.close();
+            
+            Swal.fire({
+                title: '<div class="flex flex-col items-center">' +
+                    '<div class="w-20 h-20 rounded-full bg-red-100 flex items-center justify-center mb-4">' +
+                    '<i class="fas fa-wifi-slash text-red-600 text-3xl"></i>' +
+                    '</div>' +
+                    '<h3 class="text-2xl font-bold text-gray-800">Koneksi Error</h3>' +
+                    '</div>',
+                html: `
+                    <div class="text-center space-y-4">
+                        <p class="text-gray-600 text-lg">Gagal terhubung ke server</p>
+                        <div class="bg-red-50 rounded-xl p-4 border border-red-200">
+                            <p class="text-sm text-red-800">
+                                <i class="fas fa-server mr-2"></i>
+                                Periksa koneksi internet Anda dan coba lagi
+                            </p>
+                            <p class="text-xs text-red-700 mt-2 font-mono bg-white p-2 rounded">
+                                ${error.message || 'Unknown error'}
+                            </p>
+                        </div>
+                    </div>
+                `,
+                confirmButtonText: '<div class="flex items-center justify-center gap-2">' +
+                                '<i class="fas fa-redo"></i>' +
+                                '<span>Coba Lagi</span>' +
+                                '</div>',
+                confirmButtonColor: '#dc2626'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    viewExpiredDetail(tagihanId);
+                }
+            });
+        });
+    }
 
     // Debug log on page load
     console.log('🚀 Tagihan script loaded successfully');
