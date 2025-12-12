@@ -46,17 +46,75 @@
 
 <script>
     // =========================================
-    // ======= ALERT MODAL FUNCTIONS =======
+    // ======= ALERT MODAL FUNCTIONS (FIXED) =======
     // =========================================
     function showAlert(message, type = 'info', autoRedirect = false, redirectUrl = null) {
+        console.log('📢 showAlert called:', { message, type, autoRedirect, redirectUrl });
+
         const alertTypes = {
-            success: { icon: 'fas fa-check-circle', class: 'alert-modal-success', title: 'Sukses!', buttonText: 'Lanjutkan' },
-            error: { icon: 'fas fa-exclamation-triangle', class: 'alert-modal-error', title: 'Error!', buttonText: 'Coba Lagi' },
-            warning: { icon: 'fas fa-bolt', class: 'alert-modal-warning', title: 'Peringatan!', buttonText: 'Mengerti' },
-            info: { icon: 'fas fa-info-circle', class: 'alert-modal-info', title: 'Informasi', buttonText: 'OK' }
+            success: { 
+                icon: 'fas fa-check-circle', 
+                class: 'alert-modal-success', 
+                title: 'Sukses!', 
+                buttonText: 'OK',
+                showCloseButton: true
+            },
+            error: { 
+                icon: 'fas fa-exclamation-triangle', 
+                class: 'alert-modal-error', 
+                title: 'Error!', 
+                buttonText: 'Coba Lagi',
+                showCloseButton: false
+            },
+            warning: { 
+                icon: 'fas fa-bolt', 
+                class: 'alert-modal-warning', 
+                title: 'Peringatan!', 
+                buttonText: 'Mengerti',
+                showCloseButton: false
+            },
+            info: { 
+                icon: 'fas fa-info-circle', 
+                class: 'alert-modal-info', 
+                title: 'Informasi', 
+                buttonText: 'OK',
+                showCloseButton: false
+            }
         };
+        
         const alertConfig = alertTypes[type] || alertTypes.info;
         const alertId = 'alert-' + Date.now();
+        
+        const shouldAutoRedirect = !!autoRedirect;
+        const safeRedirectUrl = redirectUrl || null;
+        const showCountdown = shouldAutoRedirect && safeRedirectUrl;
+        
+        console.log('🔧 Alert config:', { shouldAutoRedirect, safeRedirectUrl, showCountdown });
+        
+        let footerHTML = '';
+        if (alertConfig.showCloseButton) {
+            footerHTML = `
+                <div class="alert-modal-footer">
+                    <button type="button" onclick="closeAlert('${alertId}')" class="alert-modal-button alert-modal-button-secondary">
+                        <i class="fas fa-times mr-2"></i>Tutup
+                    </button>
+                    <button type="button" onclick="handleAlertAction('${alertId}', ${shouldAutoRedirect}, '${safeRedirectUrl || ''}')" 
+                            class="alert-modal-button alert-modal-button-primary">
+                        <i class="fas fa-check mr-2"></i>${alertConfig.buttonText}
+                    </button>
+                </div>
+            `;
+        } else {
+            footerHTML = `
+                <div class="alert-modal-footer" style="justify-content: center;">
+                    <button type="button" onclick="handleAlertAction('${alertId}', ${shouldAutoRedirect}, '${safeRedirectUrl || ''}')" 
+                            class="alert-modal-button alert-modal-button-primary" style="min-width: 140px;">
+                        <i class="fas fa-check mr-2"></i>${alertConfig.buttonText}
+                    </button>
+                </div>
+            `;
+        }
+        
         const alertHTML = `
             <div id="${alertId}" class="alert-modal ${alertConfig.class}">
                 <div class="alert-modal-content">
@@ -66,61 +124,127 @@
                     </div>
                     <div class="alert-modal-body">
                         <div class="alert-modal-message">${message}</div>
-                        ${autoRedirect ? `
+                        ${showCountdown ? `
                             <div class="alert-countdown">
                                 <i class="fas fa-clock"></i>
                                 Akan dialihkan dalam 
-                                <span class="countdown-number" id="countdown-${alertId}">3</span> 
+                                <span class="countdown-number" id="countdown-number-${alertId}">5</span> 
                                 detik
                             </div>
                         ` : ''}
                     </div>
-                    <div class="alert-modal-footer">
-                        <button onclick="closeAlert('${alertId}')" class="alert-modal-button alert-modal-button-secondary">
-                            <i class="fas fa-times mr-2"></i>Tutup
-                        </button>
-                        <button onclick="handleAlertAction('${alertId}', ${autoRedirect}, '${redirectUrl}')" 
-                                class="alert-modal-button alert-modal-button-primary">
-                            <i class="fas fa-check mr-2"></i>${alertConfig.buttonText}
-                        </button>
-                    </div>
+                    ${footerHTML}
                 </div>
             </div>
         `;
+        
         document.getElementById('alert-container').insertAdjacentHTML('beforeend', alertHTML);
-        const alertElement = document.getElementById(alertId);
-        setTimeout(() => alertElement.classList.add('show'), 100);
-        if (autoRedirect) startCountdown(alertId, redirectUrl);
+        
+        // Tampilkan modal
+        setTimeout(() => {
+            document.getElementById(alertId).classList.add('show');
+        }, 50);
+        
+        // ⚠️ PERHATIAN: Ini yang penting! Start countdown JIKA diperlukan
+        if (showCountdown) {
+            console.log('⏱️ Starting countdown for:', alertId);
+            startCountdown(alertId, safeRedirectUrl);
+        }
+        
         return alertId;
     }
 
-    function startCountdown(alertId, redirectUrl) {
-        let countdown = 3;
-        const countdownElement = document.getElementById(`countdown-${alertId}`);
-        const countdownInterval = setInterval(() => {
-            countdown--;
-            if (countdownElement) countdownElement.textContent = countdown;
-            if (countdown <= 0) {
-                clearInterval(countdownInterval);
-                handleAlertAction(alertId, true, redirectUrl);
+    // ✅ SIMPLE & WORKING COUNTDOWN FUNCTION
+    // Ganti teks countdown
+    const countdownText = "Akan dialihkan dalam {detik} detik...";
+
+    // Pastikan countdown function berjalan
+    function startCountdown(seconds, redirectUrl) {
+        let counter = seconds;
+        const countdownElement = document.getElementById('countdown-timer');
+        
+        const interval = setInterval(() => {
+            countdownElement.textContent = `Akan dialihkan dalam ${counter} detik...`;
+            counter--;
+            
+            if (counter < 0) {
+                clearInterval(interval);
+                window.location.href = redirectUrl;
             }
         }, 1000);
-        document.getElementById(alertId).dataset.countdownInterval = countdownInterval;
+    }
+
+    function performRedirect(alertId) {
+        const alertElement = document.getElementById(alertId);
+        if (!alertElement) return;
+        
+        const redirectUrl = alertElement.dataset.redirectUrl;
+        
+        // Tutup alert dulu
+        alertElement.classList.remove('show');
+        
+        // Tunggu animasi selesai, baru redirect
+        setTimeout(() => {
+            if (alertElement.parentNode) {
+                alertElement.parentNode.removeChild(alertElement);
+            }
+            
+            if (redirectUrl && redirectUrl !== 'null' && redirectUrl !== '') {
+                console.log('🔄 Redirecting to:', redirectUrl);
+                window.location.href = redirectUrl;
+            }
+        }, 400);
     }
 
     function handleAlertAction(alertId, autoRedirect = false, redirectUrl = null) {
-        closeAlert(alertId);
-        if (autoRedirect && redirectUrl && redirectUrl !== 'null') {
-            setTimeout(() => window.location.href = redirectUrl, 300);
+        console.log('🟢 Button clicked:', alertId, autoRedirect, redirectUrl);
+        
+        const alertElement = document.getElementById(alertId);
+        if (!alertElement) return;
+        
+        // Hentikan countdown jika ada
+        if (alertElement.dataset.countdownInterval) {
+            clearInterval(alertElement.dataset.countdownInterval);
+            console.log('🛑 Countdown stopped');
+        }
+        
+        // Jika autoRedirect, redirect setelah alert ditutup
+        if (autoRedirect && redirectUrl && redirectUrl !== 'null' && redirectUrl !== '') {
+            alertElement.classList.remove('show');
+            setTimeout(() => {
+                if (alertElement.parentNode) {
+                    alertElement.parentNode.removeChild(alertElement);
+                }
+                console.log('🔄 Redirecting to:', redirectUrl);
+                window.location.href = redirectUrl;
+            }, 400);
+        } else {
+            // Hanya tutup alert
+            closeAlert(alertId);
         }
     }
 
     function closeAlert(alertId) {
+        console.log('❌ Close button clicked:', alertId);
+        
         const alertElement = document.getElementById(alertId);
         if (!alertElement) return;
-        if (alertElement.dataset.countdownInterval) clearInterval(alertElement.dataset.countdownInterval);
+        
+        // Hentikan countdown jika ada
+        if (alertElement.dataset.countdownInterval) {
+            clearInterval(alertElement.dataset.countdownInterval);
+            console.log('🛑 Countdown stopped');
+        }
+        
+        // Tutup alert
         alertElement.classList.remove('show');
-        setTimeout(() => alertElement.parentNode?.removeChild(alertElement), 400);
+        
+        // Hapus dari DOM setelah animasi
+        setTimeout(() => {
+            if (alertElement.parentNode) {
+                alertElement.parentNode.removeChild(alertElement);
+            }
+        }, 400);
     }
 
     // =========================================

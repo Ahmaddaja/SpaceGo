@@ -24,7 +24,6 @@ class TagihanController extends Controller
         Config::$isSanitized = true;
         Config::$is3ds = true;
 
-        \Midtrans\Config::$overrideNotifUrl = route('customer.list-rak.rak');
     }
 
     public function index()
