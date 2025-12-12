@@ -72,6 +72,17 @@ class Transaction extends Model
     // ====================
     // UI Helpers
     // ====================
+    public function getStatusName()
+{
+    return match ($this->transaction_status) {
+        'capture', 'settlement' => 'Success',  
+        'pending' => 'Pending',
+        'deny' => 'Denied',
+        'expired' => 'Expired',
+        'cancel' => 'Canceled',
+        default => 'Unknown',
+    };
+}
     public function getStatusBadgeColor()
     {
         return match ($this->transaction_status) {
