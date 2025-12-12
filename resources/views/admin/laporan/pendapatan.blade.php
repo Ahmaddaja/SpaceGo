@@ -319,12 +319,19 @@
                             </select>
                         </div>
                         <div class="col-md-3">
-                            <label class="form-label">BUlan Awal</label>
+                            <label class="form-label">Bulan Awal</label>
                             <select name="month_from" class="form-control">
                                 <option value="">Pilih Bulan Awal</option>
+                                @php
+                                    $bulanNames = [
+                                        1 => 'Januari', 2 => 'Februari', 3 => 'Maret', 4 => 'April',
+                                        5 => 'Mei', 6 => 'Juni', 7 => 'Juli', 8 => 'Agustus',
+                                        9 => 'September', 10 => 'Oktober', 11 => 'November', 12 => 'Desember'
+                                    ];
+                                @endphp
                                 @for ($i = 1; $i <= 12; $i++)
                                     <option value="{{ $i }}" {{ request('month_from') == $i ? 'selected' : '' }}>
-                                        {{ \Carbon\Carbon::create(null, $i)->translatedFormat('F') }}
+                                        {{ $bulanNames[$i] }}
                                     </option>
                                 @endfor
                             </select>
@@ -333,9 +340,16 @@
                             <label class="form-label">Bulan Akhir</label>
                             <select name="month_to" class="form-control">
                                 <option value="">Pilih Bulan Akhir</option>
+                                @php
+                                    $bulanNames = [
+                                        1 => 'Januari', 2 => 'Februari', 3 => 'Maret', 4 => 'April',
+                                        5 => 'Mei', 6 => 'Juni', 7 => 'Juli', 8 => 'Agustus',
+                                        9 => 'September', 10 => 'Oktober', 11 => 'November', 12 => 'Desember'
+                                    ];
+                                @endphp
                                 @for ($i = 1; $i <= 12; $i++)
                                     <option value="{{ $i }}" {{ request('month_to') == $i ? 'selected' : '' }}>
-                                        {{ \Carbon\Carbon::create(null, $i)->translatedFormat('F') }}
+                                        {{ $bulanNames[$i] }}
                                     </option>
                                 @endfor
                             </select>

@@ -191,6 +191,10 @@ class PaymentController extends Controller
     public function updateStatus(Request $request)
     {
         try {
+            Log::info('Update Status Request Received', [
+                'request_data' => $request->all()
+            ]);
+
             $request->validate([
                 'order_id' => 'required|string',
                 'transaction_status' => 'required|string',
@@ -203,6 +207,7 @@ class PaymentController extends Controller
             $paymentType = $request->payment_type ?? null;
             $transactionId = $request->transaction_id;
 
+            // Cari transaction
             $transaction = null;
             if ($transactionId) {
                 $transaction = Transaction::where('id', $transactionId)
@@ -217,37 +222,95 @@ class PaymentController extends Controller
             }
 
             if (!$transaction) {
-                Log::error('Transaction not found for update', ['order_id' => $orderId]);
+                Log::error('Transaction not found', [
+                    'order_id' => $orderId,
+                    'transaction_id' => $transactionId,
+                    'user_id' => Auth::id()
+                ]);
+                
                 return response()->json([
                     'success' => false,
                     'message' => 'Transaksi tidak ditemukan'
                 ], 404);
             }
 
+            Log::info('Transaction found, updating...', [
+                'transaction_id' => $transaction->id,
+                'old_status' => $transaction->transaction_status,
+                'new_status' => $transactionStatus
+            ]);
+
+            // Update transaction
             $transaction->update([
                 'transaction_status' => $transactionStatus,
                 'payment_type' => $paymentType,
                 'transaction_time' => now()
             ]);
 
-            Log::info('Transaction & Tagihan Status Updated', [
+            Log::info('Transaction updated successfully', [
                 'transaction_id' => $transaction->id,
-                'status' => $transactionStatus
+                'new_status' => $transaction->transaction_status
             ]);
 
+            // ✅ SYNC KE TAGIHAN (LOGIC BARU - PENTING!)
+            $tagihan = \App\Models\Tagihan::where('transaction_id', $transaction->id)->first();
+            if ($tagihan) {
+                $tagihan->update([
+                    'status' => $transactionStatus,
+                    'paid_at' => in_array($transactionStatus, ['capture', 'settlement']) ? now() : null
+                ]);
+                
+                Log::info('Tagihan synced', [
+                    'tagihan_id' => $tagihan->id,
+                    'status' => $transactionStatus
+                ]);
+            } else {
+                Log::warning('Tagihan not found for transaction', [
+                    'transaction_id' => $transaction->id
+                ]);
+            }
+
+            // Handle success payment (update rak status, sewa dates, etc)
             if (in_array($transactionStatus, ['capture', 'settlement'])) {
+                Log::info('Handling success payment...');
                 $this->handleSuccessPayment($transaction);
             }
 
+            Log::info('Update Status Complete', [
+                'transaction_id' => $transaction->id,
+                'final_status' => $transaction->transaction_status
+            ]);
+
             return response()->json([
                 'success' => true,
-                'message' => 'Status berhasil diupdate'
+                'message' => 'Status berhasil diupdate',
+                'data' => [
+                    'transaction_id' => $transaction->id,
+                    'status' => $transaction->transaction_status,
+                    'updated_at' => $transaction->updated_at
+                ]
             ]);
-        } catch (\Exception $e) {
-            Log::error('Update Status Error: ' . $e->getMessage());
+
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            Log::error('Validation Error', [
+                'errors' => $e->errors()
+            ]);
+            
             return response()->json([
                 'success' => false,
-                'message' => 'Gagal update status'
+                'message' => 'Validation error',
+                'errors' => $e->errors()
+            ], 422);
+            
+        } catch (\Exception $e) {
+            Log::error('Update Status Error', [
+                'message' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            
+            return response()->json([
+                'success' => false,
+                'message' => 'Gagal update status: ' . $e->getMessage()
             ], 500);
         }
     }
@@ -422,138 +485,153 @@ class PaymentController extends Controller
         }
     }
 
-    public function renewal($transaction_id)
-    {
-        try {
-            $transaction = Transaction::where('id', $transaction_id)
-                ->where('user_id', Auth::id())
-                ->whereIn('transaction_status', ['settlement', 'capture'])
-                ->firstOrFail();
+   public function renewal($transaction_id)
+{
+    try {
+        $transaction = Transaction::where('id', $transaction_id)
+            ->where('user_id', Auth::id())
+            ->whereIn('transaction_status', ['settlement', 'capture'])
+            ->firstOrFail();
 
-            // BLOKIR JIKA SEDANG PENGOSONGAN
-            if ($transaction->is_pengosongan) {
-                Log::warning('Renewal blocked: Transaction in pengosongan period', [
-                    'transaction_id' => $transaction->id,
-                    'user_id' => Auth::id()
-                ]);
-
-                return redirect()->back()
-                    ->with('error', 'Anda tidak bisa membayar atau memperpanjang masa sewa lagi karena rak sudah memasuki masa pengosongan.');
-            }
-
-            // CEK APAKAH AKAN MASUK PENGOSONGAN (dengan datetime precision)
-            $currentDbTime = DB::selectOne('SELECT NOW() as db_time')->db_time;
-            $now = \Carbon\Carbon::parse($currentDbTime);
-            $end = \Carbon\Carbon::parse($transaction->sewa_berakhir);
-            
-            // Hitung dalam menit untuk akurasi lebih tinggi
-            $minutesDiff = $now->diffInMinutes($end, false);
-            $daysDiff = $now->diffInDays($end, false);
-            
-            $gracePeriodDays = 3;
-            $maxLateDays = 30;
-
-            $totalLateDays = 0;
-            if ($daysDiff < 0) {
-                $totalLateDays = abs($daysDiff) - $gracePeriodDays;
-            }
-
-            $isEnteringPengosongan = $daysDiff < 0 && $totalLateDays >= $maxLateDays;
-
-            if ($isEnteringPengosongan) {
-                Log::warning('Renewal blocked: Transaction entering pengosongan', [
-                    'transaction_id' => $transaction->id,
-                    'user_id' => Auth::id(),
-                    'total_late_days' => $totalLateDays
-                ]);
-
-                return redirect()->back()
-                    ->with('error', 'Anda tidak bisa membayar atau memperpanjang masa sewa lagi karena rak akan memasuki masa pengosongan.');
-            }
-
-            $rak = Rak::findOrFail($transaction->rak_id);
-
-            $dendaPerHari = 50000;
-            $totalDenda = 0;
-            
-            if ($daysDiff < 0 && abs($daysDiff) > $gracePeriodDays) {
-                $latenessDays = abs($daysDiff) - $gracePeriodDays;
-                $totalDenda = $latenessDays * $dendaPerHari;
-            }
-
-            $hargaSewa = $rak->harga_sewa_perbulan;
-            $totalBayar = $hargaSewa + $totalDenda;
-
-            $orderId = 'RENEWAL-' . time() . '-' . $transaction->id;
-
-            $itemDetails = [
-                [
-                    'id' => 'rental-' . $rak->id,
-                    'price' => (int) $hargaSewa,
-                    'quantity' => 1,
-                    'name' => 'Perpanjangan Sewa ' . $rak->nama_rak
-                ]
-            ];
-
-            if ($totalDenda > 0) {
-                $latenessDays = abs($daysDiff) - $gracePeriodDays;
-                $itemDetails[] = [
-                    'id' => 'penalty-' . $transaction->id,
-                    'price' => (int) $totalDenda,
-                    'quantity' => 1,
-                    'name' => 'Denda Keterlambatan (' . $latenessDays . ' hari)'
-                ];
-            }
-
-            $params = [
-                'transaction_details' => [
-                    'order_id' => $orderId,
-                    'gross_amount' => (int) $totalBayar,
-                ],
-                'item_details' => $itemDetails,
-                'customer_details' => [
-                    'first_name' => Auth::user()->name,
-                    'email' => Auth::user()->email,
-                ],
-                'custom_field1' => 'renewal',
-                'custom_field2' => $transaction->id,
-            ];
-
-            $snapToken = Snap::getSnapToken($params);
-
-            $transaction->update([
-                'order_id' => $orderId,
-                'snap_token' => $snapToken,
-                'penalty_amount' => $totalDenda,
-                'is_renewal' => true
-            ]);
-
-            Log::info('Renewal Snap Token Generated (Tagihan auto-synced)', [
+        // BLOKIR JIKA SEDANG PENGOSONGAN
+        if ($transaction->is_pengosongan) {
+            Log::warning('Renewal blocked: Transaction in pengosongan period', [
                 'transaction_id' => $transaction->id,
-                'order_id' => $orderId,
-                'amount' => $totalBayar,
-                'penalty' => $totalDenda,
-                'days_diff' => $daysDiff,
-                'minutes_diff' => $minutesDiff
+                'user_id' => Auth::id()
             ]);
-
-            return view('customer.payment.renewal-checkout', compact(
-                'snapToken',
-                'rak',
-                'transaction',
-                'totalDenda',
-                'daysDiff',
-                'hargaSewa',
-                'totalBayar'
-            ));
-        } catch (\Exception $e) {
-            Log::error('Renewal Error: ' . $e->getMessage());
-            Log::error('Stack Trace: ' . $e->getTraceAsString());
 
             return redirect()->back()
-                ->with('error', 'Terjadi kesalahan: ' . $e->getMessage());
+                ->with('error', 'Anda tidak bisa membayar atau memperpanjang masa sewa lagi karena rak sudah memasuki masa pengosongan.');
         }
+
+        // CEK APAKAH AKAN MASUK PENGOSONGAN (dengan datetime precision)
+        $currentDbTime = DB::selectOne('SELECT NOW() as db_time')->db_time;
+        $now = \Carbon\Carbon::parse($currentDbTime);
+        $end = \Carbon\Carbon::parse($transaction->sewa_berakhir);
+        
+        // Hitung dalam menit untuk akurasi lebih tinggi
+        $minutesDiff = $now->diffInMinutes($end, false);
+        $daysDiff = $now->diffInDays($end, false);
+        
+        $gracePeriodDays = 3;
+        $maxLateDays = 30;
+
+        $totalLateDays = 0;
+        if ($daysDiff < 0) {
+            $totalLateDays = abs($daysDiff) - $gracePeriodDays;
+        }
+
+        $isEnteringPengosongan = $daysDiff < 0 && $totalLateDays >= $maxLateDays;
+
+        if ($isEnteringPengosongan) {
+            Log::warning('Renewal blocked: Transaction entering pengosongan', [
+                'transaction_id' => $transaction->id,
+                'user_id' => Auth::id(),
+                'total_late_days' => $totalLateDays
+            ]);
+
+            return redirect()->back()
+                ->with('error', 'Anda tidak bisa membayar atau memperpanjang masa sewa lagi karena rak akan memasuki masa pengosongan.');
+        }
+
+        $rak = Rak::findOrFail($transaction->rak_id);
+
+        $dendaPerHari = 50000;
+        $totalDenda = 0;
+        
+        if ($daysDiff < 0 && abs($daysDiff) > $gracePeriodDays) {
+            $latenessDays = abs($daysDiff) - $gracePeriodDays;
+            $totalDenda = $latenessDays * $dendaPerHari;
+        }
+
+        $hargaSewa = $rak->harga_sewa_perbulan;
+        $totalBayar = $hargaSewa + $totalDenda;
+
+        $orderId = 'RENEWAL-' . time() . '-' . $transaction->id;
+
+        $itemDetails = [
+            [
+                'id' => 'rental-' . $rak->id,
+                'price' => (int) $hargaSewa,
+                'quantity' => 1,
+                'name' => 'Perpanjangan Sewa ' . $rak->nama_rak
+            ]
+        ];
+
+        if ($totalDenda > 0) {
+            $latenessDays = abs($daysDiff) - $gracePeriodDays;
+            $itemDetails[] = [
+                'id' => 'penalty-' . $transaction->id,
+                'price' => (int) $totalDenda,
+                'quantity' => 1,
+                'name' => 'Denda Keterlambatan (' . $latenessDays . ' hari)'
+            ];
+        }
+
+        $params = [
+            'transaction_details' => [
+                'order_id' => $orderId,
+                'gross_amount' => (int) $totalBayar,
+            ],
+            'item_details' => $itemDetails,
+            'customer_details' => [
+                'first_name' => Auth::user()->name,
+                'email' => Auth::user()->email,
+            ],
+            'custom_field1' => 'renewal',
+            'custom_field2' => $transaction->id,
+        ];
+
+        $snapToken = Snap::getSnapToken($params);
+
+        $transaction->update([
+            'order_id' => $orderId,
+            'snap_token' => $snapToken,
+            'penalty_amount' => $totalDenda,
+            'is_renewal' => true
+        ]);
+
+        // ✅ FIX: Ambil atau buat tagihan terkait
+        $tagihan = Tagihan::where('transaction_id', $transaction->id)->first();
+        
+        // Jika tidak ada tagihan (misal dari transaksi lama), buat data sementara untuk view
+        if (!$tagihan) {
+            $tagihan = (object) [
+                'sewa_berakhir' => $transaction->sewa_berakhir,
+                'total_tagihan' => $totalBayar,
+                'harga_sewa' => $hargaSewa,
+                'penalty_amount' => $totalDenda,
+            ];
+        }
+
+        Log::info('Renewal Snap Token Generated (Tagihan auto-synced)', [
+            'transaction_id' => $transaction->id,
+            'order_id' => $orderId,
+            'amount' => $totalBayar,
+            'penalty' => $totalDenda,
+            'days_diff' => $daysDiff,
+            'minutes_diff' => $minutesDiff
+        ]);
+
+        return view('customer.payment.renewal-checkout', compact(
+            'snapToken',
+            'rak',
+            'transaction',
+            'tagihan',  // ✅ FIX: Kirim variabel tagihan
+            'totalDenda',
+            'daysDiff',
+            'hargaSewa',
+            'totalBayar',
+            'gracePeriodDays'  // ✅ FIX: Kirim juga gracePeriodDays
+        ));
+    } catch (\Exception $e) {
+        Log::error('Renewal Error: ' . $e->getMessage());
+        Log::error('Stack Trace: ' . $e->getTraceAsString());
+
+        return redirect()->back()
+            ->with('error', 'Terjadi kesalahan: ' . $e->getMessage());
     }
+}
 
     private function handleSuccessPayment($transaction)
     {

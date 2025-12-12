@@ -366,8 +366,7 @@
             width: 250px !important;
             height: 100vh !important;
             z-index: 1040 !important;
-            overflow-y: auto !important;
-            overflow-x: hidden !important;
+            overflow: hidden !important;
         }
 
         /* CONTENT WRAPPER - Beri ruang untuk navbar & sidebar */

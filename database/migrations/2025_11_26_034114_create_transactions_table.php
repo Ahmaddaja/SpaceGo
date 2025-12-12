@@ -23,8 +23,6 @@ return new class extends Migration
             $table->timestamp('transaction_time')->nullable();
             $table->text('snap_token')->nullable();
             $table->json('midtrans_response')->nullable();
-            $table->datetime('sewa_mulai')->nullable();
-            $table->datetime('sewa_berakhir')->nullable();
             $table->timestamps();
 
             // Index untuk query yang sering digunakan

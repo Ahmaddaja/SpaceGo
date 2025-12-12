@@ -7,31 +7,32 @@
         </h5>
     </div>
     <div class="card-body">
-        @if (isset($rak) && $rak->fotos->count() > 0)
-            {{-- Preview existing photos for edit mode --}}
-            <div class="mb-3">
-                <label class="font-weight-bold mb-2">Foto Saat Ini</label>
-                <div class="alert alert-info alert-sm mb-3">
-                    <i class="fas fa-info-circle mr-2"></i>
-                    <small>
-                        Total foto: <strong id="existing-photos-count">{{ $rak->fotos->count() }}</strong>/4
-                        @if ($rak->fotos->count() < 4)
-                            | Anda dapat menambah <strong id="remaining-slots">{{ 4 - $rak->fotos->count() }}</strong>
-                            foto lagi
-                        @else
-                            | <strong>Maksimal tercapai</strong>
-                        @endif
-                    </small>
-                </div>
+        {{-- PERBAIKAN: Container selalu ada, meskipun kosong --}}
+        <div class="mb-3" id="existing-photos-section" @if (!isset($rak) || $rak->fotos->count() == 0) style="display:none;" @endif>
+            <label class="font-weight-bold mb-2">Foto Saat Ini</label>
+            <div class="alert alert-info alert-sm mb-3">
+                <i class="fas fa-info-circle mr-2"></i>
+                <small>
+                    Total foto: <strong
+                        id="existing-photos-count">{{ isset($rak) ? $rak->fotos->count() : 0 }}</strong>/4
+                    @if (isset($rak) && $rak->fotos->count() < 4)
+                        | Anda dapat menambah <strong id="remaining-slots">{{ 4 - $rak->fotos->count() }}</strong> foto
+                        lagi
+                    @elseif(isset($rak) && $rak->fotos->count() >= 4)
+                        | <strong>Maksimal tercapai</strong>
+                    @endif
+                </small>
+            </div>
 
-                <div class="row" id="existing-photos-container">
+            {{-- PERBAIKAN: Container SELALU ada --}}
+            <div class="row" id="existing-photos-container">
+                @if (isset($rak))
                     @foreach ($rak->fotos->sortBy('urutan') as $foto)
                         <div class="col-6 col-md-3 mb-3 existing-photo-item" data-foto-id="{{ $foto->id }}">
                             <div class="photo-wrapper position-relative square-photo-container">
                                 <img src="{{ asset('storage/' . $foto->path) }}" class="square-photo-img"
                                     alt="Foto Rak">
 
-                                {{-- Delete button dengan icon X --}}
                                 <button type="button" class="btn-remove-photo position-absolute"
                                     data-foto-id="{{ $foto->id }}" onclick="deletePhotoInstant({{ $foto->id }})"
                                     title="Hapus foto"
@@ -41,9 +42,11 @@
                             </div>
                         </div>
                     @endforeach
-                </div>
+                @endif
             </div>
+        </div>
 
+        @if (isset($rak) && $rak->fotos->count() > 0)
             <hr class="my-3">
         @endif
 
@@ -54,7 +57,6 @@
                 <span class="text-danger">*</span>
             </label>
 
-            {{-- Info counter --}}
             <div class="mb-2 p-2 border rounded bg-light">
                 <small class="text-muted">
                     Foto saat ini: <strong
@@ -63,7 +65,6 @@
                 </small>
             </div>
 
-            {{-- Info alert --}}
             <div class="alert alert-info alert-sm mb-2">
                 <i class="fas fa-info-circle mr-2"></i>
                 <small>
@@ -89,7 +90,6 @@
             @enderror
         </div>
 
-        {{-- Loading indicator --}}
         <div id="upload-loading" class="text-center py-3" style="display: none;">
             <div class="spinner-border text-primary" role="status">
                 <span class="sr-only">Uploading...</span>
@@ -101,31 +101,26 @@
 
 @push('scripts')
     <script>
-        // Variabel global yang diperlukan
         const rakId = {{ isset($rak) ? $rak->id : 'null' }};
         const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
 
-        // Fungsi uploadPhotosInstant (Tidak Diubah Signifikan)
         function uploadPhotosInstant(event) {
             const files = Array.from(event.target.files);
             const existingPhotos = document.querySelectorAll('.existing-photo-item').length;
             const maxAllowed = 4 - existingPhotos;
 
-            // Cek apakah sudah maksimal
             if (existingPhotos >= 4) {
                 showAlert('Maksimal 4 foto sudah tercapai!', 'error');
                 event.target.value = '';
                 return;
             }
 
-            // Cek apakah file yang dipilih melebihi batas
             if (files.length > maxAllowed) {
                 showAlert(`Maksimal ${maxAllowed} foto lagi! Anda memilih ${files.length} foto.`, 'error');
                 event.target.value = '';
                 return;
             }
 
-            // Validasi file (Client-side validation)
             let validFiles = [];
             for (let file of files) {
                 if (file.size > 2048 * 1024) {
@@ -147,25 +142,21 @@
                 return;
             }
 
-            // Upload ke server
             if (rakId) {
                 uploadToServer(validFiles);
             } else {
                 showAlert('Simpan rak terlebih dahulu sebelum upload foto', 'warning');
             }
 
-            // Reset input
             event.target.value = '';
         }
 
-        // Fungsi uploadToServer (MODIFIKASI UTAMA DI SINI)
         function uploadToServer(files) {
             const formData = new FormData();
-            files.forEach((file, index) => {
+            files.forEach((file) => {
                 formData.append('fotos[]', file);
             });
 
-            // Show loading dengan progress text
             const loadingDiv = document.getElementById('upload-loading');
             loadingDiv.style.display = 'block';
             loadingDiv.innerHTML = `
@@ -176,10 +167,8 @@
             `;
             document.getElementById('fotos').disabled = true;
 
-            // Gunakan XMLHttpRequest untuk progress tracking
             const xhr = new XMLHttpRequest();
 
-            // Track upload progress
             xhr.upload.addEventListener('progress', function(e) {
                 if (e.lengthComputable) {
                     const percentComplete = Math.round((e.loaded / e.total) * 100);
@@ -191,22 +180,24 @@
             });
 
             xhr.addEventListener('load', function() {
-                // Sembunyikan loading dan aktifkan input kembali di akhir
                 loadingDiv.style.display = 'none';
                 document.getElementById('fotos').disabled = false;
 
                 if (xhr.status === 200) {
-                    // --- KODE SUKSES (STATUS 200) ---
                     try {
                         const data = JSON.parse(xhr.responseText);
 
                         if (data.success) {
                             showAlert(data.message, 'success');
 
-                            // Pastikan data.fotos ada dan merupakan array
-                            if (Array.isArray(data.fotos)) {
+                            const section = document.getElementById('existing-photos-section');
+                            if (section && section.style.display === 'none') {
+                                section.style.display = 'block';
+                            }
+
+                            if (Array.isArray(data.fotos) && data.fotos.length > 0) {
                                 data.fotos.forEach(foto => {
-                                    addPhotoToContainer(foto); // <-- Ini yang akan menampilkan foto
+                                    addPhotoToContainer(foto);
                                 });
                             }
 
@@ -217,38 +208,30 @@
                                 document.querySelector('.custom-file-label').textContent = 'Maksimal foto tercapai';
                             }
                         } else {
-                            showAlert(data.message, 'error');
+                            showAlert(data.message || 'Upload gagal', 'error');
                         }
                     } catch (e) {
-                        console.error('Parse error pada status 200:', e);
-                        showAlert('Terjadi kesalahan saat memproses respons sukses (JSON Error)', 'error');
+                        showAlert('Terjadi kesalahan saat memproses respons (JSON Error)', 'error');
                     }
                 } else {
-                    // --- PENANGANAN STATUS GAGAL (TERMASUK 422 DAN 419) ---
                     let errorMessage = `Upload gagal. Status: ${xhr.status}.`;
 
                     try {
-                        // Coba parse respons, yang seharusnya berupa JSON
                         const errorData = JSON.parse(xhr.responseText);
 
                         if (xhr.status === 422 && errorData.errors) {
-                            // Status 422: Validasi Gagal. Ambil pesan error spesifik dari Laravel.
                             const firstErrorKey = Object.keys(errorData.errors)[0];
                             errorMessage = errorData.errors[firstErrorKey][0];
                         } else if (errorData.message) {
-                            // Ambil pesan umum dari server
                             errorMessage = errorData.message;
                         }
-
                     } catch (e) {
-                        // Jika gagal parse JSON (terjadi saat respons adalah HTML, seperti pada SyntaxError)
                         if (xhr.status === 419) {
                             errorMessage =
-                                'Token Keamanan (CSRF) Kedaluwarsa. Mohon refresh halaman dan coba lagi.';
+                            'Token Keamanan (CSRF) Kedaluwarsa. Mohon refresh halaman dan coba lagi.';
                         } else if (xhr.status === 422) {
                             errorMessage = 'Validasi server gagal. Kemungkinan batasan PHP/server tidak sesuai.';
                         } else {
-                            // Status error lain (500 Internal Server Error, dll)
                             errorMessage = `Upload gagal (Server Error ${xhr.status}). Cek log aplikasi.`;
                         }
                     }
@@ -257,17 +240,13 @@
                 }
             });
 
-            // ... (xhr.addEventListener('error', ...) dan xhr.addEventListener('timeout', ...) tetap sama)
-
             xhr.addEventListener('error', function() {
-                console.error('Upload error');
                 loadingDiv.style.display = 'none';
                 document.getElementById('fotos').disabled = false;
                 showAlert('Terjadi kesalahan saat upload. Periksa koneksi internet Anda.', 'error');
             });
 
             xhr.addEventListener('timeout', function() {
-                console.error('Upload timeout');
                 loadingDiv.style.display = 'none';
                 document.getElementById('fotos').disabled = false;
                 showAlert('Upload timeout. Coba lagi atau pilih file yang lebih kecil.', 'error');
@@ -276,13 +255,26 @@
             xhr.open('POST', `/raks/${rakId}/upload-photos`);
             xhr.setRequestHeader('X-CSRF-TOKEN', csrfToken);
             xhr.setRequestHeader('Accept', 'application/json');
-            xhr.timeout = 60000; // 60 detik timeout
+            xhr.timeout = 60000;
             xhr.send(formData);
         }
 
-        // Fungsi addPhotoToContainer (Tidak Diubah)
         function addPhotoToContainer(foto) {
-            const container = document.getElementById('existing-photos-container');
+            let container = document.getElementById('existing-photos-container');
+
+            if (!container) {
+                const section = document.getElementById('existing-photos-section');
+                if (section) {
+                    container = document.createElement('div');
+                    container.className = 'row';
+                    container.id = 'existing-photos-container';
+                    section.appendChild(container);
+                    section.style.display = 'block';
+                } else {
+                    return;
+                }
+            }
+
             const col = document.createElement('div');
             col.className = 'col-6 col-md-3 mb-3 existing-photo-item';
             col.setAttribute('data-foto-id', foto.id);
@@ -301,21 +293,8 @@
                 </div>
             `;
 
-            // Buat kontainer jika belum ada (khusus mode Create, tapi di sini diasumsikan Edit)
-            if (!container) {
-                // Ini jika container belum dirender karena $rak->fotos->count() == 0 di Blade
-                const existingPhotosDiv = document.createElement('div');
-                existingPhotosDiv.className = 'row';
-                existingPhotosDiv.id = 'existing-photos-container';
-                document.querySelector('.card-body').insertBefore(existingPhotosDiv, document.getElementById('fotos')
-                    .closest('.mb-3'));
-                existingPhotosDiv.appendChild(col);
-            } else {
-                container.appendChild(col);
-            }
+            container.appendChild(col);
 
-
-            // Animate in
             setTimeout(() => {
                 col.style.transition = 'all 0.3s ease';
                 col.style.opacity = '1';
@@ -323,23 +302,19 @@
             }, 10);
         }
 
-        // Fungsi deletePhotoInstant (Tidak Diubah)
         function deletePhotoInstant(fotoId) {
-            // ... (fungsi deletePhotoInstant Anda)
             if (!confirm('Apakah Anda yakin ingin menghapus foto ini?')) {
                 return;
             }
 
             const photoItem = document.querySelector(`.existing-photo-item[data-foto-id="${fotoId}"]`);
 
-            // Animasi hapus
             if (photoItem) {
                 photoItem.style.transition = 'all 0.3s ease';
                 photoItem.style.opacity = '0';
                 photoItem.style.transform = 'scale(0.8)';
             }
 
-            // Kirim request delete ke server
             fetch(`/raks/photos/${fotoId}`, {
                     method: 'DELETE',
                     headers: {
@@ -351,15 +326,18 @@
                 .then(response => response.json())
                 .then(data => {
                     if (data.success) {
-                        // Hapus dari DOM setelah animasi
                         setTimeout(() => {
                             if (photoItem) {
                                 photoItem.remove();
                             }
-                            // Update counters
                             updatePhotoCounters(data.total_photos);
 
-                            // Enable upload if below max
+                            // Sembunyikan section jika tidak ada foto
+                            if (data.total_photos === 0) {
+                                const section = document.getElementById('existing-photos-section');
+                                if (section) section.style.display = 'none';
+                            }
+
                             if (data.total_photos < 4) {
                                 document.getElementById('fotos').disabled = false;
                                 document.querySelector('.custom-file-label').textContent =
@@ -369,7 +347,6 @@
 
                         showAlert('Foto berhasil dihapus', 'success');
                     } else {
-                        // Kembalikan animasi jika gagal
                         if (photoItem) {
                             photoItem.style.opacity = '1';
                             photoItem.style.transform = 'scale(1)';
@@ -379,7 +356,6 @@
                 })
                 .catch(error => {
                     console.error('Error:', error);
-                    // Kembalikan animasi jika error
                     if (photoItem) {
                         photoItem.style.opacity = '1';
                         photoItem.style.transform = 'scale(1)';
@@ -388,7 +364,6 @@
                 });
         }
 
-        // Fungsi updatePhotoCounters (Tidak Diubah)
         function updatePhotoCounters(totalPhotos) {
             const existingCount = document.getElementById('existing-photos-count');
             const remainingSlots = document.getElementById('remaining-slots');
@@ -409,7 +384,6 @@
             }
         }
 
-        // Fungsi showAlert (Tidak Diubah)
         function showAlert(message, type) {
             const alertDiv = document.createElement('div');
             alertDiv.className =
@@ -422,17 +396,14 @@
                 </button>
             `;
 
-            // Insert after card header
             const cardBody = document.querySelector('.card-body');
             cardBody.insertBefore(alertDiv, cardBody.firstChild);
 
-            // Auto remove after 5 seconds
             setTimeout(() => {
                 alertDiv.remove();
             }, 5000);
         }
 
-        // Add hover effect to photo wrappers (Tidak Diubah)
         document.addEventListener('mouseenter', function(e) {
             if (e.target.closest('.photo-wrapper')) {
                 const btn = e.target.closest('.photo-wrapper').querySelector('.btn-remove-photo');
@@ -524,3 +495,5 @@
         }
     </style>
 @endpush
+
+
