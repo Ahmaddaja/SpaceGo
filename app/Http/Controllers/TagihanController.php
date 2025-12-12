@@ -316,59 +316,41 @@ class TagihanController extends Controller
 
             DB::beginTransaction();
 
-            $tagihan->update([
-                'status' => 'expired',
-                'cancelled_at' => now()
-            ]);
-
-            if ($tagihan->transaction) {
-                $tagihan->transaction->update([
-                    'transaction_status' => 'expired',
-                    'updated_at' => now()
-                ]);
-            }
-
+            // 1. Balikin rak
             if ($tagihan->rak) {
                 $tagihan->rak->update([
-                    'status' => 'tersedia',
-                    'updated_at' => now()
+                    'status' => 'tersedia'
                 ]);
             }
 
-            // Expire renewal pending
+            // 2. Hapus transaksi kalau ada
+            if ($tagihan->transaction) {
+                $tagihan->transaction->delete();
+            }
+
+            // 3. Hapus tagihan UTAMA
+            $tagihan->delete();
+
+            // 4. Hapus tagihan perpanjangan pending
             Tagihan::where('rak_id', $tagihan->rak_id)
                 ->where('user_id', Auth::id())
                 ->where('is_renewal', true)
-                ->where('status', 'pending')
-                ->update([
-                    'status' => 'expired',
-                    'cancelled_at' => now()
-                ]);
+                ->delete();
 
             DB::commit();
 
-            if ($request->expectsJson() || $request->ajax()) {
-                return response()->json([
-                    'success' => true,
-                    'message' => 'Rak berhasil dilepas dan tagihan kadaluarsa.'
-                ]);
-            }
-
-            return redirect()->route('customer.tagihan')
-                ->with('success', 'Rak berhasil dilepas dan tagihan kadaluarsa.');
+            return response()->json([
+                'success' => true,
+                'message' => 'Rak berhasil dilepas dan tagihan dihapus permanen.'
+            ]);
 
         } catch (\Exception $e) {
             DB::rollBack();
 
-            if ($request->expectsJson() || $request->ajax()) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Gagal melepas rak: ' . $e->getMessage()
-                ], 500);
-            }
-
-            return redirect()->route('customer.tagihan')
-                ->with('error', 'Gagal melepas rak: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Gagal melepas rak: ' . $e->getMessage()
+            ], 500);
         }
     }
 
