@@ -174,15 +174,31 @@ class RakController extends Controller
         $raks = Rak::with(['fotos', 'gudang'])->latest()->paginate(10);
         return view('admin.raks.index', compact('raks'));
     }
-
     public function create()
     {
+        // ✅ BARU: Cleanup temp photos dari session sebelumnya
+        $oldTempPhotos = session()->get('temp_rak_photos', []);
+
+        if (!empty($oldTempPhotos)) {
+            foreach ($oldTempPhotos as $photo) {
+                if (Storage::disk('public')->exists($photo['path'])) {
+                    Storage::disk('public')->delete($photo['path']);
+                }
+            }
+
+            Log::info('Cleaned up old temp photos on create page load: ' . count($oldTempPhotos) . ' files');
+        }
+
+        // ✅ BARU: Reset session untuk fresh start
+        session()->forget('temp_rak_photos');
+
+        // Lanjutkan seperti biasa
         $gudangs = Gudang::where('is_active', true)
             ->orderBy('nama_gudang')
             ->get();
 
-        // Ambil temp photos dari session jika ada
-        $tempPhotos = session()->get('temp_rak_photos', []);
+        // ✅ BARU: Kosongkan tempPhotos karena sudah di-reset
+        $tempPhotos = [];
 
         return view('admin.raks.create', compact('gudangs', 'tempPhotos'));
     }
@@ -303,6 +319,49 @@ class RakController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Gagal menghapus foto: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Clear all temporary photos dari session
+     */
+    public function clearTempPhotos()
+    {
+        try {
+            $tempPhotos = session()->get('temp_rak_photos', []);
+
+            if (empty($tempPhotos)) {
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Tidak ada foto temporary untuk dibersihkan'
+                ]);
+            }
+
+            $deletedCount = 0;
+
+            // Hapus semua foto temp dari storage
+            foreach ($tempPhotos as $photo) {
+                if (Storage::disk('public')->exists($photo['path'])) {
+                    Storage::disk('public')->delete($photo['path']);
+                    $deletedCount++;
+                }
+            }
+
+            // Hapus session
+            session()->forget('temp_rak_photos');
+
+            Log::info("Temporary photos cleared: {$deletedCount} files deleted");
+
+            return response()->json([
+                'success' => true,
+                'message' => "{$deletedCount} foto temporary berhasil dibersihkan"
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Error clearing temp photos: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Gagal membersihkan foto: ' . $e->getMessage()
             ], 500);
         }
     }
