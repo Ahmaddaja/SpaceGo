@@ -327,7 +327,7 @@
                             <i class="fas fa-shopping-cart text-yellow-600 text-4xl"></i>
                         </div>
                     </div>
-                    <h3 class="text-2xl font-bold text-yellow-800 mb-3">Belum Ada Rak yang Dibeli</h3>
+                    <h3 class="text-2xl font-bold text-yellow-800 mb-3">Belum Ada Rak yang Disewa</h3>
                     <p class="text-yellow-700 mb-2 text-lg">Anda belum melakukan penyewaan rak apapun.</p>
                     <p class="text-yellow-600 mb-8 text-sm">Mulai sewa rak pertama Anda dan nikmati kemudahan penyimpanan!
                     </p>
