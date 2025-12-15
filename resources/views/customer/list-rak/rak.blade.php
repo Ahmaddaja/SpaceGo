@@ -302,25 +302,23 @@
     <div class="py-12">
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
 
-            <div class="text-center mb-12">
-                <div
-                    class="inline-flex items-center justify-center w-20 h-20 bg-gradient-to-br from-blue-500 to-purple-600 rounded-2xl shadow-lg mb-6">
-                    <i class="fas fa-boxes text-white text-2xl"></i>
-                </div>
-                <h1 class="text-4xl md:text-5xl font-bold text-gray-900 mb-4 gradient-text">
-                    Rak Yang Sudah Disewa
-                </h1>
-                <p class="text-lg md:text-xl text-gray-600 max-w-2xl mx-auto leading-relaxed">
-                    Kelola dan pantau semua rak penyimpanan yang telah Anda sewa dalam satu tempat
-                </p>
-
-                <div class="flex justify-center items-center space-x-6 mt-6">
-                    <div class="flex items-center space-x-2 text-sm text-gray-500">
-                        <div class="w-2 h-2 bg-green-500 rounded-full"></div>
-                        <span>Total: <strong class="text-gray-700">{{ $raks->total() }} rak</strong></span>
+            <!-- RAK YANG SUDAH DISEWA -->
+                <div class="text-center mb-12">
+                    <div class="inline-flex items-center justify-center w-20 h-20 bg-gradient-to-br from-blue-500 to-purple-600 rounded-2xl shadow-lg mb-6">
+                        <i class="fas fa-pallet text-white text-2xl"></i>
+                    </div>
+                    <h1 class="text-4xl md:text-5xl font-bold text-gray-800 mb-4">Rak Yang Sudah Disewa</h1>
+                    <p class="text-gray-600 text-lg max-w-2xl mx-auto">
+                        Kelola dan pantau semua rak penyimpanan yang telah Anda sewa dalam satu tempat
+                    </p>
+                    
+                    <div class="flex justify-center items-center space-x-6 mt-6">
+                        <div class="flex items-center space-x-2 text-sm text-gray-500">
+                            <div class="w-2 h-2 bg-green-500 rounded-full"></div>
+                            <span>Total: <strong class="text-gray-700">{{ $raks->total() }} rak</strong></span>
+                        </div>
                     </div>
                 </div>
-            </div>
 
             @if ($raks->isEmpty())
                 <div class="empty-state rounded-2xl p-8 md:p-12 text-center max-w-2xl mx-auto">
