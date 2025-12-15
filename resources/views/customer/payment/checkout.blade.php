@@ -420,8 +420,188 @@
 
         // Fungsi untuk cancel checkout
         function cancelCheckout() {
-            if (confirm('Apakah Anda yakin ingin membatalkan checkout?')) {
-                window.location.href = "{{ route('payment.cancel-checkout') }}";
+            // Create modern confirmation modal
+            const modalHtml = `
+                <div class="modal-overlay" style="position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0);display:flex;align-items:center;justify-content:center;z-index:9999;opacity:0;transition:opacity 0.3s ease, background 0.3s ease;">
+                    <div class="modal-content" style="background:white;width:90%;max-width:420px;border-radius:12px;box-shadow:0 10px 30px rgba(0,0,0,0);overflow:hidden;transform:translateY(20px) scale(0.95);opacity:0;transition:all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);">
+                        <div class="modal-header" style="padding:24px 24px 16px 24px;">
+                            <div style="display:flex;align-items:center;gap:12px;">
+                                <div style="width:40px;height:40px;background:#ff6b6b;border-radius:50%;display:flex;align-items:center;justify-content:center;color:white;transform:scale(0.8);opacity:0;transition:all 0.3s ease 0.1s;">
+                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <circle cx="12" cy="12" r="10"></circle>
+                                        <line x1="15" y1="9" x2="9" y2="15"></line>
+                                        <line x1="9" y1="9" x2="15" y2="15"></line>
+                                    </svg>
+                                </div>
+                                <div style="transform:translateX(-10px);opacity:0;transition:all 0.3s ease 0.15s;">
+                                    <h5 style="margin:0;font-size:18px;color:#2c3e50;font-weight:600;">Batalkan Checkout</h5>
+                                    <p style="margin:4px 0 0 0;font-size:14px;color:#7f8c8d;">Konfirmasi Aksi</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="modal-body" style="padding:0 24px;">
+                            <div style="margin-bottom:24px;">
+                                <p style="color:#34495e;line-height:1.6;margin:0 0 8px 0;transform:translateY(10px);opacity:0;transition:all 0.3s ease 0.2s;">
+                                    Anda akan membatalkan proses checkout saat ini.
+                                </p>
+                                <p style="color:#95a5a6;font-size:14px;line-height:1.5;margin:0;transform:translateY(10px);opacity:0;transition:all 0.3s ease 0.25s;">
+                                    Semua item dalam keranjang akan tetap tersimpan untuk sesi berikutnya.
+                                </p>
+                            </div>
+                        </div>
+                        <div class="modal-footer" style="padding:20px 24px 24px 24px;border-top:1px solid #ecf0f1;display:flex;gap:12px;justify-content:flex-end;transform:translateY(10px);opacity:0;transition:all 0.3s ease 0.3s;">
+                            <button type="button" class="btn-cancel" style="padding:10px 24px;background:#fff;border:1px solid #dfe6e9;border-radius:8px;color:#636e72;font-weight:500;cursor:pointer;transition:all 0.2s;font-size:14px;min-width:100px;letter-spacing:0.3px;">
+                                Lanjutkan
+                            </button>
+                            <button type="button" class="btn-confirm" style="padding:10px 24px;background:#ff6b6b;border:none;border-radius:8px;color:white;font-weight:500;cursor:pointer;transition:all 0.2s;font-size:14px;min-width:100px;letter-spacing:0.3px;box-shadow:0 2px 8px rgba(255,107,107,0.2);">
+                                Batalkan
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            const modalContainer = document.createElement('div');
+            modalContainer.innerHTML = modalHtml;
+            document.body.appendChild(modalContainer);
+            
+            // Trigger animation after DOM is added
+            setTimeout(() => {
+                const modalOverlay = modalContainer.querySelector('.modal-overlay');
+                const modalContent = modalContainer.querySelector('.modal-content');
+                const iconCircle = modalContainer.querySelector('.modal-header > div > div');
+                const headerText = modalContainer.querySelector('.modal-header > div > div:last-child');
+                const mainText = modalContainer.querySelector('.modal-body p:first-child');
+                const subText = modalContainer.querySelector('.modal-body p:last-child');
+                const modalFooter = modalContainer.querySelector('.modal-footer');
+                
+                modalOverlay.style.background = 'rgba(0,0,0,0.6)';
+                modalOverlay.style.opacity = '1';
+                
+                modalContent.style.boxShadow = '0 20px 40px rgba(0,0,0,0.15)';
+                modalContent.style.transform = 'translateY(0) scale(1)';
+                modalContent.style.opacity = '1';
+                
+                iconCircle.style.transform = 'scale(1)';
+                iconCircle.style.opacity = '1';
+                
+                headerText.style.transform = 'translateX(0)';
+                headerText.style.opacity = '1';
+                
+                mainText.style.transform = 'translateY(0)';
+                mainText.style.opacity = '1';
+                
+                subText.style.transform = 'translateY(0)';
+                subText.style.opacity = '1';
+                
+                modalFooter.style.transform = 'translateY(0)';
+                modalFooter.style.opacity = '1';
+            }, 10);
+            
+            // Button hover effects
+            const btnCancel = modalContainer.querySelector('.btn-cancel');
+            const btnConfirm = modalContainer.querySelector('.btn-confirm');
+            
+            btnCancel.addEventListener('mouseenter', () => {
+                btnCancel.style.background = '#f8f9fa';
+                btnCancel.style.borderColor = '#b2bec3';
+            });
+            
+            btnCancel.addEventListener('mouseleave', () => {
+                btnCancel.style.background = '#fff';
+                btnCancel.style.borderColor = '#dfe6e9';
+            });
+            
+            btnConfirm.addEventListener('mouseenter', () => {
+                btnConfirm.style.background = '#ff5252';
+                btnConfirm.style.boxShadow = '0 4px 12px rgba(255,107,107,0.3)';
+                btnConfirm.style.transform = 'translateY(-1px)';
+            });
+            
+            btnConfirm.addEventListener('mouseleave', () => {
+                btnConfirm.style.background = '#ff6b6b';
+                btnConfirm.style.boxShadow = '0 2px 8px rgba(255,107,107,0.2)';
+                btnConfirm.style.transform = 'translateY(0)';
+            });
+            
+            // Button event handlers
+            btnCancel.addEventListener('click', function() {
+                closeModalWithAnimation(modalContainer);
+            });
+            
+            btnConfirm.addEventListener('click', function() {
+                // Add loading state to confirm button
+                btnConfirm.innerHTML = `
+                    <div style="display:flex;align-items:center;justify-content:center;gap:8px;">
+                        <div class="mini-spinner" style="border:2px solid rgba(255,255,255,0.3);border-top:2px solid white;border-radius:50%;width:16px;height:16px;animation:spin 0.8s linear infinite;"></div>
+                        <span>Memproses...</span>
+                    </div>
+                `;
+                btnConfirm.disabled = true;
+                btnCancel.disabled = true;
+                
+                // Add spinner animation style
+                const style = document.createElement('style');
+                style.textContent = `
+                    @keyframes spin {
+                        0% { transform: rotate(0deg); }
+                        100% { transform: rotate(360deg); }
+                    }
+                `;
+                document.head.appendChild(style);
+                
+                // Redirect after short delay for better UX
+                setTimeout(() => {
+                    window.location.href = "{{ route('payment.cancel-checkout') }}";
+                }, 600);
+            });
+            
+            // Close modal on overlay click
+            modalContainer.querySelector('.modal-overlay').addEventListener('click', function(e) {
+                if (e.target.classList.contains('modal-overlay')) {
+                    closeModalWithAnimation(modalContainer);
+                }
+            });
+            
+            // Function to close modal with animation
+            function closeModalWithAnimation(modal) {
+                const modalOverlay = modal.querySelector('.modal-overlay');
+                const modalContent = modal.querySelector('.modal-content');
+                const iconCircle = modal.querySelector('.modal-header > div > div');
+                const headerText = modal.querySelector('.modal-header > div > div:last-child');
+                const mainText = modal.querySelector('.modal-body p:first-child');
+                const subText = modal.querySelector('.modal-body p:last-child');
+                const modalFooter = modal.querySelector('.modal-footer');
+                
+                // Reverse animations
+                modalContent.style.transform = 'translateY(20px) scale(0.95)';
+                modalContent.style.opacity = '0';
+                modalContent.style.boxShadow = '0 10px 30px rgba(0,0,0,0)';
+                
+                iconCircle.style.transform = 'scale(0.8)';
+                iconCircle.style.opacity = '0';
+                
+                headerText.style.transform = 'translateX(-10px)';
+                headerText.style.opacity = '0';
+                
+                mainText.style.transform = 'translateY(10px)';
+                mainText.style.opacity = '0';
+                
+                subText.style.transform = 'translateY(10px)';
+                subText.style.opacity = '0';
+                
+                modalFooter.style.transform = 'translateY(10px)';
+                modalFooter.style.opacity = '0';
+                
+                modalOverlay.style.opacity = '0';
+                modalOverlay.style.background = 'rgba(0,0,0,0)';
+                
+                // Remove from DOM after animation
+                setTimeout(() => {
+                    if (document.body.contains(modal)) {
+                        document.body.removeChild(modal);
+                    }
+                }, 300);
             }
         }
 

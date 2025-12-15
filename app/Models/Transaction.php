@@ -39,7 +39,21 @@ class Transaction extends Model
     {
         return $this->belongsTo(Rak::class);
     }
-
+    // Relationship dengan payment untuk denda
+    public function dendaPayment()
+    {
+        return $this->belongsTo(Payment::class, 'payment_id_denda');
+    }
+    
+    // Helper method untuk cek apakah bisa dilepas
+    public function canBeReleased()
+    {
+        // Bisa dilepas jika: 
+        // 1. Tidak ada denda, ATAU
+        // 2. Ada denda tapi sudah dibayar
+        return $this->total_denda == 0 || 
+               ($this->total_denda > 0 && $this->is_denda_paid);
+    }
     // Satu transaksi memiliki satu tagihan
     // (karena transaction_id ada di tabel tagihans)
     public function tagihan()

@@ -113,7 +113,28 @@ Route::middleware(['auth', 'role:customer'])->group(function () {
         // Utils
         Route::get('/check-overdue', [TagihanController::class, 'checkOverdue'])->name('customer.tagihan.check-overdue');
         Route::get('/debug-tokens', [TagihanController::class, 'debugMissingTokens'])->name('customer.tagihan.debug-tokens');
-    });
+        // routes/web.php atau routes/customer.php
+
+    // Bayar denda dan lepas rak (HANYA DENDANYA)
+    Route::post('/tagihan/bayar-denda-lepas-rak', [TagihanController::class, 'bayarDendaDanLepasRak'])
+        ->name('customer.tagihan.pay-denda-and-release');
+
+    // Halaman checkout denda saja
+    Route::get('/tagihan/checkout-denda/{payment}', [TagihanController::class, 'checkoutDenda'])
+        ->name('customer.tagihan.checkout-denda');
+
+    // Callback dari payment gateway untuk denda
+    Route::post('/tagihan/callback-denda', [TagihanController::class, 'callbackDenda'])
+        ->name('customer.tagihan.callback-denda');
+
+    // Halaman sukses pembayaran denda
+    Route::get('/tagihan/success-denda/{payment}', [TagihanController::class, 'successDenda'])
+        ->name('customer.tagihan.success-denda');
+
+    // Halaman gagal pembayaran denda
+    Route::get('/tagihan/failed-denda/{payment}', [TagihanController::class, 'failedDenda'])
+        ->name('customer.tagihan.failed-denda');
+        });
 });
 
 // ========================
