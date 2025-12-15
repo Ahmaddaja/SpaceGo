@@ -142,6 +142,8 @@ Route::middleware(['auth', 'role:admin'])->group(function () {
     Route::post('/raks/temp-upload', [RakController::class, 'tempUpload'])->name('raks.photos.temp-upload');
     Route::delete('/raks/temp-delete/{filename}', [RakController::class, 'tempDelete'])->name('raks.photos.temp-delete');
 
+    Route::post('/raks/clear-temp-photos', [RakController::class, 'clearTempPhotos'])->name('raks.photos.clear-temp');
+
     // Customers
     Route::get('/customers', [CustomerController::class, 'index'])->name('admin.pelanggan.pelanggan');
 
