@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Transaction;
 use App\Models\Tagihan;
 use App\Models\Rak;
+use App\Models\Payment;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Carbon\Carbon;
@@ -105,6 +106,267 @@ class TagihanController extends Controller
             'overdueTransactions',
             'now'
         ));
+    }
+
+           public function bayarDendaDanLepasRak(Request $request)
+    {
+        try {
+            DB::beginTransaction();
+
+            $request->validate([
+                'transaction_id' => 'required|exists:transactions,id',
+                'total_denda' => 'required|numeric',
+            ]);
+
+            $transaction = Transaction::findOrFail($request->transaction_id);
+            
+            // Validasi bahwa transaksi ini milik user yang login
+            if ($transaction->user_id !== auth()->id()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Unauthorized access to this transaction.'
+                ], 403);
+            }
+
+            // Validasi bahwa sudah lewat masa tenggang (harus ada denda)
+            if ($transaction->total_denda <= 0) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Tidak ada denda yang perlu dibayar.'
+                ], 400);
+            }
+
+            // 1. Buat payment record untuk DENDANYA SAJA
+            $payment = Payment::create([
+                'transaction_id' => $transaction->id,
+                'user_id' => auth()->id(),
+                'amount' => $request->total_denda,
+                'payment_method' => 'pending', // akan diupdate saat callback
+                'status' => 'pending',
+                'type' => 'denda',
+                'description' => 'Pembayaran denda keterlambatan untuk lepas rak',
+                'metadata' => [
+                    'total_denda' => $request->total_denda,
+                    'action' => 'lepas_rak_setelah_denda',
+                    'rak_nama' => $transaction->rak->nama_rak ?? 'Unknown',
+                    'days_overdue' => $transaction->getDaysOverdue() // method helper
+                ]
+            ]);
+
+            // 2. Update status transaksi
+            $transaction->update([
+                'status' => 'menunggu_pembayaran_denda',
+                'payment_id_denda' => $payment->id,
+                'marked_for_release' => true, // Flag bahwa rak akan dilepas setelah bayar denda
+            ]);
+
+            DB::commit();
+
+            // Return redirect ke halaman pembayaran denda
+            return response()->json([
+                'success' => true,
+                'message' => 'Silakan lanjutkan pembayaran denda',
+                'payment_id' => $payment->id,
+                'amount' => $payment->amount,
+                'redirect_url' => route('customer.tagihan.checkout-denda', $payment->id),
+            ]);
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error('Error in bayarDendaDanLepasRak: ' . $e->getMessage());
+            
+            return response()->json([
+                'success' => false,
+                'message' => 'Terjadi kesalahan. Silakan coba lagi.'
+            ], 500);
+        }
+    }
+
+    /**
+     * Halaman checkout untuk bayar denda SAJA (tanpa biaya sewa)
+     */
+    public function checkoutDenda(Payment $payment)
+    {
+        // Validasi bahwa payment milik user yang login
+        if ($payment->user_id !== auth()->id()) {
+            abort(403);
+        }
+
+        // Validasi bahwa payment type adalah denda
+        if ($payment->type !== 'denda') {
+            abort(404);
+        }
+
+        // Validasi bahwa belum dibayar
+        if ($payment->status === 'paid') {
+            return redirect()->route('customer.dashboard')
+                ->with('info', 'Denda sudah dibayar.');
+        }
+
+        $transaction = $payment->transaction;
+        $rak = $transaction->rak;
+        
+        // Hitung hari keterlambatan untuk display
+        $now = now()->startOfDay();
+        $sewaBerakhir = \Carbon\Carbon::parse($transaction->sewa_berakhir)->startOfDay();
+        $daysDiff = $now->diffInDays($sewaBerakhir, false);
+        $gracePeriodDays = 3;
+        $latenessDays = abs($daysDiff) - $gracePeriodDays;
+        
+        return view('customer.payments.checkout-denda', [
+            'payment' => $payment,
+            'transaction' => $transaction,
+            'rak' => $rak,
+            'latenessDays' => $latenessDays > 0 ? $latenessDays : 0,
+            'dendaPerHari' => 50000, // Sesuaikan dengan config
+        ]);
+    }
+
+    /**
+     * Function untuk melepas rak SETELAH denda dibayar
+     */
+    private function releaseRakAfterDenda(Transaction $transaction)
+    {
+        $rak = $transaction->rak;
+        
+        if (!$rak) {
+            Log::error('Rak not found for transaction: ' . $transaction->id);
+            return false;
+        }
+
+        // Update status rak menjadi tersedia
+        $rak->update([
+            'status' => 'tersedia',
+            'current_transaction_id' => null,
+            'available_at' => now(),
+            'keterangan' => 'Dilepaskan setelah pembayaran denda - ' . now()->format('d/m/Y H:i')
+        ]);
+
+        // Update transaction status
+        $transaction->update([
+            'status' => 'dibatalkan_setelah_denda',
+            'released_at' => now(),
+            'release_type' => 'denda_paid',
+            'sewa_berakhir' => now(), // Update sewa berakhir menjadi sekarang
+        ]);
+
+        // Log activity
+        activity()
+            ->performedOn($transaction)
+            ->causedBy(auth()->user())
+            ->withProperties([
+                'rak_id' => $rak->id,
+                'denda_paid' => $transaction->total_denda,
+                'denda_payment_id' => $transaction->payment_id_denda
+            ])
+            ->log('Rak dilepaskan setelah pembayaran denda');
+
+        // Kirim notifikasi ke user
+        // $this->sendRakReleasedNotification($transaction);
+
+        return true;
+    }
+
+    /**
+     * Callback dari payment gateway untuk denda
+     */
+    public function callbackDenda(Request $request)
+    {
+        // Implementasi callback dari payment gateway
+        // Sesuaikan dengan payment gateway yang digunakan
+        
+        // Contoh sederhana untuk simulasi
+        $paymentId = $request->payment_id;
+        $status = $request->status;
+        
+        $payment = Payment::findOrFail($paymentId);
+        
+        DB::beginTransaction();
+        
+        try {
+            if ($status === 'success' || $status === 'settlement') {
+                // 1. Update payment status
+                $payment->update([
+                    'status' => 'paid',
+                    'paid_at' => now(),
+                    'payment_method' => $request->payment_method ?? 'bank_transfer',
+                    'metadata' => array_merge($payment->metadata ?? [], [
+                        'callback_data' => $request->all(),
+                        'paid_at' => now()->toDateTimeString()
+                    ])
+                ]);
+
+                // 2. Update transaction
+                $transaction = $payment->transaction;
+                $transaction->update([
+                    'is_denda_paid' => true,
+                    'denda_paid_at' => now(),
+                    'status' => 'selesai_denda'
+                ]);
+
+                // 3. Lepas rak jika sudah bayar denda
+                if ($transaction->marked_for_release) {
+                    $this->releaseRakAfterDenda($transaction);
+                }
+
+                DB::commit();
+                
+                // Redirect ke halaman sukses
+                return redirect()->route('customer.tagihan.success-denda', $payment->id)
+                    ->with('success', 'Pembayaran denda berhasil! Rak telah dilepaskan.');
+                    
+            } else {
+                // Pembayaran gagal
+                $payment->update(['status' => 'failed']);
+                DB::commit();
+                
+                return redirect()->route('customer.tagihan.failed-denda', $payment->id)
+                    ->with('error', 'Pembayaran denda gagal. Silakan coba lagi.');
+            }
+            
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error('Error in callbackDenda: ' . $e->getMessage());
+            
+            return redirect()->route('customer.dashboard')
+                ->with('error', 'Terjadi kesalahan dalam memproses pembayaran.');
+        }
+    }
+
+    /**
+     * Halaman sukses pembayaran denda
+     */
+    public function successDenda(Payment $payment)
+    {
+        if ($payment->user_id !== auth()->id()) {
+            abort(403);
+        }
+
+        if ($payment->status !== 'paid') {
+            return redirect()->route('customer.dashboard')
+                ->with('error', 'Pembayaran belum berhasil.');
+        }
+
+        return view('customer.payments.success-denda', [
+            'payment' => $payment,
+            'transaction' => $payment->transaction,
+            'rak' => $payment->transaction->rak,
+        ]);
+    }
+
+    /**
+     * Halaman gagal pembayaran denda
+     */
+    public function failedDenda(Payment $payment)
+    {
+        if ($payment->user_id !== auth()->id()) {
+            abort(403);
+        }
+
+        return view('customer.payments.failed-denda', [
+            'payment' => $payment,
+            'transaction' => $payment->transaction,
+        ]);
     }
 
     public function createPayment($id)
@@ -307,6 +569,11 @@ class TagihanController extends Controller
 
     public function processExpired(Request $request, $id)
     {
+                // Validasi bahwa tidak ada denda
+        if ($transaction->total_denda > 0) {
+            return back()->with('error', 'Tidak bisa melepas rak karena ada denda yang belum dibayar.');
+        }
+
         try {
             $tagihan = Tagihan::with(['transaction', 'rak'])
                 ->where('id', $id)
