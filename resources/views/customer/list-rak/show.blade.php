@@ -676,167 +676,142 @@
                     </div>
 
                     <!-- JavaScript untuk Real-time Countdown -->
-                    @push('scripts')
-                        <script>
-                        document.addEventListener('DOMContentLoaded', function () {
-                            const sewaBerakir = new Date("{{ $activeRental->sewa_berakhir }}").getTime();
-                            const gracePeriodDays = {{ $gracePeriodDays }};
-                            const gracePeriodMs = gracePeriodDays * 24 * 60 * 60 * 1000;
+                  @push('scripts')
+<script>
+document.addEventListener('DOMContentLoaded', function () {
 
-                            const alertElement = document.getElementById('tenMinuteAlert');
-                            const countdownDisplay = document.getElementById('countdownDisplay');
-                            const minutesLeftText = document.getElementById('minutesLeft');
-                            const timeRemainingText = document.getElementById('timeRemainingText');
-                            const timeRemainingBadge = document.getElementById('timeRemainingBadge');
-                            const statusLabel = document.getElementById('statusLabel');
+    // =========================
+    // 🔧 SINKRON WAKTU SERVER ↔ CLIENT
+    // =========================
+    const serverNow = {{ now()->timestamp }} * 1000; // waktu server (ms)
+    const clientNow = Date.now();                    // waktu browser
+    const timeOffset = serverNow - clientNow;        // selisih waktu
 
-                            function updateCountdown() {
-                                const now = Date.now();
-                                let distance = sewaBerakir - now;
+    // =========================
+    // DATA SEWA
+    // =========================
+    const sewaBerakir = new Date(
+        "{{ $activeRental->sewa_berakhir->toIso8601String() }}"
+    ).getTime();
 
-                                // Jika waktu sewa sudah habis
-                                if (distance <= 0) {
-                                    const timeOverdue = Math.abs(distance);
-                                    
-                                    // CEK APAKAH MASIH DALAM MASA TENGGANG
-                                    if (timeOverdue <= gracePeriodMs) {
-                                        // MASA TENGGANG
-                                        const graceDaysRemaining = Math.ceil((gracePeriodMs - timeOverdue) / (1000 * 60 * 60 * 24));
-                                        const graceHoursRemaining = Math.floor((gracePeriodMs - timeOverdue) / (1000 * 60 * 60));
-                                        const graceMinutesRemaining = Math.floor((gracePeriodMs - timeOverdue) / (1000 * 60));
-                                        
-                                        if (countdownDisplay) countdownDisplay.textContent = '00:00';
-                                        
-                                        if (timeRemainingText) {
-                                            if (graceDaysRemaining > 0) {
-                                                timeRemainingText.textContent = 'Masa Tenggang: ' + graceDaysRemaining + ' Hari Tersisa';
-                                            } else if (graceHoursRemaining > 0) {
-                                                timeRemainingText.textContent = 'Masa Tenggang: ' + graceHoursRemaining + ' Jam Tersisa';
-                                            } else {
-                                                timeRemainingText.textContent = 'Masa Tenggang: ' + graceMinutesRemaining + ' Menit Tersisa';
-                                            }
-                                        }
+    const gracePeriodDays = {{ $gracePeriodDays }};
+    const gracePeriodMs = gracePeriodDays * 24 * 60 * 60 * 1000;
 
-                                        if (timeRemainingBadge) {
-                                            timeRemainingBadge.style.background = 'rgba(251, 191, 36, 0.3)';
-                                        }
+    const alertElement = document.getElementById('tenMinuteAlert');
+    const countdownDisplay = document.getElementById('countdownDisplay');
+    const minutesLeftText = document.getElementById('minutesLeft');
+    const timeRemainingText = document.getElementById('timeRemainingText');
+    const timeRemainingBadge = document.getElementById('timeRemainingBadge');
+    const statusLabel = document.getElementById('statusLabel');
 
-                                        if (statusLabel) {
-                                            statusLabel.textContent = 'Masa Tenggang';
-                                        }
+    function updateCountdown() {
 
-                                        if (alertElement) {
-                                            alertElement.style.display = 'none';
-                                        }
-                                    } else {
-                                        // TERLAMBAT (SETELAH MASA TENGGANG)
-                                        const lateDays = Math.floor((timeOverdue - gracePeriodMs) / (1000 * 60 * 60 * 24));
-                                        
-                                        if (countdownDisplay) countdownDisplay.textContent = '00:00';
-                                        
-                                        if (timeRemainingText) {
-                                            timeRemainingText.textContent = 'Terlambat ' + lateDays + ' Hari';
-                                        }
+        // 🔧 GUNAKAN WAKTU SERVER (BUKAN JAM USER)
+        const now = Date.now() + timeOffset;
+        let distance = sewaBerakir - now;
 
-                                        if (timeRemainingBadge) {
-                                            timeRemainingBadge.style.background = 'rgba(239, 68, 68, 0.3)';
-                                        }
+        // =========================
+        // WAKTU SUDAH HABIS
+        // =========================
+        if (distance <= 0) {
+            const timeOverdue = Math.abs(distance);
 
-                                        if (statusLabel) {
-                                            statusLabel.textContent = 'Terlambat';
-                                        }
+            if (timeOverdue <= gracePeriodMs) {
+                // MASA TENGGANG
+                const graceDaysRemaining = Math.ceil((gracePeriodMs - timeOverdue) / (1000 * 60 * 60 * 24));
+                const graceHoursRemaining = Math.floor((gracePeriodMs - timeOverdue) / (1000 * 60 * 60));
+                const graceMinutesRemaining = Math.floor((gracePeriodMs - timeOverdue) / (1000 * 60));
 
-                                        if (alertElement) {
-                                            alertElement.style.display = 'none';
-                                        }
-                                    }
+                if (countdownDisplay) countdownDisplay.textContent = '00:00';
 
-                                    return;
-                                }
+                if (timeRemainingText) {
+                    if (graceDaysRemaining > 0) {
+                        timeRemainingText.textContent = 'Masa Tenggang: ' + graceDaysRemaining + ' Hari Tersisa';
+                    } else if (graceHoursRemaining > 0) {
+                        timeRemainingText.textContent = 'Masa Tenggang: ' + graceHoursRemaining + ' Jam Tersisa';
+                    } else {
+                        timeRemainingText.textContent = 'Masa Tenggang: ' + graceMinutesRemaining + ' Menit Tersisa';
+                    }
+                }
 
-                                // WAKTU MASIH TERSISA (BELUM HABIS)
-                                const days = Math.floor(distance / (1000 * 60 * 60 * 24));
-                                const hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-                                const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
-                                const seconds = Math.floor((distance % (1000 * 60)) / 1000);
+                if (timeRemainingBadge) {
+                    timeRemainingBadge.style.background = 'rgba(251, 191, 36, 0.3)';
+                }
 
-                                // ALERT 10 MENIT
-                                if (distance <= 600000) {
-                                    if (alertElement) alertElement.style.display = 'block';
+                if (statusLabel) statusLabel.textContent = 'Masa Tenggang';
+                if (alertElement) alertElement.style.display = 'none';
 
-                                    if (countdownDisplay) {
-                                        countdownDisplay.textContent =
-                                            String(minutes).padStart(2, '0') + ':' + String(seconds).padStart(2, '0');
-                                    }
+            } else {
+                // TERLAMBAT
+                const lateDays = Math.floor((timeOverdue - gracePeriodMs) / (1000 * 60 * 60 * 24));
+                const lateHours = Math.floor(((timeOverdue - gracePeriodMs) % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+                const lateMinutes = Math.floor(((timeOverdue - gracePeriodMs) % (1000 * 60 * 60)) / (1000 * 60));
 
-                                    if (minutesLeftText) minutesLeftText.textContent = minutes;
-                                } else if (alertElement) {
-                                    alertElement.style.display = 'none';
-                                }
+                if (countdownDisplay) countdownDisplay.textContent = '00:00';
 
-                                // BADGE TEKS WAKTU
-                                let displayText = '';
+                if (timeRemainingText) {
+                    timeRemainingText.textContent =
+                        'Lewat ' + lateDays + ' Hari ' + lateHours + ' Jam ' + lateMinutes + ' Menit';
+                }
 
-                            if (secondsTotal >= 0) {
-    // Masih tersisa → tampilkan Tersisa
-    if (days > 0) {
-        displayText = days + ' Hari ' + hours + ' Jam ' + minutes + ' Menit Tersisa';
-    } else if (hours > 0) {
-        displayText = hours + ' Jam';
-        if (minutes > 0) displayText += ' ' + minutes + ' Menit';
-        displayText += ' Tersisa';
+                if (timeRemainingBadge) {
+                    timeRemainingBadge.style.background = 'rgba(239, 68, 68, 0.3)';
+                }
 
-        if (timeRemainingBadge) {
-            if (hours < 3) {
-                timeRemainingBadge.style.background = 'rgba(239, 68, 68, 0.3)';
-            } else if (hours < 6) {
-                timeRemainingBadge.style.background = 'rgba(251, 191, 36, 0.3)';
+                if (statusLabel) statusLabel.textContent = 'Terlambat';
+                if (alertElement) alertElement.style.display = 'none';
             }
+
+            return;
         }
-    } else if (minutes > 0) {
-        displayText = minutes + ' Menit Tersisa';
-        if (timeRemainingBadge) {
-            timeRemainingBadge.style.background = 'rgba(239, 68, 68, 0.3)';
+
+        // =========================
+        // WAKTU MASIH TERSISA
+        // =========================
+        const days = Math.floor(distance / (1000 * 60 * 60 * 24));
+        const hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+        const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
+        const seconds = Math.floor((distance % (1000 * 60)) / 1000);
+
+        // ALERT 10 MENIT
+        if (distance <= 600000) {
+            if (alertElement) alertElement.style.display = 'block';
+
+            if (countdownDisplay) {
+                countdownDisplay.textContent =
+                    String(minutes).padStart(2, '0') + ':' + String(seconds).padStart(2, '0');
+            }
+
+            if (minutesLeftText) minutesLeftText.textContent = minutes;
+        } else if (alertElement) {
+            alertElement.style.display = 'none';
         }
-    } else {
-        displayText = seconds + ' Detik Tersisa';
-        if (timeRemainingBadge) {
-            timeRemainingBadge.style.background = 'rgba(220, 38, 38, 0.4)';
+
+        let displayText = '';
+
+        if (days > 0) {
+            displayText = days + ' Hari ' + hours + ' Jam ' + minutes + ' Menit Tersisa';
+        } else if (hours > 0) {
+            displayText = hours + ' Jam';
+            if (minutes > 0) displayText += ' ' + minutes + ' Menit';
+            displayText += ' Tersisa';
+        } else if (minutes > 0) {
+            displayText = minutes + ' Menit Tersisa';
+        } else {
+            displayText = seconds + ' Detik Tersisa';
         }
+
+        if (timeRemainingText) timeRemainingText.textContent = displayText;
+        if (statusLabel) statusLabel.textContent = 'Aktif';
     }
 
-    // Status aktif
-    if (statusLabel) statusLabel.textContent = 'Aktif';
+    // START
+    updateCountdown();
+    setInterval(updateCountdown, 1000);
+});
+</script>
+@endpush
 
-} else {
-    // WAKTU LEWAT (expired) → tampilkan LEWAT tanpa minus
-
-    const lateDays = Math.abs(days);
-    const lateHours = Math.abs(hours);
-    const lateMinutes = Math.abs(minutes);
-
-    displayText =
-        'Lewat ' +
-        lateDays + ' Hari ' +
-        lateHours + ' Jam ' +
-        lateMinutes + ' Menit';
-
-    if (timeRemainingBadge) {
-        timeRemainingBadge.style.background = 'rgba(239, 68, 68, 0.4)';
-    }
-
-    if (statusLabel) statusLabel.textContent = 'Terlambat';
-}
-
-// Apply ke HTML
-if (timeRemainingText) timeRemainingText.textContent = displayText;
-
-
-                            updateCountdown();
-                            setInterval(updateCountdown, 1000);
-                        });
-                        </script>
-                    @endpush
                 @endif
             @endif
 
