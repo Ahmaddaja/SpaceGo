@@ -10,6 +10,7 @@ use App\Services\RevenueService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Barryvdh\DomPDF\Facade\Pdf;
+use Illuminate\Support\Facades\Http;
 
 class RevenueController extends Controller
 {
@@ -324,68 +325,116 @@ class RevenueController extends Controller
 
         if ($month) {
             // Single month data
-            $total = Transaction::whereIn('transaction_status', ['capture', 'settlement'])
-                ->whereYear('transaction_time', $year)
-                ->whereMonth('transaction_time', $month)
-                ->sum('amount');
-
-            $count = Transaction::whereIn('transaction_status', ['capture', 'settlement'])
-                ->whereYear('transaction_time', $year)
-                ->whereMonth('transaction_time', $month)
-                ->count();
-
-            $rakCount = Transaction::whereIn('transaction_status', ['capture', 'settlement'])
-                ->whereYear('transaction_time', $year)
-                ->whereMonth('transaction_time', $month)
-                ->distinct('rak_id')
-                ->count('rak_id');
-
-            if ($total > 0 || $count > 0) {
-                $revenues->push((object)[
-                    'month' => $month,
-                    'month_name' => $this->getMonthName($month),
-                    'year' => $year,
-                    'total_transactions' => $count,
-                    'total_raks_rented' => $rakCount,
-                    'total_revenue' => $total
-                ]);
-            }
-            $yearlyTotal = $total;
-        } else {
-            // Year summary data
-            for ($i = 1; $i <= 12; $i++) {
-                $total = Transaction::whereIn('transaction_status', ['capture', 'settlement'])
-                    ->whereYear('transaction_time', $year)
-                    ->whereMonth('transaction_time', $i)
+                $total = Transaction::whereYear('transaction_time', $year)
+                    ->whereMonth('transaction_time', $month)
                     ->sum('amount');
 
-                $count = Transaction::whereIn('transaction_status', ['capture', 'settlement'])
-                    ->whereYear('transaction_time', $year)
-                    ->whereMonth('transaction_time', $i)
+                $count = Transaction::whereYear('transaction_time', $year)
+                    ->whereMonth('transaction_time', $month)
                     ->count();
 
-                $rakCount = Transaction::whereIn('transaction_status', ['capture', 'settlement'])
-                    ->whereYear('transaction_time', $year)
-                    ->whereMonth('transaction_time', $i)
+                $rakCount = Transaction::whereYear('transaction_time', $year)
+                    ->whereMonth('transaction_time', $month)
                     ->distinct('rak_id')
                     ->count('rak_id');
 
+                // status breakdowns and average
+                $successCount = Transaction::whereYear('transaction_time', $year)
+                    ->whereMonth('transaction_time', $month)
+                    ->whereIn('transaction_status', ['capture', 'settlement'])
+                    ->count();
+                $pendingCount = Transaction::whereYear('transaction_time', $year)
+                    ->whereMonth('transaction_time', $month)
+                    ->where('transaction_status', 'pending')
+                    ->count();
+                $failedCount = Transaction::whereYear('transaction_time', $year)
+                    ->whereMonth('transaction_time', $month)
+                    ->whereIn('transaction_status', ['deny', 'expire', 'cancel'])
+                    ->count();
+
+                $avgAmount = Transaction::whereYear('transaction_time', $year)
+                    ->whereMonth('transaction_time', $month)
+                    ->whereIn('transaction_status', ['capture', 'settlement'])
+                    ->avg('amount') ?? 0;
+
                 if ($total > 0 || $count > 0) {
                     $revenues->push((object)[
-                        'month' => $i,
-                        'month_name' => $this->getMonthName($i),
+                        'month' => $month,
+                        'month_name' => $this->getMonthName($month),
                         'year' => $year,
                         'total_transactions' => $count,
                         'total_raks_rented' => $rakCount,
-                        'total_revenue' => $total
+                        'total_revenue' => $total,
+                        'success_count' => $successCount,
+                        'pending_count' => $pendingCount,
+                        'failed_count' => $failedCount,
+                        'avg_amount' => $avgAmount
                     ]);
-                    $yearlyTotal += $total;
+                }
+                $yearlyTotal = $total;
+                $yearlyTransactions = $count;
+            } else {
+                // Year summary data
+                for ($i = 1; $i <= 12; $i++) {
+                    $total = Transaction::whereYear('transaction_time', $year)
+                        ->whereMonth('transaction_time', $i)
+                        ->sum('amount');
+
+                    $count = Transaction::whereYear('transaction_time', $year)
+                        ->whereMonth('transaction_time', $i)
+                        ->count();
+
+                    $rakCount = Transaction::whereYear('transaction_time', $year)
+                        ->whereMonth('transaction_time', $i)
+                        ->distinct('rak_id')
+                        ->count('rak_id');
+
+                    $successCount = Transaction::whereYear('transaction_time', $year)
+                        ->whereMonth('transaction_time', $i)
+                        ->whereIn('transaction_status', ['capture', 'settlement'])
+                        ->count();
+                    $pendingCount = Transaction::whereYear('transaction_time', $year)
+                        ->whereMonth('transaction_time', $i)
+                        ->where('transaction_status', 'pending')
+                        ->count();
+                    $failedCount = Transaction::whereYear('transaction_time', $year)
+                        ->whereMonth('transaction_time', $i)
+                        ->whereIn('transaction_status', ['deny', 'expire', 'cancel'])
+                        ->count();
+
+                    $avgAmount = Transaction::whereYear('transaction_time', $year)
+                        ->whereMonth('transaction_time', $i)
+                        ->whereIn('transaction_status', ['capture', 'settlement'])
+                        ->avg('amount') ?? 0;
+
+                    if ($total > 0 || $count > 0) {
+                        $revenues->push((object)[
+                            'month' => $i,
+                            'month_name' => $this->getMonthName($i),
+                            'year' => $year,
+                            'total_transactions' => $count,
+                            'total_raks_rented' => $rakCount,
+                            'total_revenue' => $total,
+                            'success_count' => $successCount,
+                            'pending_count' => $pendingCount,
+                            'failed_count' => $failedCount,
+                            'avg_amount' => $avgAmount
+                        ]);
+                        $yearlyTotal += $total;
+                        $yearlyTransactions += $count;
+                    }
                 }
             }
-        }
 
         // Chart data for PDF
         $chartData = $this->getChartDataForPdf($year);
+
+        // If client provided pre-rendered images (base64 data URIs), prefer those
+        foreach (['transaksiImage','pendapatanImage','rakImage','statusImage'] as $k) {
+            if ($request->filled($k)) {
+                $chartData[$k] = $request->input($k);
+            }
+        }
 
         $pdf = Pdf::loadView('admin.laporan.pdf', compact(
             'revenues',
@@ -410,70 +459,120 @@ class RevenueController extends Controller
         // Build revenue summary from Transaction data instead of RentalRevenue
         $revenues = collect();
         $yearlyTotal = 0;
+        $yearlyTransactions = 0;
 
         if ($month) {
             // Single month data
-            $total = Transaction::whereIn('transaction_status', ['capture', 'settlement'])
-                ->whereYear('transaction_time', $year)
-                ->whereMonth('transaction_time', $month)
-                ->sum('amount');
-
-            $count = Transaction::whereIn('transaction_status', ['capture', 'settlement'])
-                ->whereYear('transaction_time', $year)
-                ->whereMonth('transaction_time', $month)
-                ->count();
-
-            $rakCount = Transaction::whereIn('transaction_status', ['capture', 'settlement'])
-                ->whereYear('transaction_time', $year)
-                ->whereMonth('transaction_time', $month)
-                ->distinct('rak_id')
-                ->count('rak_id');
-
-            if ($total > 0 || $count > 0) {
-                $revenues->push((object)[
-                    'month' => $month,
-                    'month_name' => $this->getMonthName($month),
-                    'year' => $year,
-                    'total_transactions' => $count,
-                    'total_raks_rented' => $rakCount,
-                    'total_revenue' => $total
-                ]);
-            }
-            $yearlyTotal = $total;
-        } else {
-            // Year summary data
-            for ($i = 1; $i <= 12; $i++) {
-                $total = Transaction::whereIn('transaction_status', ['capture', 'settlement'])
-                    ->whereYear('transaction_time', $year)
-                    ->whereMonth('transaction_time', $i)
+                $total = Transaction::whereYear('transaction_time', $year)
+                    ->whereMonth('transaction_time', $month)
                     ->sum('amount');
 
                 $count = Transaction::whereYear('transaction_time', $year)
-                    ->whereMonth('transaction_time', $i)
+                    ->whereMonth('transaction_time', $month)
                     ->count();
 
-                $rakCount = Transaction::whereIn('transaction_status', ['capture', 'settlement'])
-                    ->whereYear('transaction_time', $year)
-                    ->whereMonth('transaction_time', $i)
+                $rakCount = Transaction::whereYear('transaction_time', $year)
+                    ->whereMonth('transaction_time', $month)
                     ->distinct('rak_id')
                     ->count('rak_id');
 
+                // status breakdowns and average
+                $successCount = Transaction::whereYear('transaction_time', $year)
+                    ->whereMonth('transaction_time', $month)
+                    ->whereIn('transaction_status', ['capture', 'settlement'])
+                    ->count();
+                $pendingCount = Transaction::whereYear('transaction_time', $year)
+                    ->whereMonth('transaction_time', $month)
+                    ->where('transaction_status', 'pending')
+                    ->count();
+                $failedCount = Transaction::whereYear('transaction_time', $year)
+                    ->whereMonth('transaction_time', $month)
+                    ->whereIn('transaction_status', ['deny', 'expire', 'cancel'])
+                    ->count();
+
+                $avgAmount = Transaction::whereYear('transaction_time', $year)
+                    ->whereMonth('transaction_time', $month)
+                    ->whereIn('transaction_status', ['capture', 'settlement'])
+                    ->avg('amount') ?? 0;
+
                 if ($total > 0 || $count > 0) {
                     $revenues->push((object)[
-                        'month' => $i,
-                        'month_name' => $this->getMonthName($i),
+                        'month' => $month,
+                        'month_name' => $this->getMonthName($month),
                         'year' => $year,
                         'total_transactions' => $count,
                         'total_raks_rented' => $rakCount,
-                        'total_revenue' => $total
+                        'total_revenue' => $total,
+                        'success_count' => $successCount,
+                        'pending_count' => $pendingCount,
+                        'failed_count' => $failedCount,
+                        'avg_amount' => $avgAmount
                     ]);
-                    $yearlyTotal += $total;
+                }
+                $yearlyTotal = $total;
+                $yearlyTransactions = $count;
+            } else {
+                // Year summary data
+                for ($i = 1; $i <= 12; $i++) {
+                    $total = Transaction::whereYear('transaction_time', $year)
+                        ->whereMonth('transaction_time', $i)
+                        ->sum('amount');
+
+                    $count = Transaction::whereYear('transaction_time', $year)
+                        ->whereMonth('transaction_time', $i)
+                        ->count();
+
+                    $rakCount = Transaction::whereYear('transaction_time', $year)
+                        ->whereMonth('transaction_time', $i)
+                        ->distinct('rak_id')
+                        ->count('rak_id');
+
+                    $successCount = Transaction::whereYear('transaction_time', $year)
+                        ->whereMonth('transaction_time', $i)
+                        ->whereIn('transaction_status', ['capture', 'settlement'])
+                        ->count();
+                    $pendingCount = Transaction::whereYear('transaction_time', $year)
+                        ->whereMonth('transaction_time', $i)
+                        ->where('transaction_status', 'pending')
+                        ->count();
+                    $failedCount = Transaction::whereYear('transaction_time', $year)
+                        ->whereMonth('transaction_time', $i)
+                        ->whereIn('transaction_status', ['deny', 'expire', 'cancel'])
+                        ->count();
+
+                    $avgAmount = Transaction::whereYear('transaction_time', $year)
+                        ->whereMonth('transaction_time', $i)
+                        ->whereIn('transaction_status', ['capture', 'settlement'])
+                        ->avg('amount') ?? 0;
+
+                    if ($total > 0 || $count > 0) {
+                        $revenues->push((object)[
+                            'month' => $i,
+                            'month_name' => $this->getMonthName($i),
+                            'year' => $year,
+                            'total_transactions' => $count,
+                            'total_raks_rented' => $rakCount,
+                            'total_revenue' => $total,
+                            'success_count' => $successCount,
+                            'pending_count' => $pendingCount,
+                            'failed_count' => $failedCount,
+                            'avg_amount' => $avgAmount
+                        ]);
+                        $yearlyTotal += $total;
+                        $yearlyTransactions += $count;
+                    }
                 }
             }
-        }
 
         // Chart data for PDF
         $chartData = $this->getChartDataForPdf($year);
+
+        // If client provided pre-rendered images (base64 data URIs), prefer those
+        foreach (['transaksiImage','pendapatanImage','rakImage','statusImage'] as $k) {
+            if ($request->filled($k)) {
+                $chartData[$k] = $request->input($k);
+            }
+        }
 
         $pdf = Pdf::loadView('admin.laporan.pdf', compact(
             'revenues',
@@ -736,6 +835,68 @@ class RevenueController extends Controller
             $pendapatanData[] = $total;
         }
 
+        // Generate chart images using QuickChart and return them as base64 data URIs
+        $transaksiConfig = [
+            'type' => 'bar',
+            'data' => [
+                'labels' => $transaksiLabels,
+                'datasets' => [[
+                    'label' => 'Transaksi',
+                    'data' => $transaksiData,
+                    'backgroundColor' => '#4e73df'
+                ]]
+            ],
+            'options' => [
+                'plugins' => ['legend' => ['display' => false]],
+                'scales' => ['y' => ['beginAtZero' => true]]
+            ]
+        ];
+
+        $pendapatanConfig = [
+            'type' => 'bar',
+            'data' => [
+                'labels' => $pendapatanLabels,
+                'datasets' => [[
+                    'label' => 'Pendapatan',
+                    'data' => $pendapatanData,
+                    'backgroundColor' => '#43e97b'
+                ]]
+            ],
+            'options' => [
+                'plugins' => ['legend' => ['display' => false]],
+                'scales' => ['y' => ['beginAtZero' => true]]
+            ]
+        ];
+
+        $rakConfig = [
+            'type' => 'doughnut',
+            'data' => [
+                'labels' => ['Terisi', 'Tersedia', 'Maintenance'],
+                'datasets' => [[
+                    'data' => [$rakTerisi, $rakTersedia, $rakMaintenance],
+                    'backgroundColor' => ['#f5576c', '#43e97b', '#e7ff0a']
+                ]]
+            ],
+            'options' => ['plugins' => ['legend' => ['position' => 'right']]]
+        ];
+
+        $statusConfig = [
+            'type' => 'doughnut',
+            'data' => [
+                'labels' => ['Sukses', 'Pending', 'Gagal'],
+                'datasets' => [[
+                    'data' => [$statusSuccess, $statusPending, $statusFailed],
+                    'backgroundColor' => ['#43e97b', '#ffc107', '#dc3545']
+                ]]
+            ],
+            'options' => ['plugins' => ['legend' => ['position' => 'right']]]
+        ];
+
+        $transaksiImage = $this->quickChartBase64($transaksiConfig, 800, 260);
+        $pendapatanImage = $this->quickChartBase64($pendapatanConfig, 800, 260);
+        $rakImage = $this->quickChartBase64($rakConfig, 360, 260);
+        $statusImage = $this->quickChartBase64($statusConfig, 360, 260);
+
         return compact(
             'transaksiLabels',
             'transaksiData',
@@ -746,8 +907,28 @@ class RevenueController extends Controller
             'rakTersedia',
             'statusSuccess',
             'statusPending',
-            'statusFailed'
+            'statusFailed',
+            'transaksiImage',
+            'pendapatanImage',
+            'rakImage',
+            'statusImage'
         );
+    }
+
+    private function quickChartBase64(array $config, int $width = 800, int $height = 400): ?string
+    {
+        try {
+            $url = 'https://quickchart.io/chart?c=' . urlencode(json_encode($config)) . "&w={$width}&h={$height}&format=png";
+            $response = Http::get($url);
+
+            if ($response->ok()) {
+                return 'data:image/png;base64,' . base64_encode($response->body());
+            }
+        } catch (\Exception $e) {
+            // silently fail and return null - fallback will be used in blade
+        }
+
+        return null;
     }
 
     private function getMonthName(int $month): string

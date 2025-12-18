@@ -111,7 +111,73 @@ class TransactionSeeder extends Seeder
             $currentDate->addMonth();
         }
 
-        $this->command->info("✅ Successfully created {$totalTransactions} transaction records.");
+        // Additionally, simulate a set of transactions that are 'inserted' now but have their transaction_time spread across July-December
+        $simulateCount = 10; // number of simulated 'today' insertions
+        $monthsRange = range(7, 12); // July - December
+        $monthsCount = count($monthsRange);
+        $simulated = 0;
+
+        // Status weights (same bias used above)
+        $statusWeights = [25,25,20,10,10,10];
+
+        // Remove previous simulated entries to avoid duplicates
+        Transaction::where('order_id', 'like', '%-SIM%')->delete();
+
+        for ($i = 0; $i < $simulateCount; $i++) {
+            $customer = $customers->random();
+            $rak = $raks->random();
+
+            // Force successful statuses so these simulated transactions show in revenue totals
+            $status = collect(['capture', 'settlement'])->random();
+
+            $month = $monthsRange[$i % $monthsCount];
+            $year = Carbon::now()->year;
+
+            $daysInMonth = Carbon::create($year, $month, 1)->daysInMonth;
+            $day = rand(1, $daysInMonth);
+            $hour = rand(8, 22);
+            $minute = rand(0, 59);
+            $second = rand(0, 59);
+
+            $transactionDate = Carbon::create($year, $month, $day, $hour, $minute, $second);
+
+            $amount = $rak->harga_sewa_perbulan;
+
+            $orderId = 'ORDER-' . $transactionDate->format('YmdHis') . $rak->id . $customer->id . '-SIM' . str_pad($i + 1, 3, '0', STR_PAD_LEFT);
+
+            Transaction::create([
+                'order_id' => $orderId,
+                'user_id' => $customer->id,
+                'rak_id' => $rak->id,
+                'amount' => $amount,
+                'transaction_status' => $status,
+                'snap_token' => 'snap_' . $orderId,
+                'payment_type' => collect($paymentTypes)->random(),
+                'transaction_time' => $transactionDate,
+                'fraud_status' => rand(1, 10) <= 9 ? 'accept' : 'challenge',
+                'midtrans_response' => [
+                    'status_code' => '200',
+                    'status_message' => 'Success',
+                    'transaction_id' => $orderId,
+                    'order_id' => $orderId,
+                    'gross_amount' => (string)$amount,
+                    'payment_type' => collect($paymentTypes)->random(),
+                    'transaction_time' => $transactionDate->toISOString(),
+                    'transaction_status' => $status,
+                    'fraud_status' => rand(1, 10) <= 9 ? 'accept' : 'challenge',
+                ],
+                'created_at' => Carbon::now(),
+                'updated_at' => Carbon::now(),
+            ]);
+
+            $simulated++;
+            $totalTransactions++;
+        }
+
+        // After seeding, ensure RentalRevenue entries are synced for the year so pendapatan shows totals
+        \App\Services\RevenueService::syncAllRevenues();
+
+        $this->command->info("✅ Successfully created {$totalTransactions} transaction records ({$simulated} simulated spread across July-December}). RentalRevenue synced.");
     }
 
     /**

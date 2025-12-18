@@ -360,241 +360,257 @@
         Chart.defaults.color = '#6c757d';
 
         // Grafik Transaksi Bulanan
-        const transaksiCtx = document.getElementById('transaksiChart').getContext('2d');
-        const transaksiChart = new Chart(transaksiCtx, {
-            type: 'line',
-            data: {
-                labels: {!! json_encode($transaksiLabels) !!},
-                datasets: [{
-                    label: 'Jumlah Transaksi',
-                    data: {!! json_encode($transaksiData) !!},
-                    borderColor: '#667eea',
-                    backgroundColor: 'rgba(102, 126, 234, 0.1)',
-                    tension: 0.4,
-                    fill: true,
-                    borderWidth: 3,
-                    pointRadius: 5,
-                    pointBackgroundColor: '#667eea',
-                    pointBorderColor: '#fff',
-                    pointBorderWidth: 2,
-                    pointHoverRadius: 7
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: true,
-                plugins: {
-                    legend: {
-                        display: true,
-                        position: 'top',
-                        labels: {
-                            padding: 15,
-                            font: {
-                                size: 12,
-                                weight: '600'
-                            }
-                        }
-                    },
-                    tooltip: {
-                        mode: 'index',
-                        intersect: false,
-                        backgroundColor: 'rgba(0, 0, 0, 0.8)',
-                        padding: 12,
-                        cornerRadius: 8
-                    }
+        (function(){
+            const el = document.getElementById('transaksiChart');
+            if (!el) return;
+            const transaksiCtx = el.getContext('2d');
+            new Chart(transaksiCtx, {
+                type: 'line',
+                data: {
+                    labels: {!! json_encode($transaksiLabels) !!},
+                    datasets: [{
+                        label: 'Jumlah Transaksi',
+                        data: {!! json_encode($transaksiData) !!},
+                        borderColor: '#667eea',
+                        backgroundColor: 'rgba(102, 126, 234, 0.1)',
+                        tension: 0.4,
+                        fill: true,
+                        borderWidth: 3,
+                        pointRadius: 5,
+                        pointBackgroundColor: '#667eea',
+                        pointBorderColor: '#fff',
+                        pointBorderWidth: 2,
+                        pointHoverRadius: 7
+                    }]
                 },
-                scales: {
-                    y: {
-                        beginAtZero: true,
-                        ticks: {
-                            stepSize: 5,
-                            font: {
-                                size: 11
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: true,
+                    plugins: {
+                        legend: {
+                            display: true,
+                            position: 'top',
+                            labels: {
+                                padding: 15,
+                                font: {
+                                    size: 12,
+                                    weight: '600'
+                                }
                             }
                         },
-                        grid: {
-                            color: 'rgba(0, 0, 0, 0.05)'
+                        tooltip: {
+                            mode: 'index',
+                            intersect: false,
+                            backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                            padding: 12,
+                            cornerRadius: 8
                         }
                     },
-                    x: {
-                        ticks: {
-                            font: {
-                                size: 11
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                stepSize: 5,
+                                font: {
+                                    size: 11
+                                }
+                            },
+                            grid: {
+                                color: 'rgba(0, 0, 0, 0.05)'
                             }
                         },
-                        grid: {
-                            display: false
+                        x: {
+                            ticks: {
+                                font: {
+                                    size: 11
+                                }
+                            },
+                            grid: {
+                                display: false
+                            }
                         }
                     }
                 }
-            }
-        });
+            });
+        })();
 
         // Grafik Status Rak
-        const rakCtx = document.getElementById('rakChart').getContext('2d');
-        const rakChart = new Chart(rakCtx, {
-            type: 'doughnut',
-            data: {
-                labels: ['Terisi', 'Tersedia', 'Maintenance'],
-                datasets: [{
-                    data: [{{ $rakTerisi }}, {{ $rakTersedia }}, {{ $rakMaintenance }}],
-                    backgroundColor: [
-                        'rgba(245, 87, 108, 0.8)',
-                        'rgba(67, 233, 123, 0.8)',
-                        'rgba(231, 255, 10, 0.8)'
-                    ],
-                    borderWidth: 3,
-                    borderColor: '#fff',
-                    hoverOffset: 10
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: true,
-                plugins: {
-                    legend: {
-                        position: 'bottom',
-                        labels: {
-                            padding: 15,
-                            font: {
-                                size: 12,
-                                weight: '600'
-                            },
-                            usePointStyle: true,
-                            pointStyle: 'circle'
+        (function(){
+            const el = document.getElementById('rakChart');
+            if (!el) return;
+            const rakCtx = el.getContext('2d');
+            new Chart(rakCtx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Terisi', 'Tersedia', 'Maintenance'],
+                    datasets: [{
+                        data: [{{ $rakTerisi }}, {{ $rakTersedia }}, {{ $rakMaintenance }}],
+                        backgroundColor: [
+                            'rgba(245, 87, 108, 0.8)',
+                            'rgba(67, 233, 123, 0.8)',
+                            'rgba(231, 255, 10, 0.8)'
+                        ],
+                        borderWidth: 3,
+                        borderColor: '#fff',
+                        hoverOffset: 10
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: true,
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: {
+                                padding: 15,
+                                font: {
+                                    size: 12,
+                                    weight: '600'
+                                },
+                                usePointStyle: true,
+                                pointStyle: 'circle'
+                            }
+                        },
+                        tooltip: {
+                            backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                            padding: 12,
+                            cornerRadius: 8
                         }
-                    },
-                    tooltip: {
-                        backgroundColor: 'rgba(0, 0, 0, 0.8)',
-                        padding: 12,
-                        cornerRadius: 8
                     }
                 }
-            }
-        });
+            });
+        })();
 
         // Grafik Pendapatan
-        const pendapatanCtx = document.getElementById('pendapatanChart').getContext('2d');
-        const pendapatanChart = new Chart(pendapatanCtx, {
-            type: 'bar',
-            data: {
-                labels: {!! json_encode($pendapatanLabels) !!},
-                datasets: [{
-                    label: 'Pendapatan (Rp)',
-                    data: {!! json_encode($pendapatanData) !!},
-                    backgroundColor: 'rgba(67, 233, 123, 0.7)',
-                    borderColor: 'rgba(67, 233, 123, 1)',
-                    borderWidth: 2,
-                    borderRadius: 8,
-                    hoverBackgroundColor: 'rgba(67, 233, 123, 0.9)'
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: true,
-                plugins: {
-                    legend: {
-                        display: true,
-                        position: 'top',
-                        labels: {
-                            padding: 15,
-                            font: {
-                                size: 12,
-                                weight: '600'
-                            }
-                        }
-                    },
-                    tooltip: {
-                        backgroundColor: 'rgba(0, 0, 0, 0.8)',
-                        padding: 12,
-                        cornerRadius: 8,
-                        callbacks: {
-                            label: function(context) {
-                                let label = context.dataset.label || '';
-                                if (label) {
-                                    label += ': ';
-                                }
-                                if (context.parsed.y !== null) {
-                                    label += 'Rp ' + context.parsed.y.toLocaleString('id-ID');
-                                }
-                                return label;
-                            }
-                        }
-                    }
+        (function(){
+            const el = document.getElementById('pendapatanChart');
+            if (!el) return;
+            const pendapatanCtx = el.getContext('2d');
+            new Chart(pendapatanCtx, {
+                type: 'bar',
+                data: {
+                    labels: {!! json_encode($pendapatanLabels) !!},
+                    datasets: [{
+                        label: 'Pendapatan (Rp)',
+                        data: {!! json_encode($pendapatanData) !!},
+                        backgroundColor: 'rgba(67, 233, 123, 0.7)',
+                        borderColor: 'rgba(67, 233, 123, 1)',
+                        borderWidth: 2,
+                        borderRadius: 8,
+                        hoverBackgroundColor: 'rgba(67, 233, 123, 0.9)'
+                    }]
                 },
-                scales: {
-                    y: {
-                        beginAtZero: true,
-                        ticks: {
-                            callback: function(value) {
-                                if (value >= 1000000) {
-                                    return 'Rp ' + (value / 1000000).toFixed(1) + 'jt';
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: true,
+                    plugins: {
+                        legend: {
+                            display: true,
+                            position: 'top',
+                            labels: {
+                                padding: 15,
+                                font: {
+                                    size: 12,
+                                    weight: '600'
                                 }
-                                return 'Rp ' + (value / 1000).toFixed(0) + 'k';
-                            },
-                            font: {
-                                size: 11
                             }
                         },
-                        grid: {
-                            color: 'rgba(0, 0, 0, 0.05)'
+                        tooltip: {
+                            backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                            padding: 12,
+                            cornerRadius: 8,
+                            callbacks: {
+                                label: function(context) {
+                                    let label = context.dataset.label || '';
+                                    if (label) {
+                                        label += ': ';
+                                    }
+                                    if (context.parsed.y !== null) {
+                                        label += 'Rp ' + context.parsed.y.toLocaleString('id-ID');
+                                    }
+                                    return label;
+                                }
+                            }
                         }
                     },
-                    x: {
-                        ticks: {
-                            font: {
-                                size: 11
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                callback: function(value) {
+                                    if (value >= 1000000) {
+                                        return 'Rp ' + (value / 1000000).toFixed(1) + 'jt';
+                                    }
+                                    return 'Rp ' + (value / 1000).toFixed(0) + 'k';
+                                },
+                                font: {
+                                    size: 11
+                                }
+                            },
+                            grid: {
+                                color: 'rgba(0, 0, 0, 0.05)'
                             }
                         },
-                        grid: {
-                            display: false
+                        x: {
+                            ticks: {
+                                font: {
+                                    size: 11
+                                }
+                            },
+                            grid: {
+                                display: false
+                            }
                         }
                     }
                 }
-            }
-        });
+            });
+        })();
 
         // Grafik Status Transaksi
-        const statusCtx = document.getElementById('statusChart').getContext('2d');
-        const statusChart = new Chart(statusCtx, {
-            type: 'doughnut',
-            data: {
-                labels: ['Sukses', 'Pending', 'Gagal'],
-                datasets: [{
-                    data: [{{ $statusSuccess }}, {{ $statusPending }}, {{ $statusFailed }}],
-                    backgroundColor: [
-                        'rgba(67, 233, 123, 0.8)',
-                        'rgba(255, 193, 7, 0.8)',
-                        'rgba(220, 53, 69, 0.8)'
-                    ],
-                    borderWidth: 3,
-                    borderColor: '#fff',
-                    hoverOffset: 10
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: true,
-                plugins: {
-                    legend: {
-                        position: 'bottom',
-                        labels: {
-                            padding: 15,
-                            font: {
-                                size: 12,
-                                weight: '600'
-                            },
-                            usePointStyle: true,
-                            pointStyle: 'circle'
+        (function(){
+            const el = document.getElementById('statusChart');
+            if (!el) return;
+            const statusCtx = el.getContext('2d');
+            new Chart(statusCtx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Sukses', 'Pending', 'Gagal'],
+                    datasets: [{
+                        data: [{{ $statusSuccess }}, {{ $statusPending }}, {{ $statusFailed }}],
+                        backgroundColor: [
+                            'rgba(67, 233, 123, 0.8)',
+                            'rgba(255, 193, 7, 0.8)',
+                            'rgba(220, 53, 69, 0.8)'
+                        ],
+                        borderWidth: 3,
+                        borderColor: '#fff',
+                        hoverOffset: 10
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: true,
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: {
+                                padding: 15,
+                                font: {
+                                    size: 12,
+                                    weight: '600'
+                                },
+                                usePointStyle: true,
+                                pointStyle: 'circle'
+                            }
+                        },
+                        tooltip: {
+                            backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                            padding: 12,
+                            cornerRadius: 8
                         }
-                    },
-                    tooltip: {
-                        backgroundColor: 'rgba(0, 0, 0, 0.8)',
-                        padding: 12,
-                        cornerRadius: 8
                     }
                 }
-            }
-        });
+            });
+        })();
     </script>
 @endpush
