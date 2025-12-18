@@ -268,6 +268,86 @@
             }
         });
     </script>
+
+    <script>
+        (function(){
+            const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+
+            async function captureDataUrl(canvasId, maxWidth = 800) {
+                const canvas = document.getElementById(canvasId);
+                if (!canvas) return null;
+                // Create offscreen canvas to scale image to maxWidth (preserve aspect ratio)
+                const ratio = canvas.width / canvas.height || 1;
+                const targetWidth = Math.min(canvas.width, maxWidth);
+                const targetHeight = Math.round(targetWidth / ratio);
+                const off = document.createElement('canvas');
+                off.width = targetWidth;
+                off.height = targetHeight;
+                const ctx = off.getContext('2d');
+                ctx.fillStyle = '#ffffff'; ctx.fillRect(0,0,off.width, off.height);
+                ctx.drawImage(canvas, 0, 0, off.width, off.height);
+                return off.toDataURL('image/png', 0.9);
+            }
+
+            async function generatePdf(action) {
+                const year = document.getElementById('btnDownloadPdf')?.dataset.year || document.getElementById('btnViewPdf')?.dataset.year;
+                const month = document.getElementById('btnDownloadPdf')?.dataset.month || document.getElementById('btnViewPdf')?.dataset.month;
+
+                // Capture chart canvases
+                const transaksiImage = await captureDataUrl('transaksiChart');
+                const pendapatanImage = await captureDataUrl('pendapatanChart');
+                const rakImage = await captureDataUrl('rakChart');
+                const statusImage = await captureDataUrl('statusChart');
+
+                const payload = { year, month, transaksiImage, pendapatanImage, rakImage, statusImage };
+
+                const url = action === 'view' ? '{{ route('admin.laporan.view.pdf') }}' : '{{ route('admin.laporan.export.pdf') }}';
+
+                const res = await fetch(url, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': csrfToken
+                    },
+                    body: JSON.stringify(payload)
+                });
+
+                if (!res.ok) {
+                    alert('Gagal menghasilkan PDF. Silakan coba lagi.');
+                    return;
+                }
+
+                const blob = await res.blob();
+                const blobUrl = URL.createObjectURL(blob);
+
+                if (action === 'view') {
+                    window.open(blobUrl, '_blank');
+                } else {
+                    // Download with filename
+                    const filename = month ? `laporan-pendapatan-${year}-${month}.pdf` : `laporan-pendapatan-${year}.pdf`;
+                    const a = document.createElement('a');
+                    a.href = blobUrl;
+                    a.download = filename;
+                    document.body.appendChild(a);
+                    a.click();
+                    a.remove();
+                }
+
+                // Revoke object URL after a short timeout
+                setTimeout(() => URL.revokeObjectURL(blobUrl), 10000);
+            }
+
+            document.getElementById('btnViewPdf')?.addEventListener('click', function(e) {
+                e.preventDefault();
+                generatePdf('view');
+            });
+
+            document.getElementById('btnDownloadPdf')?.addEventListener('click', function(e) {
+                e.preventDefault();
+                generatePdf('download');
+            });
+        })();
+    </script>
 @endpush
 
 @section('title-content')
@@ -378,10 +458,10 @@
                             <a href="{{ route('admin.laporan.performance', ['year' => $year]) }}" class="btn btn-success">
                                 <i class="fas fa-chart-line"></i> Analisis Performa
                             </a>
-                            <a href="{{ route('admin.laporan.view.pdf', ['year' => $year, 'month' => $month]) }}" class="btn btn-info" target="_blank">
+                            <a href="{{ route('admin.laporan.view.pdf', ['year' => $year, 'month' => $month]) }}" class="btn btn-info js-pdf-view" target="_blank" id="btnViewPdf" data-year="{{ $year }}" data-month="{{ $month }}">
                                 <i class="fas fa-eye"></i> PDF
                             </a>
-                            <a href="{{ route('admin.laporan.export.pdf', ['year' => $year, 'month' => $month]) }}" class="btn btn-danger">
+                            <a href="{{ route('admin.laporan.export.pdf', ['year' => $year, 'month' => $month]) }}" class="btn btn-danger js-pdf-download" id="btnDownloadPdf" data-year="{{ $year }}" data-month="{{ $month }}">
                                 <i class="fas fa-download"></i> Download
                             </a>
                         </div>
