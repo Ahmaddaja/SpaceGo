@@ -14,12 +14,13 @@
 
             <hr>
 
-            <form id="delete-form-{{ $rak->id }}" action="{{ route('raks.destroy', $rak->id) }}" method="POST"
+            {{-- <form id="delete-form-{{ $rak->id }}" action="{{ route('raks.destroy', $rak->id) }}" method="POST"
                 style="display: inline;">
                 @csrf
                 @method('DELETE')
-            </form>
+            </form> 
 
+            {{-- ✅ BUTTON DELETE - Form sudah ada di luar (edit.blade.php) --}}
             <button type="button" class="btn btn-danger btn-block" onclick="confirmDelete({{ $rak->id }})">
                 <i class="fas fa-trash mr-2"></i>Hapus Rak
             </button>
@@ -46,12 +47,10 @@
         <script>
             function confirmDelete(id) {
                 if (confirm('Apakah Anda yakin ingin menghapus rak ini? Data yang sudah dihapus tidak dapat dikembalikan.')) {
+                    // Submit form delete yang ada di edit.blade.php (di luar form update)
                     document.getElementById('delete-form-' + id).submit();
                 }
             }
         </script>
     @endpush
 @endif
-
-{{-- ❌ HAPUS BARIS INI - Menyebabkan duplikasi --}}
-{{-- @include('admin.raks.partials.scripts') --}}
